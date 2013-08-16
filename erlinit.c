@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     execvp("/usr/lib/erlang/erts-5.9.1/bin/erlexec", erlargv);
 
     // execvpe is not supposed to return
-    perror("execvpe");
+    perror("execvp");
 
     // oops the kernel
     return 0;
