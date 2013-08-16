@@ -1,4 +1,4 @@
 erlinit
 =======
 
-Shim to start erlang from init
+This is a replacement for /sbin/init that launches the erlang runtime.
