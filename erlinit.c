@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define ERTS_VERSION "5.9.3.1"
+
 char * const erlargv[] = {
     "erlexec",
     NULL
@@ -13,7 +15,7 @@ char * const erlenv[] = {
 
     // Erlang environment
     "ROOTDIR=/usr/lib/erlang",
-    "BINDIR=/usr/lib/erlang/erts-5.9.1/bin",
+    "BINDIR=/usr/lib/erlang/erts-" ERTS_VERSION "/bin",
     "EMU=beam",
     "PROGNAME=erl",
 
@@ -27,7 +29,7 @@ int main(int argc, char *argv[])
     char * const *envvar = erlenv;
     while (*envvar != NULL)
         putenv(*envvar++);
-    execvp("/usr/lib/erlang/erts-5.9.1/bin/erlexec", erlargv);
+    execvp("/usr/lib/erlang/erts-" ERTS_VERSION "/bin/erlexec", erlargv);
 
     // execvpe is not supposed to return
     perror("execvp");
