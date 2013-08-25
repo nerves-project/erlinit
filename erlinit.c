@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <linux/reboot.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 #define ERTS_VERSION "5.9.3.1"
 
 char * const erlargv[] = {
@@ -27,16 +31,34 @@ char * const erlenv[] = {
 
 int main(int argc, char *argv[])
 {
-    printf("Loading erlang shell...\n");
+    fprintf(stderr, "Loading erlang shell...\n");
 
-    char * const *envvar = erlenv;
-    while (*envvar != NULL)
-        putenv(*envvar++);
-    execvp("/usr/lib/erlang/erts-" ERTS_VERSION "/bin/erlexec", erlargv);
+    pid_t pid = fork();
+    if (pid == 0) {
+        // Set up the environment for running erlang
+        char * const *envvar = erlenv;
+        while (*envvar != NULL)
+            putenv(*envvar++);
 
-    // execvpe is not supposed to return
-    perror("execvp");
+        execvp("/usr/lib/erlang/erts-" ERTS_VERSION "/bin/erlexec", erlargv);
 
-    // oops the kernel
+        // execvpe is not supposed to return
+        perror("execvp");
+        exit(1);
+    }
+
+    // If Erlang exists, then something went wrong, so handle it.
+    pid_t waitpid;
+    do {
+        waitpid = wait(NULL);
+    } while (waitpid > 0 && waitpid != pid);
+
+    if (waitpid != pid)
+        fprintf(stderr, "Unexpected return from wait(): %d\n", waitpid);
+
+    // Reboot rather than hanging.
+    reboot(LINUX_REBOOT_CMD_RESTART);
+
+    // If we can't reboot, oops the kernel.
     return 0;
 }
