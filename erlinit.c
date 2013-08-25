@@ -12,6 +12,9 @@ char * const erlargv[] = {
 char * const erlenv[] = {
     // General environment
     "HOME=/",
+    // PATH appears to only be needed for user convenience when runninf os:cmd/1
+    // It may be possible to remove in the future.
+    "PATH=/usr/sbin:/usr/bin:/sbin:/bin",
 
     // Erlang environment
     "ROOTDIR=/usr/lib/erlang",
