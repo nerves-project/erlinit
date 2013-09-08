@@ -37,11 +37,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define ERLANG_ROOT_DIR "/usr/lib/erlang"
 #define RELEASE_ROOT_DIR "/srv/erlang"
+#define RELEASE_RELEASES_DIR  RELEASE_ROOT_DIR "/releases"
 
-static char * const erlargv[] = {
-    "erlexec",
-    NULL
-};
+static char erts_dir[PATH_MAX];
+static char release_dir[PATH_MAX];
+static char root_dir[PATH_MAX];
+static char boot_path[PATH_MAX];
+static char sys_config[PATH_MAX];
 
 static void info(const char *fmt, ...)
 {
@@ -115,7 +117,7 @@ static int erts_filter(const struct dirent *d)
     return starts_with(d->d_name, "erts-");
 }
 
-static void find_erts_directory(char *path)
+static void find_erts_directory()
 {
     struct dirent **namelist;
     int n = scandir(ERLANG_ROOT_DIR,
@@ -129,13 +131,78 @@ static void find_erts_directory(char *path)
     else if (n > 1)
         fatal("Found multiple erts directories. Clean up the installation.\n");
 
-    sprintf(path, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
+    sprintf(erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
 
     free(namelist[0]);
     free(namelist);
 }
 
-static void setup_environment(const char *erts_path, const char *release_rootdir)
+static int file_exists(const char *path)
+{
+    struct stat sb;
+    return stat(path, &sb) == 0;
+}
+
+static int release_filter(const struct dirent *d)
+{
+    // Releases are of the form NAME-VERSION
+    return strchr(d->d_name, '-') != NULL;
+}
+
+static void find_sys_config()
+{
+    sprintf(sys_config, "%s/sys.config", release_dir);
+    if (!file_exists(sys_config))
+        *sys_config = '\0';
+}
+
+static void find_boot_path()
+{
+    *boot_path = '\0';
+
+    const char *release_name_start = strrchr(release_dir, '/');
+    const char *release_name_end = strrchr(release_dir, '-');
+    if (!release_name_start ||
+            !release_name_end ||
+            release_name_end <= release_name_start)
+        return;
+
+    char release_name[256];
+    release_name_start++; // Skip pass leading '/'
+    memcpy(release_name, release_name_start, release_name_end - release_name_start);
+    release_name[release_name_end - release_name_start] = '\0';
+
+    sprintf(boot_path, "%s/%s", release_dir, release_name);
+}
+
+static void find_release()
+{
+    struct dirent **namelist;
+    int n = scandir(RELEASE_RELEASES_DIR,
+                    &namelist,
+                    release_filter,
+                    NULL);
+    if (n <= 0) {
+        info("No release found in %s.\n", RELEASE_RELEASES_DIR);
+        *release_dir = '\0';
+        *sys_config = '\0';
+        *boot_path = '\0';
+
+        strcpy(root_dir, ERLANG_ROOT_DIR);
+    } else if (n == 1) {
+        sprintf(release_dir, "%s/%s", RELEASE_RELEASES_DIR, namelist[0]->d_name);
+        strcpy(root_dir, RELEASE_ROOT_DIR);
+        free(namelist[0]);
+        free(namelist);
+
+        find_sys_config();
+        find_boot_path();
+    } else {
+        fatal("Multiple releases found. Not sure which to run.\n");
+    }
+}
+
+static void setup_environment()
 {
     // Set up the environment for running erlang.
     putenv("HOME=/");
@@ -149,12 +216,12 @@ static void setup_environment(const char *erts_path, const char *release_rootdir
 
     // ROOTDIR points to the release unless it wasn't found.
     char envvar[PATH_MAX];
-    sprintf(envvar, "ROOTDIR=%s", (release_rootdir && *release_rootdir) ? release_rootdir : ERLANG_ROOT_DIR);
-    putenv(envvar);
+    sprintf(envvar, "ROOTDIR=%s", root_dir);
+    putenv(strdup(envvar));
 
     // BINDIR points to the erts bin directory.
-    sprintf(envvar, "BINDIR=%s/bin", erts_path);
-    putenv(envvar);
+    sprintf(envvar, "BINDIR=%s/bin", erts_dir);
+    putenv(strdup(envvar));
 
     putenv("EMU=beam");
     putenv("PROGNAME=erl");
@@ -162,12 +229,13 @@ static void setup_environment(const char *erts_path, const char *release_rootdir
 
 static void child()
 {
-    // Locate erts
-    char erts_path[PATH_MAX];
-    find_erts_directory(erts_path);
+    // Locate everything needed to configure the environment
+    // and pass to erlexec.
+    find_erts_directory();
+    find_release();
 
     // Set up the environment for running erlang.
-    setup_environment(erts_path, NULL);
+    setup_environment();
 
     // Mount the virtual file systems.
     mount("", "/proc", "proc", 0, NULL);
@@ -176,10 +244,49 @@ static void child()
     // Fix the terminal settings so that CTRL keys work.
     fix_ctty();
 
+    chdir(root_dir);
+
     // Start Erlang up
     char erlexec_path[PATH_MAX];
-    sprintf(erlexec_path, "%s/bin/erlexec", erts_path);
+    sprintf(erlexec_path, "%s/bin/erlexec", erts_dir);
+
+    char *erlargv[9];
+    int arg = 0;
+//#define USE_STRACE
+#ifdef USE_STRACE
+    erlargv[arg++] = "strace";
+    erlargv[arg++] = "-f";
+    erlargv[arg++] = erlexec_path;
+#else
+    erlargv[arg++] = "erlexec";
+#endif
+    if (*sys_config) {
+        erlargv[arg++] = "-config";
+        erlargv[arg++] = sys_config;
+    }
+    if (*boot_path) {
+        erlargv[arg++] = "-boot";
+        erlargv[arg++] = boot_path;
+    }
+    erlargv[arg] = NULL;
+
+#if 0
+    // Dump the environment and commandline
+    extern char **environ;
+    char** env = environ;
+    while (*env != 0)
+        printf("Env: '%s'\n", *env++);
+
+    int i;
+    for (i = 0; i < arg; i++)
+        printf("Arg: '%s'\n", erlargv[i]);
+#endif
+
+#ifdef USE_STRACE
+    execvp("/usr/bin/strace", erlargv);
+#else
     execvp(erlexec_path, erlargv);
+#endif
 
     // execvpe is not supposed to return
     fatal("execvp failed to run %s: %s", erlexec_path, strerror(errno));
@@ -187,7 +294,7 @@ static void child()
 
 int main(int argc, char *argv[])
 {
-    info("Loading erlang shell...\n");
+    info("Loading runtime...\n");
 
     pid_t pid = fork();
     if (pid == 0) {
@@ -204,7 +311,7 @@ int main(int argc, char *argv[])
     if (waitpid != pid)
         info("Unexpected return from wait(): %d\n", waitpid);
 
-    fatal("Why are we here\n");
+    fatal("Unexpected exit. Hanging to make debugging easier...\n");
 
     // When erlang exits on purpose (or on accident), reboot
     reboot(LINUX_REBOOT_CMD_RESTART);
