@@ -202,6 +202,52 @@ static void find_release()
     }
 }
 
+static void trim_whitespace(char *s)
+{
+    char *left = s;
+    while (*left != 0 && isspace(*left))
+        left++;
+    char *right = s + strlen(s) - 1;
+    while (right >= left && isspace(*right))
+        right--;
+
+    int len = right - left + 1;
+    if (len)
+        memmove(s, left, len);
+    s[len] = 0;
+}
+
+static void load_erlinit()
+{
+    char line[128];
+    int lineno = 0;
+
+    // Load up Erlang environment overrides
+    FILE *fp = fopen("/etc/erlinit.conf", "r");
+    if (!fp)
+        return;
+
+    while (fgets(line, sizeof(line), fp)) {
+        lineno++;
+        trim_whitespace(line);
+
+        // Skip comments and blank lines
+        if (*line == 0 || *line == '#')
+            continue;
+
+        // Simple format check
+        if (!strchr(line, '=')) {
+            info("erlinit.conf[%d]: syntax error in '%s'\n", lineno, line);
+            continue;
+        }
+
+        // All values currently populate the environment
+        putenv(strdup(line));
+    }
+
+    fclose(fp);
+}
+
 static void setup_environment()
 {
     // Set up the environment for running erlang.
@@ -227,6 +273,33 @@ static void setup_environment()
     putenv("PROGNAME=erl");
 }
 
+static void forkexec(const char *path, ...)
+{
+    va_list ap;
+#define MAX_ARGS 32
+    char *argv[MAX_ARGS];
+    int i;
+
+    va_start(ap, path);
+    argv[0] = path;
+    for (i = 1; i < MAX_ARGS - 1; i++)
+    {
+        argv[i] = va_arg(ap, char *);
+        if (argv[i] == NULL)
+            break;
+    }
+    argv[i] = 0;
+    va_end(ap);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        execv(path, argv);
+        exit(127);
+    } else {
+        waitpid(pid, 0, 0);
+    }
+}
+
 static void child()
 {
     // Locate everything needed to configure the environment
@@ -236,10 +309,15 @@ static void child()
 
     // Set up the environment for running erlang.
     setup_environment();
+    load_erlinit();
 
     // Mount the virtual file systems.
     mount("", "/proc", "proc", 0, NULL);
     mount("", "/sys", "sysfs", 0, NULL);
+
+    // Bring up the loopback interface (needed if erlang is a node)
+    forkexec("/sbin/ip", "link", "set", "lo", "up", NULL);
+    forkexec("/sbin/ip", "addr", "add", "127.0.0.1", "dev", "lo", NULL);
 
     // Fix the terminal settings so that CTRL keys work.
     fix_ctty();
@@ -250,7 +328,7 @@ static void child()
     char erlexec_path[PATH_MAX];
     sprintf(erlexec_path, "%s/bin/erlexec", erts_dir);
 
-    char *erlargv[9];
+    char *erlargv[32];
     int arg = 0;
 //#define USE_STRACE
 #ifdef USE_STRACE
@@ -268,6 +346,7 @@ static void child()
         erlargv[arg++] = "-boot";
         erlargv[arg++] = boot_path;
     }
+
     erlargv[arg] = NULL;
 
 #if 0
@@ -303,13 +382,8 @@ int main(int argc, char *argv[])
     }
 
     // If Erlang exists, then something went wrong, so handle it.
-    pid_t waitpid;
-    do {
-        waitpid = wait(NULL);
-    } while (waitpid > 0 && waitpid != pid);
-
-    if (waitpid != pid)
-        info("Unexpected return from wait(): %d\n", waitpid);
+    if (waitpid(pid, 0, 0) < 0)
+        info("Unexpected error from waitpid(): %s\n", strerror(errno));
 
     fatal("Unexpected exit. Hanging to make debugging easier...\n");
 
