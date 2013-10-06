@@ -125,11 +125,11 @@ static void find_erts_directory()
                     erts_filter,
                     NULL);
     if (n < 0)
-        fatal("scandir failed: %s\n", strerror(errno));
+        fatal("erlinit: scandir failed: %s\n", strerror(errno));
     else if (n == 0)
-        fatal("erts not found. Check that erlang was installed to %s\n", ERLANG_ROOT_DIR);
+        fatal("erlinit: erts not found. Check that erlang was installed to %s\n", ERLANG_ROOT_DIR);
     else if (n > 1)
-        fatal("Found multiple erts directories. Clean up the installation.\n");
+        fatal("erlinit: Found multiple erts directories. Clean up the installation.\n");
 
     sprintf(erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
 
@@ -183,7 +183,7 @@ static void find_release()
                     release_filter,
                     NULL);
     if (n <= 0) {
-        info("No release found in %s.\n", RELEASE_RELEASES_DIR);
+        info("erlinit: No release found in %s.\n", RELEASE_RELEASES_DIR);
         *release_dir = '\0';
         *sys_config = '\0';
         *boot_path = '\0';
@@ -198,7 +198,7 @@ static void find_release()
         find_sys_config();
         find_boot_path();
     } else {
-        fatal("Multiple releases found. Not sure which to run.\n");
+        fatal("erlinit: Multiple releases found. Not sure which to run.\n");
     }
 }
 
@@ -217,7 +217,7 @@ static void trim_whitespace(char *s)
     s[len] = 0;
 }
 
-static void load_erlinit()
+static void load_erlinit_conf()
 {
     char line[128];
     int lineno = 0;
@@ -245,6 +245,26 @@ static void load_erlinit()
         putenv(strdup(line));
     }
 
+    fclose(fp);
+}
+
+static void configure_hostname()
+{
+    FILE *fp = fopen("/etc/hostname", "r");
+    if (!fp) {
+        info("erlinit: /etc/hostname not found\n");
+        return;
+    }
+
+    char line[128];
+    if (fgets(line, sizeof(line), fp)) {
+        trim_whitespace(line);
+
+        if (*line == 0)
+            info("erlinit: Empty hostname\n");
+        else if (sethostname(line, strlen(line)) < 0)
+            info("erlinit: Error setting hostname: %s\n", strerror(errno));
+    }
     fclose(fp);
 }
 
@@ -309,7 +329,7 @@ static void child()
 
     // Set up the environment for running erlang.
     setup_environment();
-    load_erlinit();
+    load_erlinit_conf();
 
     // Mount the virtual file systems.
     mount("", "/proc", "proc", 0, NULL);
@@ -318,6 +338,7 @@ static void child()
     // Bring up the loopback interface (needed if erlang is a node)
     forkexec("/sbin/ip", "link", "set", "lo", "up", NULL);
     forkexec("/sbin/ip", "addr", "add", "127.0.0.1", "dev", "lo", NULL);
+    configure_hostname();
 
     // Fix the terminal settings so that CTRL keys work.
     fix_ctty();
@@ -368,7 +389,7 @@ static void child()
 #endif
 
     // execvpe is not supposed to return
-    fatal("execvp failed to run %s: %s", erlexec_path, strerror(errno));
+    fatal("erlinit: execvp failed to run %s: %s", erlexec_path, strerror(errno));
 }
 
 int main(int argc, char *argv[])
@@ -383,9 +404,9 @@ int main(int argc, char *argv[])
 
     // If Erlang exists, then something went wrong, so handle it.
     if (waitpid(pid, 0, 0) < 0)
-        info("Unexpected error from waitpid(): %s\n", strerror(errno));
+        info("erlinit: unexpected error from waitpid(): %s\n", strerror(errno));
 
-    fatal("Unexpected exit. Hanging to make debugging easier...\n");
+    fatal("erlinit: unexpected exit. Hanging to make debugging easier...\n");
 
     // When erlang exits on purpose (or on accident), reboot
     reboot(LINUX_REBOOT_CMD_RESTART);
