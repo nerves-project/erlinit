@@ -145,34 +145,56 @@ static int file_exists(const char *path)
 
 static int release_filter(const struct dirent *d)
 {
-    // Releases are of the form NAME-VERSION
-    return strchr(d->d_name, '-') != NULL;
+    // Releases are directories usually with names of
+    // the form NAME-VERSION or VERSION.
+    //
+    // Sadly, it looks like the robust way of doing this
+    // is by using process of elimination.
+    return strcmp(d->d_name, ".") != 0 &&
+           strcmp(d->d_name, "..") != 0 &&
+           strcmp(d->d_name, "RELEASES") != 0;
+}
+
+static int bootfile_filter(const struct dirent *d)
+{
+    // Look for files that end with .boot
+    return strstr(d->d_name, ".boot") != NULL;
 }
 
 static void find_sys_config()
 {
     sprintf(sys_config, "%s/sys.config", release_dir);
-    if (!file_exists(sys_config))
+    if (!file_exists(sys_config)) {
         *sys_config = '\0';
+        info("erlinit: %s not found?\n", sys_config);
+    }
 }
 
 static void find_boot_path()
 {
-    *boot_path = '\0';
+    struct dirent **namelist;
+    int n = scandir(release_dir,
+                    &namelist,
+                    bootfile_filter,
+                    NULL);
+    if (n <= 0) {
+        fatal("erlinit: No boot file found in %s.\n", release_dir);
+    } else if (n == 1) {
+        sprintf(boot_path, "%s/%s", release_dir, namelist[0]->d_name);
 
-    const char *release_name_start = strrchr(release_dir, '/');
-    const char *release_name_end = strrchr(release_dir, '-');
-    if (!release_name_start ||
-            !release_name_end ||
-            release_name_end <= release_name_start)
-        return;
+        // Strip off the .boot since that's what erl wants.
+        char *dot = strrchr(boot_path, '.');
+        *dot = '\0';
 
-    char release_name[256];
-    release_name_start++; // Skip pass leading '/'
-    memcpy(release_name, release_name_start, release_name_end - release_name_start);
-    release_name[release_name_end - release_name_start] = '\0';
-
-    sprintf(boot_path, "%s/%s", release_dir, release_name);
+        free(namelist[0]);
+        free(namelist);
+    } else {
+        info("erlinit: Found more than one boot file:\n");
+        int i;
+        for (i = 0; i < n; i++)
+            info("         %s\n", namelist[i]->d_name);
+        fatal("erlinit: Not sure which one to use.\n");
+    }
 }
 
 static void find_release()
@@ -198,7 +220,11 @@ static void find_release()
         find_sys_config();
         find_boot_path();
     } else {
-        fatal("erlinit: Multiple releases found. Not sure which to run.\n");
+        info("erlinit: Found more than one release:\n");
+        int i;
+        for (i = 0; i < n; i++)
+            info("         %s\n", namelist[i]->d_name);
+        fatal("erlinit: Not sure which to run.\n");
     }
 }
 
@@ -301,7 +327,7 @@ static void forkexec(const char *path, ...)
     int i;
 
     va_start(ap, path);
-    argv[0] = path;
+    argv[0] = strdup(path);
     for (i = 1; i < MAX_ARGS - 1; i++)
     {
         argv[i] = va_arg(ap, char *);
@@ -317,6 +343,7 @@ static void forkexec(const char *path, ...)
         exit(127);
     } else {
         waitpid(pid, 0, 0);
+        free(argv[0]);
     }
 }
 
