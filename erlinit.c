@@ -35,6 +35,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+// #define in the following two macros to help debug initialization issues
+//#define DEBUG
+//#define USE_STRACE
+
 #define ERLANG_ROOT_DIR "/usr/lib/erlang"
 #define RELEASE_ROOT_DIR "/srv/erlang"
 #define RELEASE_RELEASES_DIR  RELEASE_ROOT_DIR "/releases"
@@ -67,8 +71,15 @@ static void fatal(const char *fmt, ...)
     sleep(9999);
 }
 
+#ifdef DEBUG
+#define debug(fmt, ...) info(fmt, ## __VA_ARGS__)
+#else
+#define debug(fmt, ...)
+#endif
+
 static int readsysfs(const char *path, char *buffer, int maxlen)
 {
+    debug("readsysfs %s\n", path);
     int fd = open(path, O_RDONLY);
     if (fd < 0) 
         return 0;
@@ -87,6 +98,7 @@ static int readsysfs(const char *path, char *buffer, int maxlen)
 
 static void fix_ctty()
 {
+    debug("fix_ctty\n");
     // Set up a controlling terminal for Erlang so that
     // it's possible to get to shell management mode.
     // See http://www.busybox.net/FAQ.html#job_control
@@ -119,6 +131,7 @@ static int erts_filter(const struct dirent *d)
 
 static void find_erts_directory()
 {
+    debug("find_erts_directory\n");
     struct dirent **namelist;
     int n = scandir(ERLANG_ROOT_DIR,
                     &namelist,
@@ -163,6 +176,7 @@ static int bootfile_filter(const struct dirent *d)
 
 static void find_sys_config()
 {
+    debug("find_sys_config\n");
     sprintf(sys_config, "%s/sys.config", release_dir);
     if (!file_exists(sys_config)) {
         *sys_config = '\0';
@@ -172,6 +186,7 @@ static void find_sys_config()
 
 static void find_boot_path()
 {
+    debug("find_boot_path\n");
     struct dirent **namelist;
     int n = scandir(release_dir,
                     &namelist,
@@ -199,6 +214,7 @@ static void find_boot_path()
 
 static void find_release()
 {
+    debug("find_release\n");
     struct dirent **namelist;
     int n = scandir(RELEASE_RELEASES_DIR,
                     &namelist,
@@ -245,6 +261,7 @@ static void trim_whitespace(char *s)
 
 static void load_erlinit_conf()
 {
+    debug("load_erlinit_conf\n");
     char line[128];
     int lineno = 0;
 
@@ -276,6 +293,7 @@ static void load_erlinit_conf()
 
 static void configure_hostname()
 {
+    debug("configure_hostname\n");
     FILE *fp = fopen("/etc/hostname", "r");
     if (!fp) {
         info("erlinit: /etc/hostname not found\n");
@@ -296,6 +314,7 @@ static void configure_hostname()
 
 static void setup_environment()
 {
+    debug("setup_environment\n");
     // Set up the environment for running erlang.
     putenv("HOME=/");
 
@@ -321,6 +340,7 @@ static void setup_environment()
 
 static void forkexec(const char *path, ...)
 {
+    debug("forkexec %s\n", path);
     va_list ap;
 #define MAX_ARGS 32
     char *argv[MAX_ARGS];
@@ -345,6 +365,7 @@ static void forkexec(const char *path, ...)
         waitpid(pid, 0, 0);
         free(argv[0]);
     }
+    debug("forkexec %s done\n", path);
 }
 
 static void child()
@@ -378,7 +399,6 @@ static void child()
 
     char *erlargv[32];
     int arg = 0;
-//#define USE_STRACE
 #ifdef USE_STRACE
     erlargv[arg++] = "strace";
     erlargv[arg++] = "-f";
@@ -397,16 +417,16 @@ static void child()
 
     erlargv[arg] = NULL;
 
-#if 0
+#ifdef DEBUG
     // Dump the environment and commandline
     extern char **environ;
     char** env = environ;
     while (*env != 0)
-        printf("Env: '%s'\n", *env++);
+        debug("Env: '%s'\n", *env++);
 
     int i;
     for (i = 0; i < arg; i++)
-        printf("Arg: '%s'\n", erlargv[i]);
+        debug("Arg: '%s'\n", erlargv[i]);
 #endif
 
 #ifdef USE_STRACE
