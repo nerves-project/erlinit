@@ -36,6 +36,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/wait.h>
 
 // #define in the following two macros to help debug initialization issues
+// Check that strace is installed to /usr/bin when enabling USE_STRACE
 //#define DEBUG
 //#define USE_STRACE
 
@@ -48,6 +49,7 @@ static char release_dir[PATH_MAX];
 static char root_dir[PATH_MAX];
 static char boot_path[PATH_MAX];
 static char sys_config[PATH_MAX];
+static char vmargs_path[PATH_MAX];
 
 static void info(const char *fmt, ...)
 {
@@ -81,11 +83,11 @@ static int readsysfs(const char *path, char *buffer, int maxlen)
 {
     debug("readsysfs %s\n", path);
     int fd = open(path, O_RDONLY);
-    if (fd < 0) 
+    if (fd < 0)
         return 0;
 
     int count = read(fd, buffer, maxlen - 1);
-    
+
     close(fd);
     if (count <= 0)
         return 0;
@@ -107,7 +109,7 @@ static void fix_ctty()
     char ttypath[32];
     strcpy(ttypath, "/dev/");
     readsysfs("/sys/class/tty/console/active", &ttypath[5], sizeof(ttypath) - 5);
-   
+
     int fd = open(ttypath, O_RDWR);
     if (fd > 0) {
         dup2(fd, 0);
@@ -179,8 +181,18 @@ static void find_sys_config()
     debug("find_sys_config\n");
     sprintf(sys_config, "%s/sys.config", release_dir);
     if (!file_exists(sys_config)) {
-        *sys_config = '\0';
         info("erlinit: %s not found?\n", sys_config);
+        *sys_config = '\0';
+    }
+}
+
+static void find_vm_args()
+{
+    debug("find_vm_args\n");
+    sprintf(vmargs_path, "%s/vm.args", release_dir);
+    if (!file_exists(vmargs_path)) {
+        info("erlinit: %s not found?\n", vmargs_path);
+        *vmargs_path = '\0';
     }
 }
 
@@ -234,6 +246,7 @@ static void find_release()
         free(namelist);
 
         find_sys_config();
+        find_vm_args();
         find_boot_path();
     } else {
         info("erlinit: Found more than one release:\n");
@@ -257,38 +270,6 @@ static void trim_whitespace(char *s)
     if (len)
         memmove(s, left, len);
     s[len] = 0;
-}
-
-static void load_erlinit_conf()
-{
-    debug("load_erlinit_conf\n");
-    char line[128];
-    int lineno = 0;
-
-    // Load up Erlang environment overrides
-    FILE *fp = fopen("/etc/erlinit.conf", "r");
-    if (!fp)
-        return;
-
-    while (fgets(line, sizeof(line), fp)) {
-        lineno++;
-        trim_whitespace(line);
-
-        // Skip comments and blank lines
-        if (*line == 0 || *line == '#')
-            continue;
-
-        // Simple format check
-        if (!strchr(line, '=')) {
-            info("erlinit.conf[%d]: syntax error in '%s'\n", lineno, line);
-            continue;
-        }
-
-        // All values currently populate the environment
-        putenv(strdup(line));
-    }
-
-    fclose(fp);
 }
 
 static void configure_hostname()
@@ -377,7 +358,6 @@ static void child()
 
     // Set up the environment for running erlang.
     setup_environment();
-    load_erlinit_conf();
 
     // Mount the virtual file systems.
     mount("", "/proc", "proc", 0, NULL);
@@ -413,6 +393,10 @@ static void child()
     if (*boot_path) {
         erlargv[arg++] = "-boot";
         erlargv[arg++] = boot_path;
+    }
+    if (*vmargs_path) {
+        erlargv[arg++] = "-args_file";
+        erlargv[arg++] = vmargs_path;
     }
 
     erlargv[arg] = NULL;
