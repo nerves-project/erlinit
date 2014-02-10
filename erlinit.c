@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2013 Frank Hunleth
+Copyright (c) 2013-14 Frank Hunleth
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -359,10 +359,6 @@ static void child()
     // Set up the environment for running erlang.
     setup_environment();
 
-    // Mount the virtual file systems.
-    mount("", "/proc", "proc", 0, NULL);
-    mount("", "/sys", "sysfs", 0, NULL);
-
     // Bring up the loopback interface (needed if erlang is a node)
     forkexec("/sbin/ip", "link", "set", "lo", "up", NULL);
     forkexec("/sbin/ip", "addr", "add", "127.0.0.1", "dev", "lo", NULL);
@@ -427,6 +423,28 @@ int main(int argc, char *argv[])
 {
     info("Loading runtime...\n");
 
+    debug("erlinit: argc=%d\n", argc);
+    int i;
+    for (i = 0; i < argc; i++)
+	debug("erlinit: argv[%d]=%s\n", i, argv[i]);
+
+    // Setup a union filesystem for the rootfs so that the official
+    // contents are protected in a read-only fs, but we can still update
+    // files for debugging.
+    // NOTE: Since this is a debug feature, it may be something
+    //       that goes away in a production build.
+    mount("", "/mnt/.overlayfs", "tmpfs", 0, "size=10%");
+    mount("", "/mnt/.unionfs", "unionfs", 0, "dirs=/mnt/.overlayfs=rw:/=ro");
+    chdir("/mnt/.unionfs");
+    mkdir(".oldrootfs", 0755);
+    pivot_root(".", ".oldrootfs");
+
+    // Mount the virtual file systems.
+    mount("", "/proc", "proc", 0, NULL);
+    mount("", "/sys", "sysfs", 0, NULL);
+
+    // Do most of the work in a child process so that if it
+    // crashes, we can handle the crash.
     pid_t pid = fork();
     if (pid == 0) {
         child();
@@ -437,7 +455,7 @@ int main(int argc, char *argv[])
     if (waitpid(pid, 0, 0) < 0)
         info("erlinit: unexpected error from waitpid(): %s\n", strerror(errno));
 
-    fatal("erlinit: unexpected exit. Hanging to make debugging easier...\n");
+    //fatal("erlinit: unexpected exit. Hanging to make debugging easier...\n");
 
     // When erlang exits on purpose (or on accident), reboot
     reboot(LINUX_REBOOT_CMD_RESTART);
