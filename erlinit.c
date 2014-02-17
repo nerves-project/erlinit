@@ -35,14 +35,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-// #define in the following two macros to help debug initialization issues
-// Check that strace is installed to /usr/bin when enabling USE_STRACE
-//#define DEBUG
-//#define USE_STRACE
+#define PROGRAM_NAME "erlinit"
 
 #define ERLANG_ROOT_DIR "/usr/lib/erlang"
 #define RELEASE_ROOT_DIR "/srv/erlang"
 #define RELEASE_RELEASES_DIR  RELEASE_ROOT_DIR "/releases"
+
+static int verbose = 0;
+static int run_strace = 0;
+static int print_timing = 0;
 
 static char erts_dir[PATH_MAX];
 static char release_dir[PATH_MAX];
@@ -51,37 +52,56 @@ static char boot_path[PATH_MAX];
 static char sys_config[PATH_MAX];
 static char vmargs_path[PATH_MAX];
 
-static void info(const char *fmt, ...)
+static void print_prefix()
 {
+    fprintf(stderr, PROGRAM_NAME ": ");
+}
+
+static void debug(const char *fmt, ...)
+{
+    if (verbose) {
+        print_prefix();
+
+        va_list ap;
+        va_start(ap, fmt);
+        vfprintf(stderr, fmt, ap);
+        va_end(ap);
+
+        fprintf(stderr, "\n");
+    }
+}
+
+static void warn(const char *fmt, ...)
+{
+    print_prefix();
+
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     va_end(ap);
+
+    fprintf(stderr, "\n");
 }
 
 static void fatal(const char *fmt, ...)
 {
     fprintf(stderr, "\n\nFATAL ERROR:\n");
 
+    print_prefix();
+
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     va_end(ap);
 
-    fprintf(stderr, "\nCANNOT CONTINUE.\n");
+    fprintf(stderr, "\n\nCANNOT CONTINUE.\n");
 
     sleep(9999);
 }
 
-#ifdef DEBUG
-#define debug(fmt, ...) info(fmt, ## __VA_ARGS__)
-#else
-#define debug(fmt, ...)
-#endif
-
 static int readsysfs(const char *path, char *buffer, int maxlen)
 {
-    debug("readsysfs %s\n", path);
+    debug("readsysfs %s", path);
     int fd = open(path, O_RDONLY);
     if (fd < 0)
         return 0;
@@ -100,7 +120,7 @@ static int readsysfs(const char *path, char *buffer, int maxlen)
 
 static void fix_ctty()
 {
-    debug("fix_ctty\n");
+    debug("fix_ctty");
     // Set up a controlling terminal for Erlang so that
     // it's possible to get to shell management mode.
     // See http://www.busybox.net/FAQ.html#job_control
@@ -117,7 +137,7 @@ static void fix_ctty()
         dup2(fd, 2);
         close(fd);
     } else {
-        fprintf(stderr, "Error setting controlling terminal: %s\n", ttypath);
+        warn("error setting controlling terminal: %s", ttypath);
     }
 }
 
@@ -133,18 +153,18 @@ static int erts_filter(const struct dirent *d)
 
 static void find_erts_directory()
 {
-    debug("find_erts_directory\n");
+    debug("find_erts_directory");
     struct dirent **namelist;
     int n = scandir(ERLANG_ROOT_DIR,
                     &namelist,
                     erts_filter,
                     NULL);
     if (n < 0)
-        fatal("erlinit: scandir failed: %s\n", strerror(errno));
+        fatal("scandir failed: %s", strerror(errno));
     else if (n == 0)
-        fatal("erlinit: erts not found. Check that erlang was installed to %s\n", ERLANG_ROOT_DIR);
+        fatal("erts not found. Check that erlang was installed to %s", ERLANG_ROOT_DIR);
     else if (n > 1)
-        fatal("erlinit: Found multiple erts directories. Clean up the installation.\n");
+        fatal("Found multiple erts directories. Clean up the installation.");
 
     sprintf(erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
 
@@ -178,34 +198,34 @@ static int bootfile_filter(const struct dirent *d)
 
 static void find_sys_config()
 {
-    debug("find_sys_config\n");
+    debug("find_sys_config");
     sprintf(sys_config, "%s/sys.config", release_dir);
     if (!file_exists(sys_config)) {
-        info("erlinit: %s not found?\n", sys_config);
+        warn("%s not found?", sys_config);
         *sys_config = '\0';
     }
 }
 
 static void find_vm_args()
 {
-    debug("find_vm_args\n");
+    debug("find_vm_args");
     sprintf(vmargs_path, "%s/vm.args", release_dir);
     if (!file_exists(vmargs_path)) {
-        info("erlinit: %s not found?\n", vmargs_path);
+        warn("%s not found?", vmargs_path);
         *vmargs_path = '\0';
     }
 }
 
 static void find_boot_path()
 {
-    debug("find_boot_path\n");
+    debug("find_boot_path");
     struct dirent **namelist;
     int n = scandir(release_dir,
                     &namelist,
                     bootfile_filter,
                     NULL);
     if (n <= 0) {
-        fatal("erlinit: No boot file found in %s.\n", release_dir);
+        fatal("No boot file found in %s.", release_dir);
     } else if (n == 1) {
         sprintf(boot_path, "%s/%s", release_dir, namelist[0]->d_name);
 
@@ -216,24 +236,24 @@ static void find_boot_path()
         free(namelist[0]);
         free(namelist);
     } else {
-        info("erlinit: Found more than one boot file:\n");
+        warn("Found more than one boot file:");
         int i;
         for (i = 0; i < n; i++)
-            info("         %s\n", namelist[i]->d_name);
-        fatal("erlinit: Not sure which one to use.\n");
+            warn("  %s\n", namelist[i]->d_name);
+        fatal("Not sure which one to use.");
     }
 }
 
 static void find_release()
 {
-    debug("find_release\n");
+    debug("find_release");
     struct dirent **namelist;
     int n = scandir(RELEASE_RELEASES_DIR,
                     &namelist,
                     release_filter,
                     NULL);
     if (n <= 0) {
-        info("erlinit: No release found in %s.\n", RELEASE_RELEASES_DIR);
+        warn("No release found in %s.", RELEASE_RELEASES_DIR);
         *release_dir = '\0';
         *sys_config = '\0';
         *boot_path = '\0';
@@ -249,11 +269,11 @@ static void find_release()
         find_vm_args();
         find_boot_path();
     } else {
-        info("erlinit: Found more than one release:\n");
+        warn("Found more than one release:");
         int i;
         for (i = 0; i < n; i++)
-            info("         %s\n", namelist[i]->d_name);
-        fatal("erlinit: Not sure which to run.\n");
+            warn("         %s", namelist[i]->d_name);
+        fatal("Not sure which to run.");
     }
 }
 
@@ -274,10 +294,10 @@ static void trim_whitespace(char *s)
 
 static void configure_hostname()
 {
-    debug("configure_hostname\n");
+    debug("configure_hostname");
     FILE *fp = fopen("/etc/hostname", "r");
     if (!fp) {
-        info("erlinit: /etc/hostname not found\n");
+        warn("/etc/hostname not found");
         return;
     }
 
@@ -286,20 +306,20 @@ static void configure_hostname()
         trim_whitespace(line);
 
         if (*line == 0)
-            info("erlinit: Empty hostname\n");
+            warn("Empty hostname");
         else if (sethostname(line, strlen(line)) < 0)
-            info("erlinit: Error setting hostname: %s\n", strerror(errno));
+            warn("Error setting hostname: %s", strerror(errno));
     }
     fclose(fp);
 }
 
 static void setup_environment()
 {
-    debug("setup_environment\n");
+    debug("setup_environment");
     // Set up the environment for running erlang.
     putenv("HOME=/");
 
-    // PATH appears to only be needed for user convenience when runninf os:cmd/1
+    // PATH appears to only be needed for user convenience when running os:cmd/1
     // It may be possible to remove in the future.
     putenv("PATH=/usr/sbin:/usr/bin:/sbin:/bin");
     putenv("TERM=vt100");
@@ -321,7 +341,7 @@ static void setup_environment()
 
 static void forkexec(const char *path, ...)
 {
-    debug("forkexec %s\n", path);
+    debug("forkexec %s", path);
     va_list ap;
 #define MAX_ARGS 32
     char *argv[MAX_ARGS];
@@ -346,11 +366,15 @@ static void forkexec(const char *path, ...)
         waitpid(pid, 0, 0);
         free(argv[0]);
     }
-    debug("forkexec %s done\n", path);
+    debug("forkexec %s done", path);
 }
 
 static void child()
 {
+    // Mount the virtual file systems.
+    mount("", "/proc", "proc", 0, NULL);
+    mount("", "/sys", "sysfs", 0, NULL);
+
     // Locate everything needed to configure the environment
     // and pass to erlexec.
     find_erts_directory();
@@ -375,13 +399,13 @@ static void child()
 
     char *erlargv[32];
     int arg = 0;
-#ifdef USE_STRACE
-    erlargv[arg++] = "strace";
-    erlargv[arg++] = "-f";
-    erlargv[arg++] = erlexec_path;
-#else
-    erlargv[arg++] = "erlexec";
-#endif
+    if (run_strace) {
+        erlargv[arg++] = "strace";
+        erlargv[arg++] = "-f";
+        erlargv[arg++] = erlexec_path;
+    } else
+        erlargv[arg++] = "erlexec";
+
     if (*sys_config) {
         erlargv[arg++] = "-config";
         erlargv[arg++] = sys_config;
@@ -397,51 +421,83 @@ static void child()
 
     erlargv[arg] = NULL;
 
-#ifdef DEBUG
-    // Dump the environment and commandline
-    extern char **environ;
-    char** env = environ;
-    while (*env != 0)
-        debug("Env: '%s'\n", *env++);
+    if (verbose) {
+        // Dump the environment and commandline
+        extern char **environ;
+        char** env = environ;
+        while (*env != 0)
+            debug("Env: '%s'", *env++);
 
-    int i;
-    for (i = 0; i < arg; i++)
-        debug("Arg: '%s'\n", erlargv[i]);
-#endif
+        int i;
+        for (i = 0; i < arg; i++)
+            debug("Arg: '%s'", erlargv[i]);
+    }
 
-#ifdef USE_STRACE
-    execvp("/usr/bin/strace", erlargv);
-#else
-    execvp(erlexec_path, erlargv);
-#endif
+    debug("Launching erl...");
+    if (print_timing)
+        warn("stop");
+
+    execvp(run_strace ? "/usr/bin/strace" : erlexec_path, erlargv);
 
     // execvpe is not supposed to return
-    fatal("erlinit: execvp failed to run %s: %s", erlexec_path, strerror(errno));
+    fatal("execvp failed to run %s: %s", erlexec_path, strerror(errno));
 }
 
-int main(int argc, char *argv[])
+static void mount_unionfs()
 {
-    info("Loading runtime...\n");
-
-    debug("erlinit: argc=%d\n", argc);
-    int i;
-    for (i = 0; i < argc; i++)
-	debug("erlinit: argv[%d]=%s\n", i, argv[i]);
+    debug("mount_unionfs");
 
     // Setup a union filesystem for the rootfs so that the official
     // contents are protected in a read-only fs, but we can still update
-    // files for debugging.
-    // NOTE: Since this is a debug feature, it may be something
-    //       that goes away in a production build.
+    // files when debugging.
     mount("", "/mnt/.overlayfs", "tmpfs", 0, "size=10%");
     mount("", "/mnt/.unionfs", "unionfs", 0, "dirs=/mnt/.overlayfs=rw:/=ro");
     chdir("/mnt/.unionfs");
     mkdir(".oldrootfs", 0755);
     pivot_root(".", ".oldrootfs");
+}
 
-    // Mount the virtual file systems.
-    mount("", "/proc", "proc", 0, NULL);
-    mount("", "/sys", "sysfs", 0, NULL);
+int main(int argc, char *argv[])
+{
+    int unionfs = 0;
+    int hang_on_exit = 0;
+    int opt;
+    while ((opt = getopt(argc, argv, "hstuv")) != -1) {
+        switch (opt) {
+        case 'h':
+            hang_on_exit = 1;
+            break;
+        case 's':
+            run_strace = 1;
+            break;
+        case 't':
+            print_timing = 1;
+            break;
+        case 'u':
+            unionfs = 1;
+            break;
+        case 'v':
+            verbose = 1;
+            break;
+        default:
+            warn("ignoring command line argument '%c'", opt);
+            break;
+        }
+    }
+
+    if (print_timing)
+        warn("start");
+
+    debug("Starting erlinit...");
+
+    debug("argc=%d", argc);
+    int i;
+    for (i = 0; i < argc; i++)
+	debug("argv[%d]=%s", i, argv[i]);
+
+    // If the user wants a unionfs, remount the rootfs first
+    if (unionfs)
+        mount_unionfs();
 
     // Do most of the work in a child process so that if it
     // crashes, we can handle the crash.
@@ -451,14 +507,16 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // If Erlang exists, then something went wrong, so handle it.
+    // If Erlang exits, then something went wrong, so handle it.
     if (waitpid(pid, 0, 0) < 0)
-        info("erlinit: unexpected error from waitpid(): %s\n", strerror(errno));
+        warn("unexpected error from waitpid(): %s", strerror(errno));
 
-    //fatal("erlinit: unexpected exit. Hanging to make debugging easier...\n");
-
-    // When erlang exits on purpose (or on accident), reboot
-    reboot(LINUX_REBOOT_CMD_RESTART);
+    // Reboot by default, but we can be told to hang since that sometimes
+    // makes debugging easier.
+    if (hang_on_exit)
+        fatal("unexpected exit. Hanging to make debugging easier...");
+    else
+        reboot(LINUX_REBOOT_CMD_RESTART);
 
     // If we can't reboot, oops the kernel.
     return 0;
