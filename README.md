@@ -1,5 +1,7 @@
 # erlinit
 
+[![Build Status](https://travis-ci.org/nerves-project/erlinit.png?branch=master)](https://travis-ci.org/nerves-project/erlinit)
+
 This is a replacement for `/sbin/init` that launches an Erlang/OTP release. It
 is intentionally minimalist as it expects Erlang/OTP to be in charge of
 application initialization and supervision. It can be thought of as a simple
