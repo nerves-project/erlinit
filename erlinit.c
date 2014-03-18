@@ -450,11 +450,33 @@ static void mount_unionfs()
     // Setup a union filesystem for the rootfs so that the official
     // contents are protected in a read-only fs, but we can still update
     // files when debugging.
-    mount("", "/mnt/.overlayfs", "tmpfs", 0, "size=10%");
-    mount("", "/mnt/.unionfs", "unionfs", 0, "dirs=/mnt/.overlayfs=rw:/=ro");
-    chdir("/mnt/.unionfs");
-    mkdir(".oldrootfs", 0755);
-    pivot_root(".", ".oldrootfs");
+    if (mount("", "/mnt/.overlayfs", "tmpfs", 0, "size=10%") < 0) {
+        warn("Could not mount tmpfs in /mnt/.overlayfs: %s\n"
+             "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
+        return;
+    }
+
+    if (mount("", "/mnt/.unionfs", "unionfs", 0, "dirs=/mnt/.overlayfs=rw:/=ro") < 0) {
+        warn("Could not mount unionfs: %s\n"
+             "Check that kernel has unionfs patches from http://unionfs.filesystems.org/\n"
+             "and that unionfs is enabled in the kernel config.", strerror(errno));
+        return;
+    }
+
+    if (chdir("/mnt/.unionfs") < 0) {
+        warn("Could not change directory to /mnt/.unionfs: %s", strerror(errno));
+        return;
+    }
+
+    if (mkdir(".oldrootfs", 0755) < 0) {
+        warn("Could not create directory .oldrootfs: %s", strerror(errno));
+        return;
+    }
+
+    if (pivot_root(".", ".oldrootfs") < 0) {
+        warn("pivot_root failed: %s", strerror(errno));
+        return;
+    }
 }
 
 int main(int argc, char *argv[])
