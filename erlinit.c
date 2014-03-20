@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,9 +42,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RELEASE_ROOT_DIR "/srv/erlang"
 #define RELEASE_RELEASES_DIR  RELEASE_ROOT_DIR "/releases"
 
+#define MAX_MOUNTS 32
+
 static int verbose = 0;
 static int run_strace = 0;
 static int print_timing = 0;
+static int desired_reboot_cmd = -1;
 
 static char erts_dir[PATH_MAX];
 static char release_dir[PATH_MAX];
@@ -479,6 +483,112 @@ static void mount_unionfs()
     }
 }
 
+static void unmount_all()
+{
+    debug("unmount_all");
+    FILE *fp = fopen("/proc/mounts", "r");
+    if (!fp) {
+        warn("/proc/mounts not found");
+        return;
+    }
+
+    struct mount_info {
+        char source[256];
+        char target[256];
+        char fstype[32];
+    } mounts[MAX_MOUNTS];
+
+    char options[128];
+    int freq;
+    int passno;
+    int i = 0;
+    while (i < MAX_MOUNTS &&
+           fscanf(fp, "%s %s %s %s %d %d", mounts[i].source, mounts[i].target, mounts[i].fstype, options, &freq, &passno) == 6) {
+        debug("%s->%s\n", mounts[i].source, mounts[i].target);
+        i++;
+    }
+    fclose(fp);
+
+    // For now, unmount everything with physical storage behind it for now
+    // TODO: iterate multiple times until everything unmounts?
+    int num_mounts = i;
+    for (i = 0; i < num_mounts; i++) {
+        if (starts_with(mounts[i].source, "/dev") &&
+            strcmp(mounts[i].source, "/dev/root") != 0) {
+            if (umount(mounts[i].target) < 0)
+                warn("umount %s failed: %s", mounts[i].target, strerror(errno));
+        }
+    }
+}
+
+static void signal_handler(int signum);
+
+static void register_signal_handlers()
+{
+    struct sigaction act;
+
+    act.sa_handler = signal_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+
+    sigaction(SIGPWR, &act, NULL);
+    sigaction(SIGUSR1, &act, NULL);
+    sigaction(SIGTERM, &act, NULL);
+    sigaction(SIGUSR2, &act, NULL);
+}
+
+static void unregister_signal_handlers()
+{
+    struct sigaction act;
+
+    act.sa_handler = SIG_IGN;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+
+    sigaction(SIGPWR, &act, NULL);
+    sigaction(SIGUSR1, &act, NULL);
+    sigaction(SIGTERM, &act, NULL);
+    sigaction(SIGUSR2, &act, NULL);
+}
+
+void signal_handler(int signum)
+{
+    switch (signum) {
+    case SIGPWR:
+    case SIGUSR1:
+        desired_reboot_cmd = LINUX_REBOOT_CMD_HALT;
+        break;
+    case SIGTERM:
+        desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
+        break;
+    case SIGUSR2:
+        desired_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
+        break;
+    default:
+        warn("received unexpected signal %d", signum);
+        desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
+        break;
+    }
+
+    // Handling the signal is a one-time action. Now we're done.
+    unregister_signal_handlers();
+}
+
+static void kill_all()
+{
+    // Kill processes the nice way
+    kill(-1, SIGTERM);
+    warn("Sending SIGTERM to all processes");
+    sync();
+
+    sleep(1);
+
+    // Brutal kill the stragglers
+    kill(-1, SIGKILL);
+    warn("Sending SIGKILL to all processes");
+    sync();
+}
+
 int main(int argc, char *argv[])
 {
     int unionfs = 0;
@@ -529,17 +639,40 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    // Register signal handlers to catch requests to exit
+    register_signal_handlers();
+
     // If Erlang exits, then something went wrong, so handle it.
-    if (waitpid(pid, 0, 0) < 0)
-        warn("unexpected error from waitpid(): %s", strerror(errno));
+    if (waitpid(pid, 0, 0) < 0) {
+        // If waitpid fails and it's not because of a signal, print a warning.
+        if (desired_reboot_cmd < 0) {
+            warn("unexpected error from waitpid(): %s", strerror(errno));
+            desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
+        }
+    } else {
+        // This is an exit from Erlang.
+        if (hang_on_exit) {
+            sync();
+            // Sometimes Erlang exits on initialization. Hanging on exit
+            // makes it easier to debug these cases since messages don't
+            // keep scrolling on the screen.
+            fatal("unexpected exit. Hanging as requested...");
+        }
+        desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
+    }
 
-    // Reboot by default, but we can be told to hang since that sometimes
-    // makes debugging easier.
-    if (hang_on_exit)
-        fatal("unexpected exit. Hanging to make debugging easier...");
-    else
-        reboot(LINUX_REBOOT_CMD_RESTART);
+    // Exit everything that's still running.
+    kill_all();
 
-    // If we can't reboot, oops the kernel.
+    // Unmount almost everything.
+    unmount_all();
+
+    // Sync just to be safe.
+    sync();
+
+    // Reboot/poweroff/halt
+    reboot(desired_reboot_cmd);
+
+    // If we get here, oops the kernel.
     return 0;
 }
