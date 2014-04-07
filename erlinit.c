@@ -460,6 +460,7 @@ static void mount_unionfs()
         return;
     }
 
+#if 0
     if (mount("", "/mnt/.unionfs", "unionfs", 0, "dirs=/mnt/.overlayfs=rw:/=ro") < 0) {
         warn("Could not mount unionfs: %s\n"
              "Check that kernel has unionfs patches from http://unionfs.filesystems.org/\n"
@@ -481,6 +482,14 @@ static void mount_unionfs()
         warn("pivot_root failed: %s", strerror(errno));
         return;
     }
+#else
+    if (mount("", "/srv", "unionfs", 0, "dirs=/mnt/.overlayfs=rw:/srv=ro") < 0) {
+        warn("Could not mount unionfs: %s\n"
+             "Check that kernel has unionfs patches from http://unionfs.filesystems.org/\n"
+             "and that unionfs is enabled in the kernel config.", strerror(errno));
+        return;
+    }
+#endif
 }
 
 static void unmount_all()
@@ -630,6 +639,15 @@ int main(int argc, char *argv[])
     // If the user wants a unionfs, remount the rootfs first
     if (unionfs)
         mount_unionfs();
+
+    // Mount /tmp since it currently is challenging to do it at the
+    // right time in Erlang.
+    // NOTE: try to clean this up when the unionfs errors are resolved.
+    if (mount("", "/tmp", "tmpfs", 0, "size=10%") < 0) {
+        warn("Could not mount tmpfs in /tmp: %s\n"
+             "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
+        return;
+    }
 
     // Do most of the work in a child process so that if it
     // crashes, we can handle the crash.
