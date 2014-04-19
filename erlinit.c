@@ -130,9 +130,15 @@ static void fix_ctty()
     // See http://www.busybox.net/FAQ.html#job_control
     setsid();
 
+    // Query the active console(s)
     char ttypath[32];
     strcpy(ttypath, "/dev/");
     readsysfs("/sys/class/tty/console/active", &ttypath[5], sizeof(ttypath) - 5);
+
+    // It's possible that multiple consoles are active, so pick the first one.
+    char *sep = strchr(&ttypath[5], ' ');
+    if (sep)
+	*sep = 0;
 
     int fd = open(ttypath, O_RDWR);
     if (fd > 0) {
