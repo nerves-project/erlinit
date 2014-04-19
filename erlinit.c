@@ -55,6 +55,7 @@ static int run_strace = 0;
 static int print_timing = 0;
 static int desired_reboot_cmd = -1;
 
+static char controlling_terminal[32];
 static char erts_dir[PATH_MAX];
 static char release_dir[PATH_MAX];
 static char root_dir[PATH_MAX];
@@ -128,23 +129,30 @@ static int readsysfs(const char *path, char *buffer, int maxlen)
     return count;
 }
 
-static void fix_ctty()
+static void set_ctty()
 {
-    debug("fix_ctty");
+    debug("set_ctty");
     // Set up a controlling terminal for Erlang so that
     // it's possible to get to shell management mode.
     // See http://www.busybox.net/FAQ.html#job_control
     setsid();
 
-    // Query the active console(s)
     char ttypath[32];
-    strcpy(ttypath, "/dev/");
-    readsysfs("/sys/class/tty/console/active", &ttypath[5], sizeof(ttypath) - 5);
 
-    // It's possible that multiple consoles are active, so pick the first one.
-    char *sep = strchr(&ttypath[5], ' ');
-    if (sep)
-	*sep = 0;
+    // Check if the user is forcing the controlling terminal
+    if (controlling_terminal[0] != '\-' &&
+	strlen(controlling_terminal) < sizeof(ttypath) - 5) {
+	sprintf(ttypath, "/dev/%s", controlling_terminal);
+    } else {
+	// Pick the active console(s)
+	strcpy(ttypath, "/dev/");
+	readsysfs("/sys/class/tty/console/active", &ttypath[5], sizeof(ttypath) - 5);
+
+	// It's possible that multiple consoles are active, so pick the first one.
+	char *sep = strchr(&ttypath[5], ' ');
+	if (sep)
+	    *sep = 0;
+    }
 
     int fd = open(ttypath, O_RDWR);
     if (fd > 0) {
@@ -405,7 +413,7 @@ static void child()
     configure_hostname();
 
     // Fix the terminal settings so that CTRL keys work.
-    fix_ctty();
+    set_ctty();
 
     chdir(root_dir);
 
@@ -679,8 +687,13 @@ int main(int argc, char *argv[])
     int unionfs = 0;
     int hang_on_exit = 0;
     int opt;
-    while ((opt = getopt(merged_argc, merged_argv, "hstuv")) != -1) {
+    controlling_terminal[0] = '\0';
+
+    while ((opt = getopt(merged_argc, merged_argv, "c:hstuv")) != -1) {
         switch (opt) {
+	case 'c':
+	    strcpy(controlling_terminal, optarg);
+	    break;
         case 'h':
             hang_on_exit = 1;
             break;
