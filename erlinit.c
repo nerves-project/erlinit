@@ -44,6 +44,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define MAX_MOUNTS 32
 
+#define MAX_ARGC 32
+
+static char argument_buffer[1024];
+static int merged_argc;
+static char *merged_argv[MAX_ARGC];
+
 static int verbose = 0;
 static int run_strace = 0;
 static int print_timing = 0;
@@ -604,12 +610,76 @@ static void kill_all()
     sync();
 }
 
+// This is a very simple config file parser that extracts
+// commandline arguments from the specified file.
+int load_config(const char *filename,
+                char **argv,
+                int max_args,
+                char *arg_buffer,
+                int buffer_length)
+{
+    FILE *fp = fopen(filename, "r");
+    if (!fp)
+        return 0;
+
+    int argc = 0;
+    char line[128];
+    while (fgets(line, sizeof(line), fp)) {
+        // Check for comment
+        if (line[0] == '#')
+            continue;
+
+        char *token = strtok(line, " \t\n");
+        while (token && max_args > 0) {
+            int token_len = strlen(token) + 1;
+            if (token_len > buffer_length)
+                break;
+
+            strcpy(arg_buffer, token);
+            *argv = arg_buffer;
+
+            arg_buffer += token_len;
+            buffer_length -= token_len;
+
+            argv++;
+            max_args--;
+            argc++;
+
+            token = strtok(NULL, " \t\n");
+        }
+    }
+    fclose(fp);
+    return argc;
+}
+
+void merge_config(int argc, char *argv[])
+{
+    // When merging, argv[0] is first, then the
+    // arguments from erlinit.config and then any
+    // additional arguments from the commandline.
+    // This way, the commandline takes precedence.
+    merged_argc = 1;
+    merged_argv[0] = argv[0];
+
+    merged_argc += load_config("/etc/erlinit.config",
+			       &merged_argv[1],
+			       MAX_ARGC - argc,
+			       argument_buffer,
+			       sizeof(argument_buffer));
+
+    memcpy(&merged_argv[merged_argc], argv, argc - 1);
+    merged_argc += argc - 1;
+}
+
 int main(int argc, char *argv[])
 {
+    // Merge the config file and the command line arguments
+    merge_config(argc, argv);
+
     int unionfs = 0;
     int hang_on_exit = 0;
     int opt;
-    while ((opt = getopt(argc, argv, "hstuv")) != -1) {
+    while ((opt = getopt(merged_argc, merged_argv, "hstuv")) != -1) {
         switch (opt) {
         case 'h':
             hang_on_exit = 1;
@@ -637,10 +707,10 @@ int main(int argc, char *argv[])
 
     debug("Starting erlinit...");
 
-    debug("argc=%d", argc);
+    debug("cmdline argc=%d, merged argc=%d", argc, merged_argc);
     int i;
-    for (i = 0; i < argc; i++)
-	debug("argv[%d]=%s", i, argv[i]);
+    for (i = 0; i < merged_argc; i++)
+	debug("merged argv[%d]=%s", i, merged_argv[i]);
 
     // If the user wants a unionfs, remount the rootfs first
     if (unionfs)

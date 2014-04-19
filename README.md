@@ -36,9 +36,25 @@ the `sys.config` and `vm.args` are used, so it is possible to configure
 the system via files in the release. `erlinit` does not introduce any
 new configuration files.
 
-## Command line options
+## Configuration and Command line options
 
-Linux passes all unknown kernel arguments to `init` or in this case, `erlinit`.
+`erlinit` pulls its configuration from both the commandline and the file
+`/etc/erlinit.config`. The commandline comes from the Linux kernel arguments
+that that are left over after the kernel processes them. Look at the bootloader
+configuration and the Linux kernel configuration to see how to modify these.
+
+The `erlinit.config` file is parsed line by line. If a line starts with a `#`,
+it is ignored. Parameters are passed via the file similar to a commandline.
+For example, the following is a valid `/etc/erlinit.config`:
+
+    # erlinit.config example
+
+	# Uncomment the following line to make the rootfs writable via a unionfs
+	# -u
+
+	# Uncomment to enable verbose prints
+	-v
+
 The following lists the options:
 
     -h Hang the system if Erlang exits. The default is to reboot.
@@ -49,6 +65,10 @@ The following lists the options:
     -v Enable verbose prints
 
 ## Writable root file systems and unionfs
+
+NOTE: It was recently found that on some platforms unionfs and ext4 don't work
+well together. As such, the unionfs mount has been limited to `/srv` to minimize
+the damage. This does not fix the bug, but merely limits some of its damage.
 
 By default `erlinit` keeps the root filesystem mounted read-only. This is useful
 since it significantly reduces the chance of corrupting the root filesystem at
