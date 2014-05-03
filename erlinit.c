@@ -140,7 +140,7 @@ static void set_ctty()
     char ttypath[32];
 
     // Check if the user is forcing the controlling terminal
-    if (controlling_terminal[0] != '\-' &&
+    if (controlling_terminal[0] != '\0' &&
 	strlen(controlling_terminal) < sizeof(ttypath) - 5) {
 	sprintf(ttypath, "/dev/%s", controlling_terminal);
     } else {
@@ -675,7 +675,12 @@ void merge_config(int argc, char *argv[])
 			       argument_buffer,
 			       sizeof(argument_buffer));
 
-    memcpy(&merged_argv[merged_argc], argv, argc - 1);
+    if (merged_argc + argc - 1 > MAX_ARGC) {
+        warn("Too many arguments specified between the config file and commandline. Dropping some.");
+        argc = MAX_ARGC - merged_argc + 1;
+    }
+
+    memcpy(&merged_argv[merged_argc], &argv[1], (argc - 1) * sizeof(char**));
     merged_argc += argc - 1;
 }
 
