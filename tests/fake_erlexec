@@ -1,0 +1,3 @@
+#!/bin/sh
+
+echo "Hello from erlexec" 1>&2

@@ -53,6 +53,7 @@ static char *merged_argv[MAX_ARGC];
 static int verbose = 0;
 static int run_strace = 0;
 static int print_timing = 0;
+static int debug_mode = 0;
 static int desired_reboot_cmd = -1;
 
 static char controlling_terminal[32];
@@ -107,7 +108,10 @@ static void fatal(const char *fmt, ...)
 
     fprintf(stderr, "\n\nCANNOT CONTINUE.\n");
 
-    sleep(9999);
+    if (!debug_mode)
+        sleep(9999);
+
+    exit(1);
 }
 
 static int readsysfs(const char *path, char *buffer, int maxlen)
@@ -132,6 +136,9 @@ static int readsysfs(const char *path, char *buffer, int maxlen)
 static void set_ctty()
 {
     debug("set_ctty");
+    if (debug_mode)
+        return;
+
     // Set up a controlling terminal for Erlang so that
     // it's possible to get to shell management mode.
     // See http://www.busybox.net/FAQ.html#job_control
@@ -184,7 +191,7 @@ static void find_erts_directory()
                     erts_filter,
                     NULL);
     if (n < 0)
-        fatal("scandir failed: %s", strerror(errno));
+        fatal("Erlang installation not found. Check that %s exists", ERLANG_ROOT_DIR);
     else if (n == 0)
         fatal("erts not found. Check that erlang was installed to %s", ERLANG_ROOT_DIR);
     else if (n > 1)
@@ -393,6 +400,18 @@ static void forkexec(const char *path, ...)
     debug("forkexec %s done", path);
 }
 
+static void setup_networking()
+{
+    debug("setup_networking");
+    if (debug_mode)
+        return;
+
+    // Bring up the loopback interface (needed if erlang is a node)
+    forkexec("/sbin/ip", "link", "set", "lo", "up", NULL);
+    forkexec("/sbin/ip", "addr", "add", "127.0.0.1", "dev", "lo", NULL);
+    configure_hostname();
+}
+
 static void child()
 {
     // Mount the virtual file systems.
@@ -407,10 +426,8 @@ static void child()
     // Set up the environment for running erlang.
     setup_environment();
 
-    // Bring up the loopback interface (needed if erlang is a node)
-    forkexec("/sbin/ip", "link", "set", "lo", "up", NULL);
-    forkexec("/sbin/ip", "addr", "add", "127.0.0.1", "dev", "lo", NULL);
-    configure_hostname();
+    // Set up the minimum networking we need for Erlang.
+    setup_networking();
 
     // Fix the terminal settings so that CTRL keys work.
     set_ctty();
@@ -515,6 +532,9 @@ static void mount_unionfs()
 static void unmount_all()
 {
     debug("unmount_all");
+    if (debug_mode)
+        return;
+
     FILE *fp = fopen("/proc/mounts", "r");
     if (!fp) {
         warn("/proc/mounts not found");
@@ -605,6 +625,10 @@ void signal_handler(int signum)
 
 static void kill_all()
 {
+    debug("kill_all");
+    if (debug_mode)
+        return;
+
     // Kill processes the nice way
     kill(-1, SIGTERM);
     warn("Sending SIGTERM to all processes");
@@ -694,11 +718,14 @@ int main(int argc, char *argv[])
     int opt;
     controlling_terminal[0] = '\0';
 
-    while ((opt = getopt(merged_argc, merged_argv, "c:hstuv")) != -1) {
+    while ((opt = getopt(merged_argc, merged_argv, "c:dhstuv")) != -1) {
         switch (opt) {
 	case 'c':
 	    strcpy(controlling_terminal, optarg);
 	    break;
+        case 'd':
+            debug_mode = 1;
+            break;
         case 'h':
             hang_on_exit = 1;
             break;
@@ -737,7 +764,7 @@ int main(int argc, char *argv[])
     // Mount /tmp since it currently is challenging to do it at the
     // right time in Erlang.
     // NOTE: try to clean this up when the unionfs errors are resolved.
-    if (mount("", "/tmp", "tmpfs", 0, "size=10%") < 0) {
+    if (!debug_mode && mount("", "/tmp", "tmpfs", 0, "size=10%") < 0) {
         warn("Could not mount tmpfs in /tmp: %s\n"
              "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
         return;
