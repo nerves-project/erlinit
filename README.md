@@ -49,15 +49,15 @@ For example, the following is a valid `/etc/erlinit.config`:
 
     # erlinit.config example
 
-	# Uncomment the following line to make the rootfs writable via a unionfs
-	# -u
+    # Uncomment the following line to make the rootfs writable via a unionfs
+    # -u
 
-	# Uncomment to enable verbose prints
-	-v
+    # Uncomment to enable verbose prints
+    -v
 
 The following lists the options:
 
-	-c <tty[n]> Force the controlling terminal (ttyAMA0, tty1, etc.)
+    -c <tty[n]> Force the controlling terminal (ttyAMA0, tty1, etc.)
     -h Hang the system if Erlang exits. The default is to reboot.
     -s Run strace on Erlang
     -t Print out when erlinit starts and when it launches Erlang (for

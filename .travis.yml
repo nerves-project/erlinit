@@ -4,4 +4,4 @@ compiler:
     - gcc
 
 script:
-    - make
+    - make && make test
