@@ -1,6 +1,18 @@
+#!/bin/sh
+
+#
+# Test that specifying -v on the command line works
+#
+
+$CAT >$CMDLINE_FILE <<EOF
+-v
+EOF
+
+$CAT >$EXPECTED <<EOF
 erlinit: Starting erlinit...
-erlinit: cmdline argc=1, merged argc=2
+erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/erlinit
 erlinit: merged argv[1]=-v
 erlinit: Could not mount tmpfs in /tmp: Operation not permitted
 Check that tmpfs support is enabled in the kernel config.
+EOF

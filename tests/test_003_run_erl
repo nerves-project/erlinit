@@ -1,3 +1,14 @@
+#!/bin/sh
+
+#
+# Test that a nearly parameterless run of erlexec works
+#
+
+$CAT >$CMDLINE_FILE <<EOF
+-v -d
+EOF
+
+$CAT >$EXPECTED <<EOF
 erlinit: Starting erlinit...
 erlinit: cmdline argc=3, merged argc=3
 erlinit: merged argv[0]=/sbin/erlinit
@@ -21,3 +32,4 @@ erlinit: Launching erl...
 Hello from erlexec
 erlinit: kill_all
 erlinit: unmount_all
+EOF

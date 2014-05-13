@@ -35,13 +35,13 @@ unset -v `env | sed -e 's/=.*//'`
 
 run() {
     TEST=$1
-    CONFIG=$TESTS_DIR/$TEST.config
-    CMDLINE_FILE=$TESTS_DIR/$TEST.cmdline
-    EXPECTED=$TESTS_DIR/$TEST.expected
+    CONFIG=$WORK/$TEST.config
+    CMDLINE_FILE=$WORK/$TEST.cmdline
+    EXPECTED=$WORK/$TEST.expected
 
     $ECHO Running $TEST...
 
-    # setup a fake chroot to simulate erlinit boot
+    # Setup a fake chroot to simulate erlinit boot
     $RM -fr $WORK
     $MKDIR -p $WORK/sbin
     $MKDIR -p $WORK/bin
@@ -51,6 +51,9 @@ run() {
     $LN -s $ERLINIT $WORK/sbin/erlinit
     $MKDIR -p $FAKE_ERTS_DIR/bin
     $LN -s $FAKE_ERLEXEC $FAKE_ERTS_DIR/bin/erlexec
+
+    # Run the test script to setup files for the test
+    source $TEST
 
     if [ -e $CONFIG ]; then
        $LN -s $CONFIG $WORK/etc/erlinit.config
@@ -68,8 +71,10 @@ run() {
     # Trim the results of known lines that vary between runs
     $CAT $RESULTS.raw | \
         $GREP -vi "erlinit: Env:.*FAKECHROOT" | \
-        $GREP -v "erlinit: Env:.*LD_" | \
-        $GREP -v "erlinit: Env:.*PWD" \
+        $GREP -v "erlinit: Env: 'LD_" | \
+        $GREP -v "erlinit: Env: 'SHLVL=" | \
+        $GREP -v "erlinit: Env: '_=" | \
+        $GREP -v "erlinit: Env: 'PWD=" \
         > $RESULTS
 
     # check results
@@ -81,7 +86,7 @@ run() {
 }
 
 # Test command line arguments
-TESTS=$($LS $TESTS_DIR/*.expected | $SORT)
+TESTS=$($LS $TESTS_DIR/test_* | $SORT)
 for TEST_CONFIG in $TESTS; do
     TEST=$(/usr/bin/basename $TEST_CONFIG .expected)
     run $TEST
