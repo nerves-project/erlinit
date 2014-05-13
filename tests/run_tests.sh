@@ -19,7 +19,7 @@ CHROOT=/usr/sbin/chroot
 
 TESTS_DIR=$(dirname $(readlink -f $0))
 
-WORK=$TESTS_DIR/root
+WORK=$TESTS_DIR/work
 ERLINIT=$TESTS_DIR/../erlinit
 FAKE_ERLEXEC=$TESTS_DIR/fake_erlexec
 RESULTS=$WORK/results
@@ -49,6 +49,7 @@ run() {
     $MKDIR -p $WORK/sbin
     $MKDIR -p $WORK/bin
     $MKDIR -p $WORK/etc
+    $MKDIR -p $WORK/usr/bin
     $LN -s $ECHO $WORK/bin/echo
     $LN -s $SH $WORK/bin/sh
     $LN -s $ERLINIT $WORK/sbin/erlinit

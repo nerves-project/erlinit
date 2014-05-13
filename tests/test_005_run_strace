@@ -1,0 +1,44 @@
+#!/bin/sh
+
+#
+# Test that requesting that strace be run does the right thing
+#
+
+$CAT >$CMDLINE_FILE <<EOF
+-v -d -s
+EOF
+
+$CAT >$WORK/usr/bin/strace <<EOF
+#!/bin/sh
+
+echo Hello from strace 1>&2
+EOF
+
+$CAT >$EXPECTED <<EOF
+erlinit: Starting erlinit...
+erlinit: cmdline argc=4, merged argc=4
+erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=-d
+erlinit: merged argv[3]=-s
+erlinit: find_erts_directory
+erlinit: find_release
+erlinit: No release found in /srv/erlang/releases.
+erlinit: setup_environment
+erlinit: setup_networking
+erlinit: set_ctty
+erlinit: Env: 'HOME=/'
+erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
+erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
+erlinit: Env: 'EMU=beam'
+erlinit: Env: 'PROGNAME=erl'
+erlinit: Arg: 'strace'
+erlinit: Arg: '-f'
+erlinit: Arg: '/usr/lib/erlang/erts-6.0/bin/erlexec'
+erlinit: Launching erl...
+Hello from strace
+erlinit: kill_all
+erlinit: unmount_all
+EOF
