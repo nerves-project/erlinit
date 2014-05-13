@@ -46,12 +46,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define MAX_ARGC 32
 
-static char argument_buffer[1024];
 static int merged_argc;
 static char *merged_argv[MAX_ARGC];
 
 static int verbose = 0;
-static int run_strace = 0;
 static int print_timing = 0;
 static int debug_mode = 0;
 static int desired_reboot_cmd = -1;
@@ -63,6 +61,7 @@ static char root_dir[PATH_MAX];
 static char boot_path[PATH_MAX];
 static char sys_config[PATH_MAX];
 static char vmargs_path[PATH_MAX];
+static char alternate_exec[PATH_MAX];
 
 static void print_prefix()
 {
@@ -437,30 +436,35 @@ static void child()
     // Start Erlang up
     char erlexec_path[PATH_MAX];
     sprintf(erlexec_path, "%s/bin/erlexec", erts_dir);
+    char *exec_path = erlexec_path;
 
-    char *erlargv[32];
+    char *exec_argv[32];
     int arg = 0;
-    if (run_strace) {
-        erlargv[arg++] = "strace";
-        erlargv[arg++] = "-f";
-        erlargv[arg++] = erlexec_path;
+    if (alternate_exec[0] != '\0') {
+        exec_path = strtok(alternate_exec, " ");
+        exec_argv[arg++] = exec_path;
+
+        while ((exec_argv[arg] = strtok(NULL, " ")) != NULL)
+            arg++;
+
+        exec_argv[arg++] = erlexec_path;
     } else
-        erlargv[arg++] = "erlexec";
+        exec_argv[arg++] = "erlexec";
 
     if (*sys_config) {
-        erlargv[arg++] = "-config";
-        erlargv[arg++] = sys_config;
+        exec_argv[arg++] = "-config";
+        exec_argv[arg++] = sys_config;
     }
     if (*boot_path) {
-        erlargv[arg++] = "-boot";
-        erlargv[arg++] = boot_path;
+        exec_argv[arg++] = "-boot";
+        exec_argv[arg++] = boot_path;
     }
     if (*vmargs_path) {
-        erlargv[arg++] = "-args_file";
-        erlargv[arg++] = vmargs_path;
+        exec_argv[arg++] = "-args_file";
+        exec_argv[arg++] = vmargs_path;
     }
 
-    erlargv[arg] = NULL;
+    exec_argv[arg] = NULL;
 
     if (verbose) {
         // Dump the environment and commandline
@@ -471,17 +475,17 @@ static void child()
 
         int i;
         for (i = 0; i < arg; i++)
-            debug("Arg: '%s'", erlargv[i]);
+            debug("Arg: '%s'", exec_argv[i]);
     }
 
     debug("Launching erl...");
     if (print_timing)
         warn("stop");
 
-    execvp(run_strace ? "/usr/bin/strace" : erlexec_path, erlargv);
+    execvp(exec_path, exec_argv);
 
     // execvpe is not supposed to return
-    fatal("execvp failed to run %s: %s", erlexec_path, strerror(errno));
+    fatal("execvp failed to run %s: %s", exec_path, strerror(errno));
 }
 
 static void mount_unionfs()
@@ -642,13 +646,72 @@ static void kill_all()
     sync();
 }
 
+int parse_config_line(char *line, char **argv, int max_args)
+{
+    int argc = 0;
+    char *c = line;
+    char *token = NULL;
+#define STATE_SPACE 0
+#define STATE_TOKEN 1
+#define STATE_QUOTED_TOKEN 2
+    int state = STATE_SPACE;
+    while (*c != '\0') {
+        switch (state) {
+            case STATE_SPACE:
+                if (*c == '#')
+                    return argc;
+                else if (isspace(*c))
+                    break;
+                else if (*c == '"') {
+                    token = c + 1;
+                    state = STATE_QUOTED_TOKEN;
+                } else {
+                    token = c;
+                    state = STATE_TOKEN;
+                }
+                break;
+            case STATE_TOKEN:
+                if (*c == '#' || isspace(*c)) {
+                    *argv = strndup(token, c - token);
+                    argv++;
+                    argc++;
+                    token = NULL;
+
+                    if (*c == '#' || argc == max_args)
+                       return argc;
+
+                    state = STATE_SPACE;
+                }
+                break;
+            case STATE_QUOTED_TOKEN:
+                if (*c == '"') {
+                    *argv = strndup(token, c - token);
+                    argv++;
+                    argc++;
+                    token = NULL;
+                    state = STATE_SPACE;
+
+                    if (argc == max_args)
+                        return argc;
+                }
+                break;
+        }
+        c++;
+    }
+
+    if (token) {
+        *argv = strndup(token, c - token);
+        argc++;
+    }
+
+    return argc;
+}
+
 // This is a very simple config file parser that extracts
 // commandline arguments from the specified file.
 int load_config(const char *filename,
                 char **argv,
-                int max_args,
-                char *arg_buffer,
-                int buffer_length)
+                int max_args)
 {
     FILE *fp = fopen(filename, "r");
     if (!fp)
@@ -656,30 +719,12 @@ int load_config(const char *filename,
 
     int argc = 0;
     char line[128];
-    while (fgets(line, sizeof(line), fp)) {
-        // Check for comment
-        if (line[0] == '#')
-            continue;
-
-        char *token = strtok(line, " \t\n");
-        while (token && max_args > 0) {
-            int token_len = strlen(token) + 1;
-            if (token_len > buffer_length)
-                break;
-
-            strcpy(arg_buffer, token);
-            *argv = arg_buffer;
-
-            arg_buffer += token_len;
-            buffer_length -= token_len;
-
-            argv++;
-            max_args--;
-            argc++;
-
-            token = strtok(NULL, " \t\n");
-        }
+    while (fgets(line, sizeof(line), fp) && argc < max_args) {
+        int new_args = parse_config_line(line, argv, max_args - argc);
+        argc += new_args;
+        argv += new_args;
     }
+
     fclose(fp);
     return argc;
 }
@@ -695,9 +740,7 @@ void merge_config(int argc, char *argv[])
 
     merged_argc += load_config("/etc/erlinit.config",
 			       &merged_argv[1],
-			       MAX_ARGC - argc,
-			       argument_buffer,
-			       sizeof(argument_buffer));
+			       MAX_ARGC - argc);
 
     if (merged_argc + argc - 1 > MAX_ARGC) {
         warn("Too many arguments specified between the config file and commandline. Dropping some.");
@@ -717,8 +760,9 @@ int main(int argc, char *argv[])
     int hang_on_exit = 0;
     int opt;
     controlling_terminal[0] = '\0';
+    alternate_exec[0] = '\0';
 
-    while ((opt = getopt(merged_argc, merged_argv, "c:dhstuv")) != -1) {
+    while ((opt = getopt(merged_argc, merged_argv, "c:dhs:tuv")) != -1) {
         switch (opt) {
 	case 'c':
 	    strcpy(controlling_terminal, optarg);
@@ -730,7 +774,7 @@ int main(int argc, char *argv[])
             hang_on_exit = 1;
             break;
         case 's':
-            run_strace = 1;
+            strcpy(alternate_exec, optarg);
             break;
         case 't':
             print_timing = 1;

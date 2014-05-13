@@ -59,7 +59,7 @@ The following lists the options:
 
     -c <tty[n]> Force the controlling terminal (ttyAMA0, tty1, etc.)
     -h Hang the system if Erlang exits. The default is to reboot.
-    -s Run strace on Erlang
+    -s <program and arguments> Run another program that starts Erlang up
     -t Print out when erlinit starts and when it launches Erlang (for
        benchmarking)
     -u Remount the root filesystem with a unionfs
@@ -93,7 +93,8 @@ to debug when things go wrong. Hopefully this won't happen to you, but if
 it does, try passing '-v' in the kernel arguments so that `erlinit` runs in
 verbose mode. If it looks like the Erlang runtime is being started, but it
 crashes or hangs midway without providing any usable console output, try
-passing '-s' in the kernel arguments and add the strace program to `/usr/bin`.
+passing `-s "/usr/bin/strace -f"` in the config file or via kernel arguments
+to run `strace` on the initialization process. Be sure to add the strace program to `/usr/bin`.
 Sometimes you need to sift through the strace output to find the missing
 library or file that couldn't be loaded. When debugged, please consider
 contributing a fix back to help other `erlinit` users.
