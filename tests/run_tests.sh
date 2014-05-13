@@ -1,18 +1,21 @@
 #!/bin/bash
 
 # Set absolute paths to utilities since we'll clear the environment for testing
-FAKECHROOT=/usr/bin/fakechroot
-CHROOT=/usr/sbin/chroot
-RM=/bin/rm
-LN=/bin/ln
-DIFF=/usr/bin/diff
-MKDIR=/bin/mkdir
-ECHO=/bin/echo
-SORT=/usr/bin/sort
-LS=/bin/ls
+# NOTE: It should be possible to delay clearing the environment to make this less
+#       painful.
 CAT=/bin/cat
-SH=/bin/sh
+ECHO=/bin/echo
 GREP=/bin/grep
+LN=/bin/ln
+LS=/bin/ls
+MKDIR=/bin/mkdir
+RM=/bin/rm
+SH=/bin/sh
+DIFF=/usr/bin/diff
+FAKECHROOT=/usr/bin/fakechroot
+SORT=/usr/bin/sort
+TOUCH=/usr/bin/touch
+CHROOT=/usr/sbin/chroot
 
 TESTS_DIR=$(dirname $(readlink -f $0))
 
@@ -53,7 +56,7 @@ run() {
     $LN -s $FAKE_ERLEXEC $FAKE_ERTS_DIR/bin/erlexec
 
     # Run the test script to setup files for the test
-    source $TEST
+    source $TESTS_DIR/$TEST
 
     if [ -e $CONFIG ]; then
        $LN -s $CONFIG $WORK/etc/erlinit.config
@@ -66,7 +69,7 @@ run() {
     fi
 
     # run
-    $FAKECHROOT -e $TESTS_DIR/clearenv $CHROOT $WORK /sbin/erlinit $CMDLINE 2> $RESULTS.raw
+    $FAKECHROOT $CHROOT $WORK /sbin/erlinit $CMDLINE 2> $RESULTS.raw
 
     # Trim the results of known lines that vary between runs
     $CAT $RESULTS.raw | \

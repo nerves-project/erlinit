@@ -1,0 +1,49 @@
+#!/bin/sh
+
+#
+# Test that starting up a Erlang/OTP release works
+#
+
+$CAT >$CMDLINE_FILE <<EOF
+-v -d
+EOF
+
+RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
+$MKDIR -p $RELEASE_PATH
+$TOUCH $RELEASE_PATH/test.boot
+$TOUCH $RELEASE_PATH/sys.config
+$TOUCH $RELEASE_PATH/vm.args
+
+$CAT >$EXPECTED <<EOF
+erlinit: Starting erlinit...
+erlinit: cmdline argc=3, merged argc=3
+erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=-d
+erlinit: find_erts_directory
+erlinit: find_release
+erlinit: find_sys_config
+erlinit: find_vm_args
+erlinit: find_boot_path
+erlinit: setup_environment
+erlinit: setup_networking
+erlinit: set_ctty
+erlinit: Env: 'HOME=/'
+erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'ROOTDIR=/srv/erlang'
+erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
+erlinit: Env: 'EMU=beam'
+erlinit: Env: 'PROGNAME=erl'
+erlinit: Arg: 'erlexec'
+erlinit: Arg: '-config'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/sys.config'
+erlinit: Arg: '-boot'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/test'
+erlinit: Arg: '-args_file'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
+erlinit: Launching erl...
+Hello from erlexec
+erlinit: kill_all
+erlinit: unmount_all
+EOF
