@@ -411,11 +411,29 @@ static void setup_networking()
     configure_hostname();
 }
 
+static void setup_filesystems()
+{
+    if (debug_mode)
+        return;
+
+    // Mount and init the virtual file systems.
+    if (mount("", "/proc", "proc", 0, NULL) < 0)
+        warn("Cannot mount /proc");
+    if (mount("", "/sys", "sysfs", 0, NULL) < 0)
+        warn("Cannot mount /sys");
+
+    // /dev should be automatically created/mounted by Linux
+    if (mkdir("/dev/pts", 0755) < 0)
+        warn("Cannot create /dev/pts");
+    if (mkdir("/dev/shm", 0755) < 0)
+        warn("Cannot create /dev/shm");
+    if (mount("", "/dev/pts", "devpts", 0, NULL) < 0)
+        warn("Cannot mount /dev/pts");
+}
+
 static void child()
 {
-    // Mount the virtual file systems.
-    mount("", "/proc", "proc", 0, NULL);
-    mount("", "/sys", "sysfs", 0, NULL);
+    setup_filesystems();
 
     // Locate everything needed to configure the environment
     // and pass to erlexec.
