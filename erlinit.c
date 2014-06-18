@@ -506,51 +506,6 @@ static void child()
     fatal("execvp failed to run %s: %s", exec_path, strerror(errno));
 }
 
-static void mount_unionfs()
-{
-    debug("mount_unionfs");
-
-    // Setup a union filesystem for the rootfs so that the official
-    // contents are protected in a read-only fs, but we can still update
-    // files when debugging.
-    if (mount("", "/mnt/.overlayfs", "tmpfs", 0, "size=10%") < 0) {
-        warn("Could not mount tmpfs in /mnt/.overlayfs: %s\n"
-             "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
-        return;
-    }
-
-#if 0
-    if (mount("", "/mnt/.unionfs", "unionfs", 0, "dirs=/mnt/.overlayfs=rw:/=ro") < 0) {
-        warn("Could not mount unionfs: %s\n"
-             "Check that kernel has unionfs patches from http://unionfs.filesystems.org/\n"
-             "and that unionfs is enabled in the kernel config.", strerror(errno));
-        return;
-    }
-
-    if (chdir("/mnt/.unionfs") < 0) {
-        warn("Could not change directory to /mnt/.unionfs: %s", strerror(errno));
-        return;
-    }
-
-    if (mkdir(".oldrootfs", 0755) < 0) {
-        warn("Could not create directory .oldrootfs: %s", strerror(errno));
-        return;
-    }
-
-    if (pivot_root(".", ".oldrootfs") < 0) {
-        warn("pivot_root failed: %s", strerror(errno));
-        return;
-    }
-#else
-    if (mount("", "/srv", "unionfs", 0, "dirs=/mnt/.overlayfs=rw:/srv=ro") < 0) {
-        warn("Could not mount unionfs: %s\n"
-             "Check that kernel has unionfs patches from http://unionfs.filesystems.org/\n"
-             "and that unionfs is enabled in the kernel config.", strerror(errno));
-        return;
-    }
-#endif
-}
-
 static void unmount_all()
 {
     debug("unmount_all");
@@ -774,13 +729,12 @@ int main(int argc, char *argv[])
     // Merge the config file and the command line arguments
     merge_config(argc, argv);
 
-    int unionfs = 0;
     int hang_on_exit = 0;
     int opt;
     controlling_terminal[0] = '\0';
     alternate_exec[0] = '\0';
 
-    while ((opt = getopt(merged_argc, merged_argv, "c:dhs:tuv")) != -1) {
+    while ((opt = getopt(merged_argc, merged_argv, "c:dhs:tv")) != -1) {
         switch (opt) {
 	case 'c':
 	    strcpy(controlling_terminal, optarg);
@@ -796,9 +750,6 @@ int main(int argc, char *argv[])
             break;
         case 't':
             print_timing = 1;
-            break;
-        case 'u':
-            unionfs = 1;
             break;
         case 'v':
             verbose = 1;
@@ -819,13 +770,8 @@ int main(int argc, char *argv[])
     for (i = 0; i < merged_argc; i++)
 	debug("merged argv[%d]=%s", i, merged_argv[i]);
 
-    // If the user wants a unionfs, remount the rootfs first
-    if (unionfs)
-        mount_unionfs();
-
     // Mount /tmp since it currently is challenging to do it at the
     // right time in Erlang.
-    // NOTE: try to clean this up when the unionfs errors are resolved.
     if (!debug_mode && mount("", "/tmp", "tmpfs", 0, "size=10%") < 0) {
         warn("Could not mount tmpfs in /tmp: %s\n"
              "Check that tmpfs support is enabled in the kernel config.", strerror(errno));

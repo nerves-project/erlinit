@@ -49,9 +49,6 @@ For example, the following is a valid `/etc/erlinit.config`:
 
     # erlinit.config example
 
-    # Uncomment the following line to make the rootfs writable via a unionfs
-    # -u
-
     # Uncomment to enable verbose prints
     -v
 
@@ -62,14 +59,9 @@ The following lists the options:
     -s <program and arguments> Run another program that starts Erlang up
     -t Print out when erlinit starts and when it launches Erlang (for
        benchmarking)
-    -u Remount the root filesystem with a unionfs
     -v Enable verbose prints
 
-## Writable root file systems and unionfs
-
-NOTE: It was recently found that on some platforms unionfs and ext4 don't work
-well together. As such, the unionfs mount has been limited to `/srv` to minimize
-the damage. This does not fix the bug, but merely limits some of its damage.
+## Read-only root file systems
 
 By default `erlinit` keeps the root filesystem mounted read-only. This is useful
 since it significantly reduces the chance of corrupting the root filesystem at
@@ -77,14 +69,12 @@ runtime. If applications need to write to disk, they can always mount a
 writable partition and have code that handles corruptions on it. Recovering from
 a corrupt root filesystem is harder. During development, though, working with a
 read-only root filesystem can be a pain so an alternative is to remount it
-read-write. Applications can do this, but a better approach can be to remount it
-using a unionfs. This way the root filesystem is kept read-only and all changes
-are stored in memory until the next reboot. While changes are lost after a
-reboot, you don't have to worry about a bad change bricking the target. If you
-pass the '-u' option to `erlinit`, it will run the necessary commands to setup
-the unionfs before starting Erlang. The Linux kernel must be patched with the
-unionfs code for this to work. See http://unionfs.filesystems.org/ for
-information.
+read-write. Applications can do this, but a better approach is to update the
+application to reference the files in development from /tmp or a writable
+partition. For example, the Erlang code search path can be updated at runtime to
+references new directories for code. The
+[relsync](https://github.com/fhunleth/relsync) program does this to dynamically
+update Erlang code via the Erlang distribution protocol.
 
 ## Debugging erlinit
 
