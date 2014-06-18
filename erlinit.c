@@ -62,6 +62,7 @@ static char boot_path[PATH_MAX];
 static char sys_config[PATH_MAX];
 static char vmargs_path[PATH_MAX];
 static char alternate_exec[PATH_MAX];
+static char *additional_env;
 
 static void print_prefix()
 {
@@ -367,6 +368,15 @@ static void setup_environment()
 
     putenv("EMU=beam");
     putenv("PROGNAME=erl");
+
+    // Set any additional environment variables from the user
+    if (additional_env) {
+        char *envstr = strtok(additional_env, ";");
+        while (envstr) {
+            putenv(envstr);
+            envstr = strtok(NULL, ";");
+        }
+    }
 }
 
 static void forkexec(const char *path, ...)
@@ -734,13 +744,16 @@ int main(int argc, char *argv[])
     controlling_terminal[0] = '\0';
     alternate_exec[0] = '\0';
 
-    while ((opt = getopt(merged_argc, merged_argv, "c:dhs:tv")) != -1) {
+    while ((opt = getopt(merged_argc, merged_argv, "c:de:hs:tv")) != -1) {
         switch (opt) {
 	case 'c':
 	    strcpy(controlling_terminal, optarg);
 	    break;
         case 'd':
             debug_mode = 1;
+            break;
+        case 'e':
+            additional_env = strdup(optarg);
             break;
         case 'h':
             hang_on_exit = 1;

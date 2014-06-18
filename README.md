@@ -49,12 +49,16 @@ For example, the following is a valid `/etc/erlinit.config`:
 
     # erlinit.config example
 
+    # Enable UTF-8 filename handling
+    -e LANG=en_US.UTF-8;LANGUAGE=en
+
     # Uncomment to enable verbose prints
     -v
 
 The following lists the options:
 
     -c <tty[n]> Force the controlling terminal (ttyAMA0, tty1, etc.)
+    -e <VAR=value;VAR2=Value2...> Set additional environment variables
     -h Hang the system if Erlang exits. The default is to reboot.
     -s <program and arguments> Run another program that starts Erlang up
     -t Print out when erlinit starts and when it launches Erlang (for

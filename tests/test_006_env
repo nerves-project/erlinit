@@ -1,0 +1,39 @@
+#!/bin/sh
+
+#
+# Test that a nearly parameterless run of erlexec works
+#
+
+$CAT >$CMDLINE_FILE <<EOF
+-v -d -e LANG=en_US.UTF-8;LANGUAGE=en
+EOF
+
+$CAT >$EXPECTED <<EOF
+erlinit: Starting erlinit...
+erlinit: cmdline argc=5, merged argc=5
+erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=-d
+erlinit: merged argv[3]=-e
+erlinit: merged argv[4]=LANG=en_US.UTF-8;LANGUAGE=en
+erlinit: find_erts_directory
+erlinit: find_release
+erlinit: No release found in /srv/erlang/releases.
+erlinit: setup_environment
+erlinit: setup_networking
+erlinit: set_ctty
+erlinit: Env: 'HOME=/'
+erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
+erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
+erlinit: Env: 'EMU=beam'
+erlinit: Env: 'PROGNAME=erl'
+erlinit: Env: 'LANG=en_US.UTF-8'
+erlinit: Env: 'LANGUAGE=en'
+erlinit: Arg: 'erlexec'
+erlinit: Launching erl...
+Hello from erlexec
+erlinit: kill_all
+erlinit: unmount_all
+EOF
