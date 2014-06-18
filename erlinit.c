@@ -54,15 +54,15 @@ static int print_timing = 0;
 static int debug_mode = 0;
 static int desired_reboot_cmd = -1;
 
-static char controlling_terminal[32];
 static char erts_dir[PATH_MAX];
 static char release_dir[PATH_MAX];
 static char root_dir[PATH_MAX];
 static char boot_path[PATH_MAX];
 static char sys_config[PATH_MAX];
 static char vmargs_path[PATH_MAX];
-static char alternate_exec[PATH_MAX];
-static char *additional_env;
+static char *controlling_terminal = NULL;
+static char *alternate_exec = NULL;
+static char *additional_env = NULL;
 
 static void print_prefix()
 {
@@ -147,7 +147,7 @@ static void set_ctty()
     char ttypath[32];
 
     // Check if the user is forcing the controlling terminal
-    if (controlling_terminal[0] != '\0' &&
+    if (controlling_terminal &&
 	strlen(controlling_terminal) < sizeof(ttypath) - 5) {
 	sprintf(ttypath, "/dev/%s", controlling_terminal);
     } else {
@@ -468,7 +468,7 @@ static void child()
 
     char *exec_argv[32];
     int arg = 0;
-    if (alternate_exec[0] != '\0') {
+    if (alternate_exec) {
         exec_path = strtok(alternate_exec, " ");
         exec_argv[arg++] = exec_path;
 
@@ -741,13 +741,11 @@ int main(int argc, char *argv[])
 
     int hang_on_exit = 0;
     int opt;
-    controlling_terminal[0] = '\0';
-    alternate_exec[0] = '\0';
 
     while ((opt = getopt(merged_argc, merged_argv, "c:de:hs:tv")) != -1) {
         switch (opt) {
 	case 'c':
-	    strcpy(controlling_terminal, optarg);
+	    controlling_terminal = strdup(optarg);
 	    break;
         case 'd':
             debug_mode = 1;
@@ -759,7 +757,7 @@ int main(int argc, char *argv[])
             hang_on_exit = 1;
             break;
         case 's':
-            strcpy(alternate_exec, optarg);
+            alternate_exec = strdup(optarg);
             break;
         case 't':
             print_timing = 1;
