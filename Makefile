@@ -1,8 +1,11 @@
 
 erlinit: erlinit.c
-	$(CC) -o $@ $<
+	$(CC) -Wall -o $@ $<
 
 test: erlinit
 	tests/run_tests.sh
 
-.PHONY: test
+clean:
+	-rm -f erlinit
+
+.PHONY: test clean
