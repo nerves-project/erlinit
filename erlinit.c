@@ -21,6 +21,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -32,9 +33,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unistd.h>
 
 #include <linux/reboot.h>
+#include <sys/reboot.h>
 #include <sys/types.h>
+#include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <netinet/in.h>
 
 #define PROGRAM_NAME "erlinit"
 
@@ -379,34 +388,45 @@ static void setup_environment()
     }
 }
 
-static void forkexec(const char *path, ...)
+static void enable_loopback()
 {
-    debug("forkexec %s", path);
-    va_list ap;
-#define MAX_ARGS 32
-    char *argv[MAX_ARGS];
-    int i;
+    // Set the loopback interface to up
+    int fd = socket(PF_INET, SOCK_DGRAM, 0);
+    struct ifreq ifr;
+    memset(&ifr, 0, sizeof(ifr));
 
-    va_start(ap, path);
-    argv[0] = strdup(path);
-    for (i = 1; i < MAX_ARGS - 1; i++)
-    {
-        argv[i] = va_arg(ap, char *);
-        if (argv[i] == NULL)
-            break;
+    ifr.ifr_name[0] = 'l';
+    ifr.ifr_name[1] = 'o';
+    ifr.ifr_name[2] = '\0';
+    if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0) {
+        warn("SIOCGIFFLAGS failed on lo");
+        goto cleanup;
     }
-    argv[i] = 0;
-    va_end(ap);
 
-    pid_t pid = fork();
-    if (pid == 0) {
-        execv(path, argv);
-        exit(127);
-    } else {
-        waitpid(pid, 0, 0);
-        free(argv[0]);
+    ifr.ifr_flags |= IFF_UP;
+    if (ioctl(fd, SIOCSIFFLAGS, &ifr)) {
+        warn("SIOCSIFFLAGS failed on lo");
+        goto cleanup;
     }
-    debug("forkexec %s done", path);
+
+    // Currently only configuring IPv4.
+    struct sockaddr_in *addr = (struct sockaddr_in *) &ifr.ifr_addr;
+    addr->sin_family = AF_INET;
+    addr->sin_port = 0;
+    addr->sin_addr.s_addr = htonl(0x7f000001); // 127.0.0.1
+    if (ioctl(fd, SIOCSIFADDR, &ifr)) {
+        warn("SIOCSIFADDR failed on lo");
+        goto cleanup;
+    }
+
+    addr->sin_addr.s_addr = htonl(0xff000000); // 255.0.0.0
+    if (ioctl(fd, SIOCSIFNETMASK, &ifr)) {
+        warn("SIOCSIFNETMASK failed on lo");
+        goto cleanup;
+    }
+
+cleanup:
+    close(fd);
 }
 
 static void setup_networking()
@@ -415,9 +435,8 @@ static void setup_networking()
     if (debug_mode)
         return;
 
-    // Bring up the loopback interface (needed if erlang is a node)
-    forkexec("/sbin/ip", "link", "set", "lo", "up", NULL);
-    forkexec("/sbin/ip", "addr", "add", "127.0.0.1", "dev", "lo", NULL);
+    // Bring up the loopback interface (needed if the erlang distribute protocol code gets run)
+    enable_loopback();
     configure_hostname();
 }
 
@@ -785,8 +804,8 @@ int main(int argc, char *argv[])
     // right time in Erlang.
     if (!debug_mode && mount("", "/tmp", "tmpfs", 0, "size=10%") < 0) {
         warn("Could not mount tmpfs in /tmp: %s\n"
-             "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
-        return;
+              "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
+        return 0;
     }
 
     // Do most of the work in a child process so that if it
