@@ -22,6 +22,7 @@ erlinit: merged argv[1]=-v
 erlinit: merged argv[2]=-d
 erlinit: merged argv[3]=-r
 erlinit: merged argv[4]=/mnt/anotherplace:/srv/erlang
+erlinit: set_ctty
 erlinit: find_erts_directory
 erlinit: find_release
 erlinit: No release found in /mnt/anotherplace/releases.
@@ -31,7 +32,6 @@ erlinit: find_vm_args
 erlinit: find_boot_path
 erlinit: setup_environment
 erlinit: setup_networking
-erlinit: set_ctty
 erlinit: Env: 'HOME=/'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'

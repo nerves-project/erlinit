@@ -16,12 +16,12 @@ erlinit: merged argv[1]=-v
 erlinit: merged argv[2]=-d
 erlinit: merged argv[3]=-e
 erlinit: merged argv[4]=LANG=en_US.UTF-8;LANGUAGE=en
+erlinit: set_ctty
 erlinit: find_erts_directory
 erlinit: find_release
 erlinit: No release found in /srv/erlang/releases.
 erlinit: setup_environment
 erlinit: setup_networking
-erlinit: set_ctty
 erlinit: Env: 'HOME=/'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'

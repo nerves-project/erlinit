@@ -227,8 +227,7 @@ static int release_filter(const struct dirent *d)
     // is by using process of elimination.
     return strcmp(d->d_name, ".") != 0 &&
            strcmp(d->d_name, "..") != 0 &&
-           strcmp(d->d_name, "RELEASES") != 0 &&
-           d->d_type == DT_DIR;
+           strcmp(d->d_name, "RELEASES") != 0;
 }
 
 static int bootfile_filter(const struct dirent *d)
@@ -304,11 +303,17 @@ static void find_release()
                         &namelist,
                         release_filter,
                         NULL);
-        if (n <= 0) {
-            warn("No release found in %s.", search_base_dir);
-        } else if (n == 1) {
-            debug("Using release in %s.", search_base_dir);
+        int i;
+        for (i = 0; i < n; i++) {
             sprintf(release_dir, "%s/%s", search_base_dir, namelist[0]->d_name);
+
+            // Check that the path goes to a directory
+            struct stat sb;
+            if (stat(release_dir, &sb) < 0 ||
+                !S_ISDIR(sb.st_mode))
+                continue;
+
+            debug("Using release in %s.", release_dir);
             strcpy(root_dir, search_path);
             free(namelist[0]);
             free(namelist);
@@ -318,14 +323,9 @@ static void find_release()
             find_boot_path();
 
             return;
-        } else {
-            warn("Found more than one release in %s:", search_base_dir);
-            int i;
-            for (i = 0; i < n; i++)
-                warn("         %s", namelist[i]->d_name);
-            fatal("Not sure which to run.");
         }
 
+        warn("No release found in %s.", search_base_dir);
         search_path = strtok(NULL, ":");
     }
     *release_dir = '\0';
@@ -482,6 +482,9 @@ static void child()
 {
     setup_filesystems();
 
+    // Fix the terminal settings so that CTRL keys work.
+    set_ctty();
+
     // Locate everything needed to configure the environment
     // and pass to erlexec.
     find_erts_directory();
@@ -492,9 +495,6 @@ static void child()
 
     // Set up the minimum networking we need for Erlang.
     setup_networking();
-
-    // Fix the terminal settings so that CTRL keys work.
-    set_ctty();
 
     chdir(root_dir);
 
