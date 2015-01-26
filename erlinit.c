@@ -48,8 +48,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define PROGRAM_NAME "erlinit"
 
 #define ERLANG_ROOT_DIR "/usr/lib/erlang"
-#define RELEASE_ROOT_DIR "/srv/erlang"
-#define RELEASE_RELEASES_DIR  RELEASE_ROOT_DIR "/releases"
+#define DEFAULT_RELEASE_ROOT_DIR "/srv/erlang"
 
 #define MAX_MOUNTS 32
 
@@ -72,6 +71,7 @@ static char vmargs_path[PATH_MAX];
 static char *controlling_terminal = NULL;
 static char *alternate_exec = NULL;
 static char *additional_env = NULL;
+static char *release_search_path = NULL;
 
 static void print_prefix()
 {
@@ -227,7 +227,8 @@ static int release_filter(const struct dirent *d)
     // is by using process of elimination.
     return strcmp(d->d_name, ".") != 0 &&
            strcmp(d->d_name, "..") != 0 &&
-           strcmp(d->d_name, "RELEASES") != 0;
+           strcmp(d->d_name, "RELEASES") != 0 &&
+           d->d_type == DT_DIR;
 }
 
 static int bootfile_filter(const struct dirent *d)
@@ -287,34 +288,51 @@ static void find_boot_path()
 static void find_release()
 {
     debug("find_release");
-    struct dirent **namelist;
-    int n = scandir(RELEASE_RELEASES_DIR,
-                    &namelist,
-                    release_filter,
-                    NULL);
-    if (n <= 0) {
-        warn("No release found in %s.", RELEASE_RELEASES_DIR);
-        *release_dir = '\0';
-        *sys_config = '\0';
-        *boot_path = '\0';
 
-        strcpy(root_dir, ERLANG_ROOT_DIR);
-    } else if (n == 1) {
-        sprintf(release_dir, "%s/%s", RELEASE_RELEASES_DIR, namelist[0]->d_name);
-        strcpy(root_dir, RELEASE_ROOT_DIR);
-        free(namelist[0]);
-        free(namelist);
+    if (release_search_path == NULL)
+        release_search_path = strdup(DEFAULT_RELEASE_ROOT_DIR);
 
-        find_sys_config();
-        find_vm_args();
-        find_boot_path();
-    } else {
-        warn("Found more than one release:");
-        int i;
-        for (i = 0; i < n; i++)
-            warn("         %s", namelist[i]->d_name);
-        fatal("Not sure which to run.");
+    // The user may specify several directories to be searched for
+    // releases. Pick the first one.
+    const char *search_path = strtok(release_search_path, ":");
+    while (search_path != NULL) {
+        char search_base_dir[PATH_MAX];
+        sprintf(search_base_dir, "%s/releases", search_path);
+
+        struct dirent **namelist;
+        int n = scandir(search_base_dir,
+                        &namelist,
+                        release_filter,
+                        NULL);
+        if (n <= 0) {
+            warn("No release found in %s.", search_base_dir);
+        } else if (n == 1) {
+            debug("Using release in %s.", search_base_dir);
+            sprintf(release_dir, "%s/%s", search_base_dir, namelist[0]->d_name);
+            strcpy(root_dir, search_path);
+            free(namelist[0]);
+            free(namelist);
+
+            find_sys_config();
+            find_vm_args();
+            find_boot_path();
+
+            return;
+        } else {
+            warn("Found more than one release in %s:", search_base_dir);
+            int i;
+            for (i = 0; i < n; i++)
+                warn("         %s", namelist[i]->d_name);
+            fatal("Not sure which to run.");
+        }
+
+        search_path = strtok(NULL, ":");
     }
+    *release_dir = '\0';
+    *sys_config = '\0';
+    *boot_path = '\0';
+
+    strcpy(root_dir, ERLANG_ROOT_DIR);
 }
 
 static void trim_whitespace(char *s)
@@ -564,7 +582,7 @@ static void unmount_all()
     }
     fclose(fp);
 
-    // For now, unmount everything with physical storage behind it for now
+    // For now, unmount everything with physical storage behind it.
     // TODO: iterate multiple times until everything unmounts?
     int num_mounts = i;
     for (i = 0; i < num_mounts; i++) {
@@ -761,7 +779,7 @@ int main(int argc, char *argv[])
     int hang_on_exit = 0;
     int opt;
 
-    while ((opt = getopt(merged_argc, merged_argv, "c:de:hs:tv")) != -1) {
+    while ((opt = getopt(merged_argc, merged_argv, "c:de:hr:s:tv")) != -1) {
         switch (opt) {
 	case 'c':
 	    controlling_terminal = strdup(optarg);
@@ -774,6 +792,9 @@ int main(int argc, char *argv[])
             break;
         case 'h':
             hang_on_exit = 1;
+            break;
+        case 'r':
+            release_search_path = strdup(optarg);
             break;
         case 's':
             alternate_exec = strdup(optarg);

@@ -60,6 +60,8 @@ The following lists the options:
     -c <tty[n]> Force the controlling terminal (ttyAMA0, tty1, etc.)
     -e <VAR=value;VAR2=Value2...> Set additional environment variables
     -h Hang the system if Erlang exits. The default is to reboot.
+    -r <path1[:path2...]> A colon-separated lists of paths to search for
+       Erlang releases. The default is /srv/erlang.
     -s <program and arguments> Run another program that starts Erlang up
     -t Print out when erlinit starts and when it launches Erlang (for
        benchmarking)
