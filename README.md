@@ -33,8 +33,7 @@ directory. A typical directory hierarchy would be:
 Currently, `erlinit` runs the Erlang VM found in `/usr/lib/erlang` so it is
 important that the release and the VM match versions. As would be expected,
 the `sys.config` and `vm.args` are used, so it is possible to configure
-the system via files in the release. `erlinit` does not introduce any
-new configuration files.
+the system via files in the release.
 
 ## Configuration and Command line options
 
