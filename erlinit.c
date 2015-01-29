@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2013-14 Frank Hunleth
+Copyright (c) 2013-15 Frank Hunleth
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -50,6 +50,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ERLANG_ROOT_DIR "/usr/lib/erlang"
 #define DEFAULT_RELEASE_ROOT_DIR "/srv/erlang"
 
+// This is the maximum number of mounted filesystems that
+// is expected in a running system. It is used on shutdown
+// when trying to unmount everything gracefully.
 #define MAX_MOUNTS 32
 
 #define MAX_ARGC 32
@@ -72,6 +75,7 @@ static char *controlling_terminal = NULL;
 static char *alternate_exec = NULL;
 static char *additional_env = NULL;
 static char *release_search_path = NULL;
+static char *extra_mounts = NULL;
 
 static void print_prefix()
 {
@@ -458,8 +462,49 @@ static void setup_networking()
     configure_hostname();
 }
 
+static unsigned long str_to_mountflags(char *s)
+{
+    unsigned long flags = 0;
+
+    // These names correspond to ones used by mount(8)
+    char *flag = strtok(s, ",");
+    while (flag) {
+        if (strcmp(flag, "dirsync") == 0)
+            flags |= MS_DIRSYNC;
+        else if (strcmp(flag, "mand") == 0)
+            flags |= MS_MANDLOCK;
+        else if (strcmp(flag, "noatime") == 0)
+            flags |= MS_NOATIME;
+        else if (strcmp(flag, "nodev") == 0)
+            flags |= MS_NODEV;
+        else if (strcmp(flag, "nodiratime") == 0)
+            flags |= MS_NODIRATIME;
+        else if (strcmp(flag, "noexec") == 0)
+            flags |= MS_NOEXEC;
+        else if (strcmp(flag, "nosuid") == 0)
+            flags |= MS_NOSUID;
+        else if (strcmp(flag, "ro") == 0)
+            flags |= MS_RDONLY;
+        else if (strcmp(flag, "relatime") == 0)
+            flags |= MS_RELATIME;
+        else if (strcmp(flag, "silent") == 0)
+            flags |= MS_SILENT;
+        else if (strcmp(flag, "strictatime") == 0)
+            flags |= MS_STRICTATIME;
+        else if (strcmp(flag, "sync") == 0)
+            flags |= MS_SYNCHRONOUS;
+        else
+            warn("Unrecognized filesystem mount flag: %s", flag);
+
+        flag = strtok(NULL, ",");
+    }
+    return flags;
+}
+
 static void setup_filesystems()
 {
+    // Debug mode is currently used for regression tests on a host. Since
+    // we can't mount anything in this environment, just return.
     if (debug_mode)
         return;
 
@@ -476,6 +521,37 @@ static void setup_filesystems()
         warn("Cannot create /dev/shm");
     if (mount("", "/dev/pts", "devpts", 0, NULL) < 0)
         warn("Cannot mount /dev/pts");
+
+    // Mount /tmp since it currently is challenging to do it at the
+    // right time in Erlang.
+    if (mount("", "/tmp", "tmpfs", 0, "size=10%") < 0)
+        warn("Could not mount tmpfs in /tmp: %s\n"
+              "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
+
+    // Mount any filesystems specified by the user. This is best effort.
+    // The user is required to figure out if anything went wrong in their
+    // applications. For example, the filesystem might not be formatted
+    // yet, and erlinit is not smart enough to figure that out.
+    //
+    // An example mount specification looks like:
+    //    /dev/mmcblk0p4:/mnt:vfat::utf8
+    if (extra_mounts) {
+        char *temp = extra_mounts;
+        const char *source = strsep(&temp, ":");
+        const char *target = strsep(&temp, ":");
+        const char *filesystemtype = strsep(&temp, ":");
+        char *mountflags = strsep(&temp, ":");
+        const char *data = strsep(&temp, ":");
+
+        if (source && target && filesystemtype && mountflags && data) {
+            unsigned long imountflags =
+                str_to_mountflags(mountflags);
+            if (mount(source, target, filesystemtype, imountflags, data) < 0)
+                warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
+        } else {
+            warn("Invalid parameter to -m. Expecting 5 colon-separated fields");
+        }
+    }
 }
 
 static void child()
@@ -779,7 +855,7 @@ int main(int argc, char *argv[])
     int hang_on_exit = 0;
     int opt;
 
-    while ((opt = getopt(merged_argc, merged_argv, "c:de:hr:s:tv")) != -1) {
+    while ((opt = getopt(merged_argc, merged_argv, "c:de:hm:r:s:tv")) != -1) {
         switch (opt) {
 	case 'c':
 	    controlling_terminal = strdup(optarg);
@@ -792,6 +868,9 @@ int main(int argc, char *argv[])
             break;
         case 'h':
             hang_on_exit = 1;
+            break;
+        case 'm':
+            extra_mounts = strdup(optarg);
             break;
         case 'r':
             release_search_path = strdup(optarg);
@@ -820,14 +899,6 @@ int main(int argc, char *argv[])
     int i;
     for (i = 0; i < merged_argc; i++)
 	debug("merged argv[%d]=%s", i, merged_argv[i]);
-
-    // Mount /tmp since it currently is challenging to do it at the
-    // right time in Erlang.
-    if (!debug_mode && mount("", "/tmp", "tmpfs", 0, "size=10%") < 0) {
-        warn("Could not mount tmpfs in /tmp: %s\n"
-              "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
-        return 0;
-    }
 
     // Do most of the work in a child process so that if it
     // crashes, we can handle the crash.

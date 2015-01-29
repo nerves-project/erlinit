@@ -59,6 +59,7 @@ The following lists the options:
     -c <tty[n]> Force the controlling terminal (ttyAMA0, tty1, etc.)
     -e <VAR=value;VAR2=Value2...> Set additional environment variables
     -h Hang the system if Erlang exits. The default is to reboot.
+    -m <dev:path:type:flags:options> Mount the specified path
     -r <path1[:path2...]> A colon-separated lists of paths to search for
        Erlang releases. The default is /srv/erlang.
     -s <program and arguments> Run another program that starts Erlang up
@@ -74,7 +75,7 @@ runtime. If applications need to write to disk, they can always mount a
 writable partition and have code that handles corruptions on it. Recovering from
 a corrupt root filesystem is harder. During development, though, working with a
 read-only root filesystem can be a pain so an alternative is to remount it
-read-write. Applications can do this, but a better approach is to update the
+read-write. Applications can do this, but another approach is to update the
 application to reference the files in development from /tmp or a writable
 partition. For example, the Erlang code search path can be updated at runtime to
 references new directories for code. The
@@ -93,3 +94,23 @@ to run `strace` on the initialization process. Be sure to add the strace program
 Sometimes you need to sift through the strace output to find the missing
 library or file that couldn't be loaded. When debugged, please consider
 contributing a fix back to help other `erlinit` users.
+
+## Filesystem mounting notes
+
+It is possible to mount filesystems before the Erlang VM is started. This is
+useful if the Erlang release is not on the root filesystem and to support
+logging to a writable filesystem. This mechanism is not intended to support
+all types of mounts as the error conditions and handling are usually better
+handled at the application level. Additionally, it is good practice to check
+that a filesystem has mounted successfully in an application just so that
+if an error occurred, the filesystem can be fixed or reformatted. Obviously,
+logging or loading an alternative Erlang release will not be available if
+this happens, but at least the system can recover for the next reboot.
+
+Typical mount commandline arguments look like:
+
+-m /dev/mmcblk0p4:/mnt:vfat::utf8
+
+This mounts /dev/mccblk0p4 as a vfat filesystem to the /mnt directory. No flags
+are passed, and the utf8 option is passed to the vfat driver. See mount(8) for
+options.
