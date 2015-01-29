@@ -12,7 +12,7 @@ Erlang/OTP release start script with some basic system initialization.
 A system should contain only one Erlang/OTP release under the `/srv/erlang`
 directory. A typical directory hierarchy would be:
 
-    /srv/erlang
+    /srv/erlang/my_app*
          ├── lib
          │   ├── my_app-0.0.1
          │   │   ├── ebin
@@ -29,6 +29,9 @@ directory. A typical directory hierarchy would be:
              │   ├── sys.config
              │   └── vm.args
              └── RELEASES
+
+In the above release hierarchy, the directory `my_app` at the base is
+optional. If there are multiple releases, the first one is used.
 
 Currently, `erlinit` runs the Erlang VM found in `/usr/lib/erlang` so it is
 important that the release and the VM match versions. As would be expected,

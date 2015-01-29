@@ -18,7 +18,7 @@ erlinit: merged argv[3]=LANG=en_US.UTF-8;LANGUAGE=en
 erlinit: set_ctty
 erlinit: find_erts_directory
 erlinit: find_release
-erlinit: No release found in /srv/erlang/releases.
+erlinit: No release found in /srv/erlang.
 erlinit: setup_environment
 erlinit: setup_networking
 erlinit: Env: 'HOME=/'

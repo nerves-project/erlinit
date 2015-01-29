@@ -27,7 +27,7 @@ erlinit: merged argv[3]=/usr/bin/strace -f
 erlinit: set_ctty
 erlinit: find_erts_directory
 erlinit: find_release
-erlinit: No release found in /srv/erlang/releases.
+erlinit: No release found in /srv/erlang.
 erlinit: setup_environment
 erlinit: setup_networking
 erlinit: Env: 'HOME=/'

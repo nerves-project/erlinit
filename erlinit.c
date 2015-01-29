@@ -66,8 +66,8 @@ static int regression_test_mode = 0;
 static int desired_reboot_cmd = -1;
 
 static char erts_dir[PATH_MAX];
-static char release_dir[PATH_MAX];
-static char root_dir[PATH_MAX];
+static char release_info_dir[PATH_MAX];
+static char release_root_dir[PATH_MAX];
 static char boot_path[PATH_MAX];
 static char sys_config[PATH_MAX];
 static char vmargs_path[PATH_MAX];
@@ -222,16 +222,10 @@ static int file_exists(const char *path)
     return stat(path, &sb) == 0;
 }
 
-static int release_filter(const struct dirent *d)
+static int dotfile_filter(const struct dirent *d)
 {
-    // Releases are directories usually with names of
-    // the form NAME-VERSION or VERSION.
-    //
-    // Sadly, it looks like the robust way of doing this
-    // is by using process of elimination.
     return strcmp(d->d_name, ".") != 0 &&
-           strcmp(d->d_name, "..") != 0 &&
-           strcmp(d->d_name, "RELEASES") != 0;
+           strcmp(d->d_name, "..") != 0;
 }
 
 static int bootfile_filter(const struct dirent *d)
@@ -243,7 +237,7 @@ static int bootfile_filter(const struct dirent *d)
 static void find_sys_config()
 {
     debug("find_sys_config");
-    sprintf(sys_config, "%s/sys.config", release_dir);
+    sprintf(sys_config, "%s/sys.config", release_info_dir);
     if (!file_exists(sys_config)) {
         warn("%s not found?", sys_config);
         *sys_config = '\0';
@@ -253,7 +247,7 @@ static void find_sys_config()
 static void find_vm_args()
 {
     debug("find_vm_args");
-    sprintf(vmargs_path, "%s/vm.args", release_dir);
+    sprintf(vmargs_path, "%s/vm.args", release_info_dir);
     if (!file_exists(vmargs_path)) {
         warn("%s not found?", vmargs_path);
         *vmargs_path = '\0';
@@ -264,14 +258,14 @@ static void find_boot_path()
 {
     debug("find_boot_path");
     struct dirent **namelist;
-    int n = scandir(release_dir,
+    int n = scandir(release_info_dir,
                     &namelist,
                     bootfile_filter,
                     NULL);
     if (n <= 0) {
-        fatal("No boot file found in %s.", release_dir);
+        fatal("No boot file found in %s.", release_info_dir);
     } else if (n == 1) {
-        sprintf(boot_path, "%s/%s", release_dir, namelist[0]->d_name);
+        sprintf(boot_path, "%s/%s", release_info_dir, namelist[0]->d_name);
 
         // Strip off the .boot since that's what erl wants.
         char *dot = strrchr(boot_path, '.');
@@ -288,6 +282,98 @@ static void find_boot_path()
     }
 }
 
+static int is_directory(const char *path)
+{
+    struct stat sb;
+    return stat(path, &sb) == 0 &&
+        S_ISDIR(sb.st_mode);
+}
+
+static int find_release_info_dir(const char *releases_dir,
+                                 char *info_dir)
+{
+    struct dirent **namelist;
+    int n = scandir(releases_dir,
+                    &namelist,
+                    dotfile_filter,
+                    NULL);
+    int i;
+    int success = 0;
+    for (i = 0; i < n; i++) {
+        char dirpath[PATH_MAX];
+        sprintf(dirpath, "%s/%s", releases_dir, namelist[i]->d_name);
+
+        // Pick the first directory. There should only be one directory
+        // anyway.
+        if (is_directory(dirpath)) {
+            strcpy(info_dir, dirpath);
+            success = 1;
+            break;
+        }
+    }
+
+    if (n >= 0) {
+        for (i = 0; i < n; i++)
+            free(namelist[i]);
+        free(namelist);
+    }
+
+    return success;
+}
+
+static int find_release_dirs(const char *base,
+                             int depth,
+                             char *root_dir,
+                             char *info_dir)
+{
+    // The "releases" directory could either be in the current folder
+    // or one directory immediately below. For example,
+    //
+    // <base/releases/<release_version>
+    //
+    // -or-
+    //
+    // <base>/<release_name>/releases/<release_version>
+    //
+    // Check for both. On return, root_dir is set to the path containing the
+    // releases directory, and info_dir is set to one of the paths above.
+    int success = 0;
+    struct dirent **namelist;
+    int n = scandir(base,
+                    &namelist,
+                    dotfile_filter,
+                    NULL);
+    int i;
+    for (i = 0; i < n; i++) {
+        char dirpath[PATH_MAX];
+        sprintf(dirpath, "%s/%s", base, namelist[i]->d_name);
+
+        if (!is_directory(dirpath))
+            continue;
+
+        if (strcmp(namelist[i]->d_name, "releases") == 0 &&
+                find_release_info_dir(dirpath, info_dir)) {
+            strcpy(root_dir, base);
+            success = 1;
+            break;
+        }
+
+        // Recurse to the next directory down if allowed.
+        if (depth && find_release_dirs(dirpath, depth - 1, root_dir, info_dir)) {
+            success = 1;
+            break;
+        }
+    }
+
+    if (n >= 0) {
+        for (i = 0; i < n; i++)
+            free(namelist[i]);
+        free(namelist);
+    }
+
+    return success;
+}
+
 static void find_release()
 {
     debug("find_release");
@@ -299,28 +385,8 @@ static void find_release()
     // releases. Pick the first one.
     const char *search_path = strtok(release_search_path, ":");
     while (search_path != NULL) {
-        char search_base_dir[PATH_MAX];
-        sprintf(search_base_dir, "%s/releases", search_path);
-
-        struct dirent **namelist;
-        int n = scandir(search_base_dir,
-                        &namelist,
-                        release_filter,
-                        NULL);
-        int i;
-        for (i = 0; i < n; i++) {
-            sprintf(release_dir, "%s/%s", search_base_dir, namelist[0]->d_name);
-
-            // Check that the path goes to a directory
-            struct stat sb;
-            if (stat(release_dir, &sb) < 0 ||
-                !S_ISDIR(sb.st_mode))
-                continue;
-
-            debug("Using release in %s.", release_dir);
-            strcpy(root_dir, search_path);
-            free(namelist[0]);
-            free(namelist);
+        if (find_release_dirs(search_path, 1, release_root_dir, release_info_dir)) {
+            debug("Using release in %s.", release_info_dir);
 
             find_sys_config();
             find_vm_args();
@@ -329,14 +395,14 @@ static void find_release()
             return;
         }
 
-        warn("No release found in %s.", search_base_dir);
+        warn("No release found in %s.", search_path);
         search_path = strtok(NULL, ":");
     }
-    *release_dir = '\0';
+    *release_info_dir = '\0';
     *sys_config = '\0';
     *boot_path = '\0';
 
-    strcpy(root_dir, ERLANG_ROOT_DIR);
+    strcpy(release_root_dir, ERLANG_ROOT_DIR);
 }
 
 static void trim_whitespace(char *s)
@@ -390,7 +456,7 @@ static void setup_environment()
 
     // ROOTDIR points to the release unless it wasn't found.
     char envvar[PATH_MAX];
-    sprintf(envvar, "ROOTDIR=%s", root_dir);
+    sprintf(envvar, "ROOTDIR=%s", release_root_dir);
     putenv(strdup(envvar));
 
     // BINDIR points to the erts bin directory.
@@ -571,7 +637,7 @@ static void child()
     // Set up the minimum networking we need for Erlang.
     setup_networking();
 
-    chdir(root_dir);
+    chdir(release_root_dir);
 
     // Start Erlang up
     char erlexec_path[PATH_MAX];
