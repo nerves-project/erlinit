@@ -62,7 +62,7 @@ static char *merged_argv[MAX_ARGC];
 
 static int verbose = 0;
 static int print_timing = 0;
-static int debug_mode = 0;
+static int regression_test_mode = 0;
 static int desired_reboot_cmd = -1;
 
 static char erts_dir[PATH_MAX];
@@ -121,7 +121,7 @@ static void fatal(const char *fmt, ...)
 
     fprintf(stderr, "\n\nCANNOT CONTINUE.\n");
 
-    if (!debug_mode)
+    if (!regression_test_mode)
         sleep(9999);
 
     exit(1);
@@ -149,7 +149,7 @@ static int readsysfs(const char *path, char *buffer, int maxlen)
 static void set_ctty()
 {
     debug("set_ctty");
-    if (debug_mode)
+    if (regression_test_mode)
         return;
 
     // Set up a controlling terminal for Erlang so that
@@ -454,7 +454,7 @@ cleanup:
 static void setup_networking()
 {
     debug("setup_networking");
-    if (debug_mode)
+    if (regression_test_mode)
         return;
 
     // Bring up the loopback interface (needed if the erlang distribute protocol code gets run)
@@ -503,9 +503,8 @@ static unsigned long str_to_mountflags(char *s)
 
 static void setup_filesystems()
 {
-    // Debug mode is currently used for regression tests on a host. Since
-    // we can't mount anything in this environment, just return.
-    if (debug_mode)
+    // Since we can't mount anything in this environment, just return.
+    if (regression_test_mode)
         return;
 
     // Mount and init the virtual file systems.
@@ -632,7 +631,7 @@ static void child()
 static void unmount_all()
 {
     debug("unmount_all");
-    if (debug_mode)
+    if (regression_test_mode)
         return;
 
     FILE *fp = fopen("/proc/mounts", "r");
@@ -726,7 +725,7 @@ void signal_handler(int signum)
 static void kill_all()
 {
     debug("kill_all");
-    if (debug_mode)
+    if (regression_test_mode)
         return;
 
     // Kill processes the nice way
@@ -849,20 +848,22 @@ void merge_config(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+    // erlinit should be pid 1. Anything else is not expected, so run in
+    // regression test mode.
+    if (getpid() != 1)
+        regression_test_mode = 1;
+
     // Merge the config file and the command line arguments
     merge_config(argc, argv);
 
     int hang_on_exit = 0;
     int opt;
 
-    while ((opt = getopt(merged_argc, merged_argv, "c:de:hm:r:s:tv")) != -1) {
+    while ((opt = getopt(merged_argc, merged_argv, "c:e:hm:r:s:tv")) != -1) {
         switch (opt) {
 	case 'c':
 	    controlling_terminal = strdup(optarg);
 	    break;
-        case 'd':
-            debug_mode = 1;
-            break;
         case 'e':
             additional_env = strdup(optarg);
             break;
