@@ -175,7 +175,7 @@ static void set_ctty()
     }
 
     int fd = open(ttypath, O_RDWR);
-    if (fd > 0) {
+    if (fd >= 0) {
         dup2(fd, 0);
         dup2(fd, 1);
         dup2(fd, 2);
@@ -480,6 +480,11 @@ static void enable_loopback()
 {
     // Set the loopback interface to up
     int fd = socket(PF_INET, SOCK_DGRAM, 0);
+    if (fd < 0) {
+        warn("socket(PF_INET) failed");
+        return;
+    }
+
     struct ifreq ifr;
     memset(&ifr, 0, sizeof(ifr));
 
@@ -646,8 +651,10 @@ static void child()
 
     char *exec_argv[32];
     int arg = 0;
-    if (alternate_exec) {
-        exec_path = strtok(alternate_exec, " ");
+    // If there's an alternate exec and it's set properly, then use it.
+    char *alternate_exec_path = strtok(alternate_exec, " ");
+    if (alternate_exec && alternate_exec_path && alternate_exec_path[0] != '\0') {
+        exec_path = alternate_exec_path;
         exec_argv[arg++] = exec_path;
 
         while ((exec_argv[arg] = strtok(NULL, " ")) != NULL)
@@ -717,7 +724,7 @@ static void unmount_all()
     int passno;
     int i = 0;
     while (i < MAX_MOUNTS &&
-           fscanf(fp, "%s %s %s %s %d %d", mounts[i].source, mounts[i].target, mounts[i].fstype, options, &freq, &passno) == 6) {
+           fscanf(fp, "%255s %255s %31s %127s %d %d", mounts[i].source, mounts[i].target, mounts[i].fstype, options, &freq, &passno) == 6) {
         debug("%s->%s\n", mounts[i].source, mounts[i].target);
         i++;
     }
@@ -729,6 +736,7 @@ static void unmount_all()
     for (i = 0; i < num_mounts; i++) {
         if (starts_with(mounts[i].source, "/dev") &&
             strcmp(mounts[i].source, "/dev/root") != 0) {
+            debug("unmounting %s...", mounts[i].target);
             if (umount(mounts[i].target) < 0)
                 warn("umount %s failed: %s", mounts[i].target, strerror(errno));
         }

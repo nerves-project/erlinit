@@ -3,9 +3,24 @@ language: c
 compiler:
     - gcc
 
+env:
+      global:
+             # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+             #   via the "travis encrypt" command using the project repo's public key
+             - secure: "JOp56bW6mmO37OVczdQWiCXQPwH3ZTu3ahwHRW2P1sZG8+Un2+vJgICj0sRBdBhF750SOFp+7piVFQIoAUE7bLffhRTS6eTKarOAx94FdHd3FgNZTQmXjN/RmglbBDj8B0Dm03fZQ4qSOFhPucISPBnHuAq3T08aNMFOd4vkyZM="
 before_install:
     - sudo apt-get update -qq
     - sudo apt-get install -qq fakechroot
 
 script:
     - make && make test
+
+addons:
+      coverity_scan:
+             project:
+                name: "nerves-project/erlinit"
+                description: "Replacement for /sbin/init that launches an Erlang/OTP Release"
+             notification_email: fhunleth@troodon-software.com
+             build_command: "make"
+             branch_pattern: coverity_scan
+
