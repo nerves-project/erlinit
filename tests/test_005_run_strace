@@ -42,6 +42,7 @@ erlinit: Arg: '-f'
 erlinit: Arg: '/usr/lib/erlang/erts-6.0/bin/erlexec'
 erlinit: Launching erl...
 Hello from strace
+erlinit: Erlang VM exited
 erlinit: kill_all
 erlinit: unmount_all
 EOF

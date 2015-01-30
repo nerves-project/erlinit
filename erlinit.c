@@ -572,13 +572,12 @@ static unsigned long str_to_mountflags(char *s)
     return flags;
 }
 
-static void setup_filesystems()
+static void setup_pseudo_filesystems()
 {
     // Since we can't mount anything in this environment, just return.
     if (regression_test_mode)
         return;
 
-    // Mount and init the virtual file systems.
     if (mount("", "/proc", "proc", 0, NULL) < 0)
         warn("Cannot mount /proc");
     if (mount("", "/sys", "sysfs", 0, NULL) < 0)
@@ -591,6 +590,13 @@ static void setup_filesystems()
         warn("Cannot create /dev/shm");
     if (mount("", "/dev/pts", "devpts", 0, NULL) < 0)
         warn("Cannot mount /dev/pts");
+}
+
+static void setup_filesystems()
+{
+    // Since we can't mount anything in this environment, just return.
+    if (regression_test_mode)
+        return;
 
     // Mount /tmp since it currently is challenging to do it at the
     // right time in Erlang.
@@ -627,9 +633,6 @@ static void setup_filesystems()
 static void child()
 {
     setup_filesystems();
-
-    // Fix the terminal settings so that CTRL keys work.
-    set_ctty();
 
     // Locate everything needed to configure the environment
     // and pass to erlexec.
@@ -724,8 +727,8 @@ static void unmount_all()
     int passno;
     int i = 0;
     while (i < MAX_MOUNTS &&
-           fscanf(fp, "%255s %255s %31s %127s %d %d", mounts[i].source, mounts[i].target, mounts[i].fstype, options, &freq, &passno) == 6) {
-        debug("%s->%s\n", mounts[i].source, mounts[i].target);
+           fscanf(fp, "%255s %255s %31s %127s %d %d", mounts[i].source, mounts[i].target, mounts[i].fstype, options, &freq, &passno) >= 3) {
+        debug("Found %s->%s", mounts[i].source, mounts[i].target);
         i++;
     }
     fclose(fp);
@@ -975,6 +978,13 @@ int main(int argc, char *argv[])
     for (i = 0; i < merged_argc; i++)
 	debug("merged argv[%d]=%s", i, merged_argv[i]);
 
+    // Mount /dev, /proc and /sys
+    setup_pseudo_filesystems();
+
+    // Fix the terminal settings so output goes to the right
+    // terminal and the CTRL keys work in the shell..
+    set_ctty();
+
     // Do most of the work in a child process so that if it
     // crashes, we can handle the crash.
     pid_t pid = fork();
@@ -988,20 +998,16 @@ int main(int argc, char *argv[])
 
     // If Erlang exits, then something went wrong, so handle it.
     if (waitpid(pid, 0, 0) < 0) {
+        debug("signal or error terminated waitpid. clean up");
+
         // If waitpid fails and it's not because of a signal, print a warning.
         if (desired_reboot_cmd < 0) {
             warn("unexpected error from waitpid(): %s", strerror(errno));
             desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
         }
     } else {
-        // This is an exit from Erlang.
-        if (hang_on_exit) {
-            sync();
-            // Sometimes Erlang exits on initialization. Hanging on exit
-            // makes it easier to debug these cases since messages don't
-            // keep scrolling on the screen.
-            fatal("unexpected exit. Hanging as requested...");
-        }
+        debug("Erlang VM exited");
+
         desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
     }
 
@@ -1013,6 +1019,14 @@ int main(int argc, char *argv[])
 
     // Sync just to be safe.
     sync();
+
+    // This is an exit from Erlang.
+    if (hang_on_exit) {
+        // Sometimes Erlang exits on initialization. Hanging on exit
+        // makes it easier to debug these cases since messages don't
+        // keep scrolling on the screen.
+        fatal("Hanging as requested...");
+    }
 
     // Reboot/poweroff/halt
     reboot(desired_reboot_cmd);

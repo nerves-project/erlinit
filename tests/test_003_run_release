@@ -44,6 +44,7 @@ erlinit: Arg: '-args_file'
 erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
 erlinit: Launching erl...
 Hello from erlexec
+erlinit: Erlang VM exited
 erlinit: kill_all
 erlinit: unmount_all
 EOF

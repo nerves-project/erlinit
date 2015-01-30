@@ -33,6 +33,7 @@ erlinit: Env: 'LANGUAGE=en'
 erlinit: Arg: 'erlexec'
 erlinit: Launching erl...
 Hello from erlexec
+erlinit: Erlang VM exited
 erlinit: kill_all
 erlinit: unmount_all
 EOF
