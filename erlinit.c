@@ -728,21 +728,23 @@ static void unmount_all()
     int i = 0;
     while (i < MAX_MOUNTS &&
            fscanf(fp, "%255s %255s %31s %127s %d %d", mounts[i].source, mounts[i].target, mounts[i].fstype, options, &freq, &passno) >= 3) {
-        debug("Found %s->%s", mounts[i].source, mounts[i].target);
         i++;
     }
     fclose(fp);
 
-    // For now, unmount everything with physical storage behind it.
-    // TODO: iterate multiple times until everything unmounts?
+    // Unmount as much as we can in reverse order.
     int num_mounts = i;
-    for (i = 0; i < num_mounts; i++) {
-        if (starts_with(mounts[i].source, "/dev") &&
-            strcmp(mounts[i].source, "/dev/root") != 0) {
-            debug("unmounting %s...", mounts[i].target);
-            if (umount(mounts[i].target) < 0)
-                warn("umount %s failed: %s", mounts[i].target, strerror(errno));
-        }
+    for (i = num_mounts - 1; i >= 0; i--) {
+        // Whitelist directories that don't unmount or
+        // remount immediately (rootfs)
+        if (strcmp(mounts[i].source, "devtmpfs") == 0 ||
+            strcmp(mounts[i].source, "/dev/root") == 0 ||
+            strcmp(mounts[i].source, "rootfs") == 0)
+            continue;
+
+        debug("unmounting %s(%s)...", mounts[i].source, mounts[i].target);
+        if (umount(mounts[i].target) < 0 && umount(mounts[i].source) < 0)
+            warn("umount %s(%s) failed: %s", mounts[i].source, mounts[i].target, strerror(errno));
     }
 }
 
