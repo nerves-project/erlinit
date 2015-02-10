@@ -445,7 +445,7 @@ static void setup_environment()
 {
     debug("setup_environment");
     // Set up the environment for running erlang.
-    putenv("HOME=/");
+    putenv("HOME=/root");
 
     // PATH appears to only be needed for user convenience when running os:cmd/1
     // It may be possible to remove in the future.

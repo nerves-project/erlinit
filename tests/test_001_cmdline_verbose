@@ -19,7 +19,7 @@ erlinit: find_release
 erlinit: No release found in /srv/erlang.
 erlinit: setup_environment
 erlinit: setup_networking
-erlinit: Env: 'HOME=/'
+erlinit: Env: 'HOME=/root'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
 erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
