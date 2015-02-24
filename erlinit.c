@@ -92,7 +92,7 @@ static void debug(const char *fmt, ...)
         vfprintf(stderr, fmt, ap);
         va_end(ap);
 
-        fprintf(stderr, "\n");
+        fprintf(stderr, "\r\n");
     }
 }
 
@@ -105,12 +105,12 @@ static void warn(const char *fmt, ...)
     vfprintf(stderr, fmt, ap);
     va_end(ap);
 
-    fprintf(stderr, "\n");
+    fprintf(stderr, "\r\n");
 }
 
 static void fatal(const char *fmt, ...)
 {
-    fprintf(stderr, "\n\nFATAL ERROR:\n");
+    fprintf(stderr, "\r\n\r\nFATAL ERROR:\r\n");
 
     print_prefix();
 
@@ -119,7 +119,7 @@ static void fatal(const char *fmt, ...)
     vfprintf(stderr, fmt, ap);
     va_end(ap);
 
-    fprintf(stderr, "\n\nCANNOT CONTINUE.\n");
+    fprintf(stderr, "\r\n\r\nCANNOT CONTINUE.\r\n");
 
     if (!regression_test_mode)
         sleep(9999);
@@ -277,7 +277,7 @@ static void find_boot_path()
         warn("Found more than one boot file:");
         int i;
         for (i = 0; i < n; i++)
-            warn("  %s\n", namelist[i]->d_name);
+            warn("  %s", namelist[i]->d_name);
         fatal("Not sure which one to use.");
     }
 }
@@ -601,7 +601,7 @@ static void setup_filesystems()
     // Mount /tmp since it currently is challenging to do it at the
     // right time in Erlang.
     if (mount("", "/tmp", "tmpfs", 0, "size=10%") < 0)
-        warn("Could not mount tmpfs in /tmp: %s\n"
+        warn("Could not mount tmpfs in /tmp: %s\r\n"
               "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
 
     // Mount any filesystems specified by the user. This is best effort.

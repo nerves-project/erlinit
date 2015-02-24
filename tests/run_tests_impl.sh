@@ -78,7 +78,7 @@ run() {
         > $RESULTS
 
     # check results
-    $DIFF $RESULTS $EXPECTED
+    $DIFF -w $RESULTS $EXPECTED
     if [ $? != 0 ]; then
         $ECHO Test $TEST failed!
         exit 1
