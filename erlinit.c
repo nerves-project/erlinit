@@ -262,24 +262,23 @@ static void find_boot_path()
                     &namelist,
                     bootfile_filter,
                     NULL);
-    if (n <= 0) {
+    if (n <= 0)
         fatal("No boot file found in %s.", release_info_dir);
-    } else if (n == 1) {
-        sprintf(boot_path, "%s/%s", release_info_dir, namelist[0]->d_name);
 
-        // Strip off the .boot since that's what erl wants.
-        char *dot = strrchr(boot_path, '.');
-        *dot = '\0';
+    if (n > 1)
+        warn("Found more than one boot file. Using %s.", namelist[0]->d_name);
 
-        free(namelist[0]);
-        free(namelist);
-    } else {
-        warn("Found more than one boot file:");
-        int i;
-        for (i = 0; i < n; i++)
-            warn("  %s", namelist[i]->d_name);
-        fatal("Not sure which one to use.");
-    }
+    // Use the first
+    sprintf(boot_path, "%s/%s", release_info_dir, namelist[0]->d_name);
+
+    // Strip off the .boot since that's what erl wants.
+    char *dot = strrchr(boot_path, '.');
+    *dot = '\0';
+
+    // Free everything
+    while (--n >= 0)
+        free(namelist[n]);
+    free(namelist);
 }
 
 static int is_directory(const char *path)
