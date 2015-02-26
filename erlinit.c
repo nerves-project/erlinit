@@ -587,7 +587,7 @@ static void setup_pseudo_filesystems()
         warn("Cannot create /dev/pts");
     if (mkdir("/dev/shm", 0755) < 0)
         warn("Cannot create /dev/shm");
-    if (mount("", "/dev/pts", "devpts", 0, NULL) < 0)
+    if (mount("", "/dev/pts", "devpts", 0, "gid=5,mode=620") < 0)
         warn("Cannot mount /dev/pts");
 }
 
@@ -597,11 +597,14 @@ static void setup_filesystems()
     if (regression_test_mode)
         return;
 
-    // Mount /tmp since it currently is challenging to do it at the
-    // right time in Erlang.
-    if (mount("", "/tmp", "tmpfs", 0, "size=10%") < 0)
+    // Mount /tmp and /run since they're almost always needed and it's
+    // not easy to do it at the right time in Erlang.
+    if (mount("", "/tmp", "tmpfs", 0, "mode=1777,size=10%") < 0)
         warn("Could not mount tmpfs in /tmp: %s\r\n"
               "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
+
+    if (mount("", "/run", "tmpfs", MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
+        warn("Could not mount tmpfs in /run: %s", strerror(errno));
 
     // Mount any filesystems specified by the user. This is best effort.
     // The user is required to figure out if anything went wrong in their
