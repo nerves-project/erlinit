@@ -1001,6 +1001,7 @@ int main(int argc, char *argv[])
     register_signal_handlers();
 
     // If Erlang exits, then something went wrong, so handle it.
+    int is_intentional_exit = 0;
     if (waitpid(pid, 0, 0) < 0) {
         debug("signal or error terminated waitpid. clean up");
 
@@ -1008,6 +1009,10 @@ int main(int argc, char *argv[])
         if (desired_reboot_cmd < 0) {
             warn("unexpected error from waitpid(): %s", strerror(errno));
             desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
+        } else {
+            // A signal is sent from commands like poweroff, reboot, and halt
+            // This is usually intentional.
+            is_intentional_exit = 1;
         }
     } else {
         debug("Erlang VM exited");
@@ -1024,12 +1029,12 @@ int main(int argc, char *argv[])
     // Sync just to be safe.
     sync();
 
-    // This is an exit from Erlang.
-    if (hang_on_exit) {
+    // See if the user wants us to hang on "unintentional" exit
+    if (hang_on_exit && !is_intentional_exit) {
         // Sometimes Erlang exits on initialization. Hanging on exit
         // makes it easier to debug these cases since messages don't
         // keep scrolling on the screen.
-        fatal("Hanging as requested...");
+        fatal("Hanging as requested by the erlinit configuration...");
     }
 
     // Reboot/poweroff/halt
