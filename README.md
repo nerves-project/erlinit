@@ -60,9 +60,13 @@ For example, the following is a valid `/etc/erlinit.config`:
 The following lists the options:
 
     -c <tty[n]> Force the controlling terminal (ttyAMA0, tty1, etc.)
+    -d <program and arguments> Run the specified program to get a unique
+       id for the board. This is useful with -n
     -e <VAR=value;VAR2=Value2...> Set additional environment variables
     -h Hang the system if Erlang exits. The default is to reboot.
     -m <dev:path:type:flags:options> Mount the specified path
+    -n <pattern> Specify a hostname for the system. The pattern is a printf(3)
+       pattern. It is passed a unique ID for the board. E.g., "nerves-%.4s"
     -r <path1[:path2...]> A colon-separated lists of paths to search for
        Erlang releases. The default is /srv/erlang.
     -s <program and arguments> Run another program that starts Erlang up
@@ -112,8 +116,33 @@ this happens, but at least the system can recover for the next reboot.
 
 Typical mount commandline arguments look like:
 
--m /dev/mmcblk0p4:/mnt:vfat::utf8
+    -m /dev/mmcblk0p4:/mnt:vfat::utf8
 
 This mounts /dev/mccblk0p4 as a vfat filesystem to the /mnt directory. No flags
 are passed, and the utf8 option is passed to the vfat driver. See mount(8) for
 options.
+
+# Hostnames
+
+`erlinit` can set the hostname of the system so that it is available when Erlang
+starts up. The hostname can be hardcoded in the `/etc/hostname` file or it can
+be set by parameters to `erlinit`. Additionally, it's possible to specify a part
+of the name to be based on a unique ID or other information present on the file
+system. The `-n` argument is used to specify the hostname string. It is a
+printf(3) formatted string that is passed a string argument. The string argument
+is found by running the command specified by `-d`. For example, if a command is
+available the prints a unique identifier to stdout, it can be used to define the
+hostname:
+
+    -d "getmyid -args" -n erl-%.4s
+
+If the `getmyid` program returns `012345`, then the hostname would be
+`erl-0123`.
+
+Another use would be for the program specified by `-d` to just return the
+hostname. The configuration would look like:
+
+    -d "getmyhostname -args" -n %s
+
+In theory, the `getmyhostname` program could read an EEPROM or some file on a
+writable partition to return the hostname.

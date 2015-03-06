@@ -73,6 +73,8 @@ static char sys_config[PATH_MAX];
 static char vmargs_path[PATH_MAX];
 static char *controlling_terminal = NULL;
 static char *alternate_exec = NULL;
+static char *uniqueid_exec = NULL;
+static char *hostname_pattern = NULL;
 static char *additional_env = NULL;
 static char *release_search_path = NULL;
 static char *extra_mounts = NULL;
@@ -182,6 +184,69 @@ static void set_ctty()
         close(fd);
     } else {
         warn("error setting controlling terminal: %s", ttypath);
+    }
+}
+
+int system_cmd(const char *cmd, char *output_buffer, int length)
+{
+    debug("system_cmd '%s'", cmd);
+    int pipefd[2];
+    if (pipe(pipefd) < 0) {
+        warn("pipe");
+        return -1;
+    }
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        // child
+        int devnull = open("/dev/null", O_RDWR);
+        if (devnull < 0) {
+            warn("Couldn't open /dev/null");
+            exit(EXIT_FAILURE);
+        }
+
+        close(pipefd[0]); // no reads from the pipe
+        close(STDIN_FILENO);
+        close(STDOUT_FILENO);
+        if (dup2(devnull, STDIN_FILENO) < 0)
+            warn("dup2 devnull");
+        if (dup2(pipefd[1], STDOUT_FILENO) < 0)
+            warn("dup2 pipe");
+        close(devnull);
+
+        char *cmd_copy = strdup(cmd);
+        char *exec_path = strtok(cmd_copy, " ");
+        char *exec_argv[16];
+        int arg = 0;
+
+        exec_argv[arg++] = exec_path;
+        while ((exec_argv[arg] = strtok(NULL, " ")) != NULL)
+            arg++;
+        exec_argv[arg] = 0;
+        execvp(exec_path, exec_argv);
+
+        // Not supposed to reach here.
+        warn("execvp '%s' failed", cmd);
+        exit(EXIT_FAILURE);
+    } else {
+        // parent
+        close(pipefd[1]); // No writes to the pipe
+
+        length--; // Save room for a '\0'
+        int index = 0;
+        int amt;
+        while (index != length &&
+               (amt = read(pipefd[0], &output_buffer[index], length - index)) > 0)
+            index += amt;
+        output_buffer[index] = '\0';
+        close(pipefd[0]);
+
+        int status;
+        if (waitpid(pid, &status, 0) != pid) {
+            warn("waitpid");
+            return -1;
+        }
+        return status;
     }
 }
 
@@ -422,22 +487,33 @@ static void trim_whitespace(char *s)
 static void configure_hostname()
 {
     debug("configure_hostname");
-    FILE *fp = fopen("/etc/hostname", "r");
-    if (!fp) {
-        warn("/etc/hostname not found");
-        return;
+    char hostname[128] = "\0";
+
+    if (hostname_pattern) {
+        // Set the hostname based on a pattern
+        char unique_id[64] = "xxxxxxxx";
+        if (uniqueid_exec)
+            system_cmd(uniqueid_exec, unique_id, sizeof(unique_id));
+
+        sprintf(hostname, hostname_pattern, unique_id);
+    } else {
+        // Set the hostname from /etc/hostname
+        FILE *fp = fopen("/etc/hostname", "r");
+        if (!fp) {
+            warn("/etc/hostname not found");
+            return;
+        }
+
+        // The hostname should be the first line of the file
+        if (fgets(hostname, sizeof(hostname), fp))
+            trim_whitespace(hostname);
+        fclose(fp);
     }
 
-    char line[128];
-    if (fgets(line, sizeof(line), fp)) {
-        trim_whitespace(line);
-
-        if (*line == 0)
-            warn("Empty hostname");
-        else if (sethostname(line, strlen(line)) < 0)
-            warn("Error setting hostname: %s", strerror(errno));
-    }
-    fclose(fp);
+    if (*hostname == '\0')
+        warn("Empty hostname");
+    else if (sethostname(hostname, strlen(hostname)) < 0)
+        warn("Error setting hostname: %s", strerror(errno));
 }
 
 static void setup_environment()
@@ -940,11 +1016,14 @@ int main(int argc, char *argv[])
     int hang_on_exit = 0;
     int opt;
 
-    while ((opt = getopt(merged_argc, merged_argv, "c:e:hm:r:s:tv")) != -1) {
+    while ((opt = getopt(merged_argc, merged_argv, "c:d:e:hm:n:r:s:tv")) != -1) {
         switch (opt) {
 	case 'c':
 	    controlling_terminal = strdup(optarg);
 	    break;
+        case 'd':
+            uniqueid_exec = strdup(optarg);
+            break;
         case 'e':
             additional_env = strdup(optarg);
             break;
@@ -953,6 +1032,9 @@ int main(int argc, char *argv[])
             break;
         case 'm':
             extra_mounts = strdup(optarg);
+            break;
+        case 'n':
+            hostname_pattern = strdup(optarg);
             break;
         case 'r':
             release_search_path = strdup(optarg);
