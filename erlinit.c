@@ -57,6 +57,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define MAX_ARGC 32
 
+// PATH_MAX wasn't in the musl include files, so rather
+// than pulling an arbitrary number in from linux/limits.h,
+// just define to something that should be trivially safe
+// for erlinit use.
+#define ERLINIT_PATH_MAX 1024
+
 static int merged_argc;
 static char *merged_argv[MAX_ARGC];
 
@@ -65,12 +71,12 @@ static int print_timing = 0;
 static int regression_test_mode = 0;
 static int desired_reboot_cmd = -1;
 
-static char erts_dir[PATH_MAX];
-static char release_info_dir[PATH_MAX];
-static char release_root_dir[PATH_MAX];
-static char boot_path[PATH_MAX];
-static char sys_config[PATH_MAX];
-static char vmargs_path[PATH_MAX];
+static char erts_dir[ERLINIT_PATH_MAX];
+static char release_info_dir[ERLINIT_PATH_MAX];
+static char release_root_dir[ERLINIT_PATH_MAX];
+static char boot_path[ERLINIT_PATH_MAX];
+static char sys_config[ERLINIT_PATH_MAX];
+static char vmargs_path[ERLINIT_PATH_MAX];
 static char *controlling_terminal = NULL;
 static char *alternate_exec = NULL;
 static char *uniqueid_exec = NULL;
@@ -364,7 +370,7 @@ static int find_release_info_dir(const char *releases_dir,
     int i;
     int success = 0;
     for (i = 0; i < n; i++) {
-        char dirpath[PATH_MAX];
+        char dirpath[ERLINIT_PATH_MAX];
         sprintf(dirpath, "%s/%s", releases_dir, namelist[i]->d_name);
 
         // Pick the first directory. There should only be one directory
@@ -409,7 +415,7 @@ static int find_release_dirs(const char *base,
                     NULL);
     int i;
     for (i = 0; i < n; i++) {
-        char dirpath[PATH_MAX];
+        char dirpath[ERLINIT_PATH_MAX];
         sprintf(dirpath, "%s/%s", base, namelist[i]->d_name);
 
         if (!is_directory(dirpath))
@@ -530,7 +536,7 @@ static void setup_environment()
     // Erlang environment
 
     // ROOTDIR points to the release unless it wasn't found.
-    char envvar[PATH_MAX];
+    char envvar[ERLINIT_PATH_MAX];
     sprintf(envvar, "ROOTDIR=%s", release_root_dir);
     putenv(strdup(envvar));
 
@@ -726,7 +732,7 @@ static void child()
     chdir(release_root_dir);
 
     // Start Erlang up
-    char erlexec_path[PATH_MAX];
+    char erlexec_path[ERLINIT_PATH_MAX];
     sprintf(erlexec_path, "%s/bin/erlexec", erts_dir);
     char *exec_path = erlexec_path;
 
