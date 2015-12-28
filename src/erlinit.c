@@ -66,24 +66,42 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 static int merged_argc;
 static char *merged_argv[MAX_ARGC];
 
-static int verbose = 0;
-static int print_timing = 0;
-static int regression_test_mode = 0;
-static int desired_reboot_cmd = -1;
+struct erlinit_options {
+    int verbose;
+    int print_timing;
+    int regression_test_mode;
+    int hang_on_exit;
 
-static char erts_dir[ERLINIT_PATH_MAX];
-static char release_info_dir[ERLINIT_PATH_MAX];
-static char release_root_dir[ERLINIT_PATH_MAX];
-static char boot_path[ERLINIT_PATH_MAX];
-static char sys_config[ERLINIT_PATH_MAX];
-static char vmargs_path[ERLINIT_PATH_MAX];
-static char *controlling_terminal = NULL;
-static char *alternate_exec = NULL;
-static char *uniqueid_exec = NULL;
-static char *hostname_pattern = NULL;
-static char *additional_env = NULL;
-static char *release_search_path = NULL;
-static char *extra_mounts = NULL;
+    char erts_dir[ERLINIT_PATH_MAX];
+    char release_info_dir[ERLINIT_PATH_MAX];
+    char release_root_dir[ERLINIT_PATH_MAX];
+    char boot_path[ERLINIT_PATH_MAX];
+    char sys_config[ERLINIT_PATH_MAX];
+    char vmargs_path[ERLINIT_PATH_MAX];
+    char *controlling_terminal;
+    char *alternate_exec;
+    char *uniqueid_exec;
+    char *hostname_pattern;
+    char *additional_env;
+    char *release_search_path;
+    char *extra_mounts;
+};
+
+static struct erlinit_options options = {
+    .verbose = 0,
+    .print_timing = 0,
+    .regression_test_mode = 0,
+    .hang_on_exit = 0,
+    .controlling_terminal = NULL,
+    .alternate_exec = NULL,
+    .uniqueid_exec = NULL,
+    .hostname_pattern = NULL,
+    .additional_env = NULL,
+    .release_search_path = NULL,
+    .extra_mounts = NULL
+};
+
+static int desired_reboot_cmd = 0;
 
 static void print_prefix()
 {
@@ -92,7 +110,7 @@ static void print_prefix()
 
 static void debug(const char *fmt, ...)
 {
-    if (verbose) {
+    if (options.verbose) {
         print_prefix();
 
         va_list ap;
@@ -129,7 +147,7 @@ static void fatal(const char *fmt, ...)
 
     fprintf(stderr, "\r\n\r\nCANNOT CONTINUE.\r\n");
 
-    if (!regression_test_mode)
+    if (!options.regression_test_mode)
         sleep(9999);
 
     exit(1);
@@ -157,7 +175,7 @@ static int readsysfs(const char *path, char *buffer, int maxlen)
 static void set_ctty()
 {
     debug("set_ctty");
-    if (regression_test_mode)
+    if (options.regression_test_mode)
         return;
 
     // Set up a controlling terminal for Erlang so that
@@ -168,18 +186,18 @@ static void set_ctty()
     char ttypath[32];
 
     // Check if the user is forcing the controlling terminal
-    if (controlling_terminal &&
-	strlen(controlling_terminal) < sizeof(ttypath) - 5) {
-	sprintf(ttypath, "/dev/%s", controlling_terminal);
+    if (options.controlling_terminal &&
+            strlen(options.controlling_terminal) < sizeof(ttypath) - 5) {
+        sprintf(ttypath, "/dev/%s", options.controlling_terminal);
     } else {
-	// Pick the active console(s)
-	strcpy(ttypath, "/dev/");
-	readsysfs("/sys/class/tty/console/active", &ttypath[5], sizeof(ttypath) - 5);
+        // Pick the active console(s)
+        strcpy(ttypath, "/dev/");
+        readsysfs("/sys/class/tty/console/active", &ttypath[5], sizeof(ttypath) - 5);
 
-	// It's possible that multiple consoles are active, so pick the first one.
-	char *sep = strchr(&ttypath[5], ' ');
-	if (sep)
-	    *sep = 0;
+        // It's possible that multiple consoles are active, so pick the first one.
+        char *sep = strchr(&ttypath[5], ' ');
+        if (sep)
+            *sep = 0;
     }
 
     int fd = open(ttypath, O_RDWR);
@@ -281,7 +299,7 @@ static void find_erts_directory()
     else if (n > 1)
         fatal("Found multiple erts directories. Clean up the installation.");
 
-    sprintf(erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
+    sprintf(options.erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
 
     free(namelist[0]);
     free(namelist);
@@ -296,7 +314,7 @@ static int file_exists(const char *path)
 static int dotfile_filter(const struct dirent *d)
 {
     return strcmp(d->d_name, ".") != 0 &&
-           strcmp(d->d_name, "..") != 0;
+            strcmp(d->d_name, "..") != 0;
 }
 
 static int bootfile_filter(const struct dirent *d)
@@ -308,20 +326,20 @@ static int bootfile_filter(const struct dirent *d)
 static void find_sys_config()
 {
     debug("find_sys_config");
-    sprintf(sys_config, "%s/sys.config", release_info_dir);
-    if (!file_exists(sys_config)) {
-        warn("%s not found?", sys_config);
-        *sys_config = '\0';
+    sprintf(options.sys_config, "%s/sys.config", options.release_info_dir);
+    if (!file_exists(options.sys_config)) {
+        warn("%s not found?", options.sys_config);
+        *options.sys_config = '\0';
     }
 }
 
 static void find_vm_args()
 {
     debug("find_vm_args");
-    sprintf(vmargs_path, "%s/vm.args", release_info_dir);
-    if (!file_exists(vmargs_path)) {
-        warn("%s not found?", vmargs_path);
-        *vmargs_path = '\0';
+    sprintf(options.vmargs_path, "%s/vm.args", options.release_info_dir);
+    if (!file_exists(options.vmargs_path)) {
+        warn("%s not found?", options.vmargs_path);
+        *options.vmargs_path = '\0';
     }
 }
 
@@ -329,21 +347,21 @@ static void find_boot_path()
 {
     debug("find_boot_path");
     struct dirent **namelist;
-    int n = scandir(release_info_dir,
+    int n = scandir(options.release_info_dir,
                     &namelist,
                     bootfile_filter,
                     NULL);
     if (n <= 0)
-        fatal("No boot file found in %s.", release_info_dir);
+        fatal("No boot file found in %s.", options.release_info_dir);
 
     if (n > 1)
         warn("Found more than one boot file. Using %s.", namelist[0]->d_name);
 
     // Use the first
-    sprintf(boot_path, "%s/%s", release_info_dir, namelist[0]->d_name);
+    sprintf(options.boot_path, "%s/%s", options.release_info_dir, namelist[0]->d_name);
 
     // Strip off the .boot since that's what erl wants.
-    char *dot = strrchr(boot_path, '.');
+    char *dot = strrchr(options.boot_path, '.');
     *dot = '\0';
 
     // Free everything
@@ -356,7 +374,7 @@ static int is_directory(const char *path)
 {
     struct stat sb;
     return stat(path, &sb) == 0 &&
-        S_ISDIR(sb.st_mode);
+            S_ISDIR(sb.st_mode);
 }
 
 static int find_release_info_dir(const char *releases_dir,
@@ -448,15 +466,15 @@ static void find_release()
 {
     debug("find_release");
 
-    if (release_search_path == NULL)
-        release_search_path = strdup(DEFAULT_RELEASE_ROOT_DIR);
+    if (options.release_search_path == NULL)
+        options.release_search_path = strdup(DEFAULT_RELEASE_ROOT_DIR);
 
     // The user may specify several directories to be searched for
     // releases. Pick the first one.
-    const char *search_path = strtok(release_search_path, ":");
+    const char *search_path = strtok(options.release_search_path, ":");
     while (search_path != NULL) {
-        if (find_release_dirs(search_path, 1, release_root_dir, release_info_dir)) {
-            debug("Using release in %s.", release_info_dir);
+        if (find_release_dirs(search_path, 1, options.release_root_dir, options.release_info_dir)) {
+            debug("Using release in %s.", options.release_info_dir);
 
             find_sys_config();
             find_vm_args();
@@ -468,11 +486,11 @@ static void find_release()
         warn("No release found in %s.", search_path);
         search_path = strtok(NULL, ":");
     }
-    *release_info_dir = '\0';
-    *sys_config = '\0';
-    *boot_path = '\0';
+    *options.release_info_dir = '\0';
+    *options.sys_config = '\0';
+    *options.boot_path = '\0';
 
-    strcpy(release_root_dir, ERLANG_ROOT_DIR);
+    strcpy(options.release_root_dir, ERLANG_ROOT_DIR);
 }
 
 static void trim_whitespace(char *s)
@@ -495,13 +513,13 @@ static void configure_hostname()
     debug("configure_hostname");
     char hostname[128] = "\0";
 
-    if (hostname_pattern) {
+    if (options.hostname_pattern) {
         // Set the hostname based on a pattern
         char unique_id[64] = "xxxxxxxx";
-        if (uniqueid_exec)
-            system_cmd(uniqueid_exec, unique_id, sizeof(unique_id));
+        if (options.uniqueid_exec)
+            system_cmd(options.uniqueid_exec, unique_id, sizeof(unique_id));
 
-        sprintf(hostname, hostname_pattern, unique_id);
+        sprintf(hostname, options.hostname_pattern, unique_id);
     } else {
         // Set the hostname from /etc/hostname
         FILE *fp = fopen("/etc/hostname", "r");
@@ -537,19 +555,19 @@ static void setup_environment()
 
     // ROOTDIR points to the release unless it wasn't found.
     char envvar[ERLINIT_PATH_MAX];
-    sprintf(envvar, "ROOTDIR=%s", release_root_dir);
+    sprintf(envvar, "ROOTDIR=%s", options.release_root_dir);
     putenv(strdup(envvar));
 
     // BINDIR points to the erts bin directory.
-    sprintf(envvar, "BINDIR=%s/bin", erts_dir);
+    sprintf(envvar, "BINDIR=%s/bin", options.erts_dir);
     putenv(strdup(envvar));
 
     putenv("EMU=beam");
     putenv("PROGNAME=erl");
 
     // Set any additional environment variables from the user
-    if (additional_env) {
-        char *envstr = strtok(additional_env, ";");
+    if (options.additional_env) {
+        char *envstr = strtok(options.additional_env, ";");
         while (envstr) {
             putenv(envstr);
             envstr = strtok(NULL, ";");
@@ -606,7 +624,7 @@ cleanup:
 static void setup_networking()
 {
     debug("setup_networking");
-    if (regression_test_mode)
+    if (options.regression_test_mode)
         return;
 
     // Bring up the loopback interface (needed if the erlang distribute protocol code gets run)
@@ -656,7 +674,7 @@ static unsigned long str_to_mountflags(char *s)
 static void setup_pseudo_filesystems()
 {
     // Since we can't mount anything in this environment, just return.
-    if (regression_test_mode)
+    if (options.regression_test_mode)
         return;
 
     if (mount("", "/proc", "proc", 0, NULL) < 0)
@@ -676,14 +694,14 @@ static void setup_pseudo_filesystems()
 static void setup_filesystems()
 {
     // Since we can't mount anything in this environment, just return.
-    if (regression_test_mode)
+    if (options.regression_test_mode)
         return;
 
     // Mount /tmp and /run since they're almost always needed and it's
     // not easy to do it at the right time in Erlang.
     if (mount("", "/tmp", "tmpfs", 0, "mode=1777,size=10%") < 0)
         warn("Could not mount tmpfs in /tmp: %s\r\n"
-              "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
+             "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
 
     if (mount("", "/run", "tmpfs", MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
         warn("Could not mount tmpfs in /run: %s", strerror(errno));
@@ -695,8 +713,8 @@ static void setup_filesystems()
     //
     // An example mount specification looks like:
     //    /dev/mmcblk0p4:/mnt:vfat::utf8
-    if (extra_mounts) {
-        char *temp = extra_mounts;
+    if (options.extra_mounts) {
+        char *temp = options.extra_mounts;
         const char *source = strsep(&temp, ":");
         const char *target = strsep(&temp, ":");
         const char *filesystemtype = strsep(&temp, ":");
@@ -705,7 +723,7 @@ static void setup_filesystems()
 
         if (source && target && filesystemtype && mountflags && data) {
             unsigned long imountflags =
-                str_to_mountflags(mountflags);
+                    str_to_mountflags(mountflags);
             if (mount(source, target, filesystemtype, imountflags, data) < 0)
                 warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
         } else {
@@ -729,18 +747,18 @@ static void child()
     // Set up the minimum networking we need for Erlang.
     setup_networking();
 
-    chdir(release_root_dir);
+    chdir(options.release_root_dir);
 
     // Start Erlang up
     char erlexec_path[ERLINIT_PATH_MAX];
-    sprintf(erlexec_path, "%s/bin/erlexec", erts_dir);
+    sprintf(erlexec_path, "%s/bin/erlexec", options.erts_dir);
     char *exec_path = erlexec_path;
 
     char *exec_argv[32];
     int arg = 0;
     // If there's an alternate exec and it's set properly, then use it.
-    char *alternate_exec_path = strtok(alternate_exec, " ");
-    if (alternate_exec && alternate_exec_path && alternate_exec_path[0] != '\0') {
+    char *alternate_exec_path = strtok(options.alternate_exec, " ");
+    if (options.alternate_exec && alternate_exec_path && alternate_exec_path[0] != '\0') {
         exec_path = alternate_exec_path;
         exec_argv[arg++] = exec_path;
 
@@ -751,22 +769,22 @@ static void child()
     } else
         exec_argv[arg++] = "erlexec";
 
-    if (*sys_config) {
+    if (*options.sys_config) {
         exec_argv[arg++] = "-config";
-        exec_argv[arg++] = sys_config;
+        exec_argv[arg++] = options.sys_config;
     }
-    if (*boot_path) {
+    if (*options.boot_path) {
         exec_argv[arg++] = "-boot";
-        exec_argv[arg++] = boot_path;
+        exec_argv[arg++] = options.boot_path;
     }
-    if (*vmargs_path) {
+    if (*options.vmargs_path) {
         exec_argv[arg++] = "-args_file";
-        exec_argv[arg++] = vmargs_path;
+        exec_argv[arg++] = options.vmargs_path;
     }
 
     exec_argv[arg] = NULL;
 
-    if (verbose) {
+    if (options.verbose) {
         // Dump the environment and commandline
         extern char **environ;
         char** env = environ;
@@ -779,7 +797,7 @@ static void child()
     }
 
     debug("Launching erl...");
-    if (print_timing)
+    if (options.print_timing)
         warn("stop");
 
     execvp(exec_path, exec_argv);
@@ -791,7 +809,7 @@ static void child()
 static void unmount_all()
 {
     debug("unmount_all");
-    if (regression_test_mode)
+    if (options.regression_test_mode)
         return;
 
     FILE *fp = fopen("/proc/mounts", "r");
@@ -822,8 +840,8 @@ static void unmount_all()
         // Whitelist directories that don't unmount or
         // remount immediately (rootfs)
         if (strcmp(mounts[i].source, "devtmpfs") == 0 ||
-            strcmp(mounts[i].source, "/dev/root") == 0 ||
-            strcmp(mounts[i].source, "rootfs") == 0)
+                strcmp(mounts[i].source, "/dev/root") == 0 ||
+                strcmp(mounts[i].source, "rootfs") == 0)
             continue;
 
         debug("unmounting %s(%s)...", mounts[i].source, mounts[i].target);
@@ -888,7 +906,7 @@ void signal_handler(int signum)
 static void kill_all()
 {
     debug("kill_all");
-    if (regression_test_mode)
+    if (options.regression_test_mode)
         return;
 
     // Kill processes the nice way
@@ -915,44 +933,44 @@ int parse_config_line(char *line, char **argv, int max_args)
     int state = STATE_SPACE;
     while (*c != '\0') {
         switch (state) {
-            case STATE_SPACE:
-                if (*c == '#')
+        case STATE_SPACE:
+            if (*c == '#')
+                return argc;
+            else if (isspace(*c))
+                break;
+            else if (*c == '"') {
+                token = c + 1;
+                state = STATE_QUOTED_TOKEN;
+            } else {
+                token = c;
+                state = STATE_TOKEN;
+            }
+            break;
+        case STATE_TOKEN:
+            if (*c == '#' || isspace(*c)) {
+                *argv = strndup(token, c - token);
+                argv++;
+                argc++;
+                token = NULL;
+
+                if (*c == '#' || argc == max_args)
                     return argc;
-                else if (isspace(*c))
-                    break;
-                else if (*c == '"') {
-                    token = c + 1;
-                    state = STATE_QUOTED_TOKEN;
-                } else {
-                    token = c;
-                    state = STATE_TOKEN;
-                }
-                break;
-            case STATE_TOKEN:
-                if (*c == '#' || isspace(*c)) {
-                    *argv = strndup(token, c - token);
-                    argv++;
-                    argc++;
-                    token = NULL;
 
-                    if (*c == '#' || argc == max_args)
-                       return argc;
+                state = STATE_SPACE;
+            }
+            break;
+        case STATE_QUOTED_TOKEN:
+            if (*c == '"') {
+                *argv = strndup(token, c - token);
+                argv++;
+                argc++;
+                token = NULL;
+                state = STATE_SPACE;
 
-                    state = STATE_SPACE;
-                }
-                break;
-            case STATE_QUOTED_TOKEN:
-                if (*c == '"') {
-                    *argv = strndup(token, c - token);
-                    argv++;
-                    argc++;
-                    token = NULL;
-                    state = STATE_SPACE;
-
-                    if (argc == max_args)
-                        return argc;
-                }
-                break;
+                if (argc == max_args)
+                    return argc;
+            }
+            break;
         }
         c++;
     }
@@ -997,8 +1015,8 @@ void merge_config(int argc, char *argv[])
     merged_argv[0] = argv[0];
 
     merged_argc += load_config("/etc/erlinit.config",
-			       &merged_argv[1],
-			       MAX_ARGC - argc);
+                               &merged_argv[1],
+                               MAX_ARGC - argc);
 
     if (merged_argc + argc - 1 > MAX_ARGC) {
         warn("Too many arguments specified between the config file and commandline. Dropping some.");
@@ -1014,45 +1032,44 @@ int main(int argc, char *argv[])
     // erlinit should be pid 1. Anything else is not expected, so run in
     // regression test mode.
     if (getpid() != 1)
-        regression_test_mode = 1;
+        options.regression_test_mode = 1;
 
     // Merge the config file and the command line arguments
     merge_config(argc, argv);
 
-    int hang_on_exit = 0;
     int opt;
 
     while ((opt = getopt(merged_argc, merged_argv, "c:d:e:hm:n:r:s:tv")) != -1) {
         switch (opt) {
-	case 'c':
-	    controlling_terminal = strdup(optarg);
-	    break;
+        case 'c':
+            options.controlling_terminal = strdup(optarg);
+            break;
         case 'd':
-            uniqueid_exec = strdup(optarg);
+            options.uniqueid_exec = strdup(optarg);
             break;
         case 'e':
-            additional_env = strdup(optarg);
+            options.additional_env = strdup(optarg);
             break;
         case 'h':
-            hang_on_exit = 1;
+            options.hang_on_exit = 1;
             break;
         case 'm':
-            extra_mounts = strdup(optarg);
+            options.extra_mounts = strdup(optarg);
             break;
         case 'n':
-            hostname_pattern = strdup(optarg);
+            options.hostname_pattern = strdup(optarg);
             break;
         case 'r':
-            release_search_path = strdup(optarg);
+            options.release_search_path = strdup(optarg);
             break;
         case 's':
-            alternate_exec = strdup(optarg);
+            options.alternate_exec = strdup(optarg);
             break;
         case 't':
-            print_timing = 1;
+            options.print_timing = 1;
             break;
         case 'v':
-            verbose = 1;
+            options.verbose = 1;
             break;
         default:
             warn("ignoring command line argument '%c'", opt);
@@ -1060,7 +1077,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (print_timing)
+    if (options.print_timing)
         warn("start");
 
     debug("Starting erlinit...");
@@ -1068,7 +1085,7 @@ int main(int argc, char *argv[])
     debug("cmdline argc=%d, merged argc=%d", argc, merged_argc);
     int i;
     for (i = 0; i < merged_argc; i++)
-	debug("merged argv[%d]=%s", i, merged_argv[i]);
+        debug("merged argv[%d]=%s", i, merged_argv[i]);
 
     // Mount /dev, /proc and /sys
     setup_pseudo_filesystems();
@@ -1118,7 +1135,7 @@ int main(int argc, char *argv[])
     sync();
 
     // See if the user wants us to hang on "unintentional" exit
-    if (hang_on_exit && !is_intentional_exit) {
+    if (options.hang_on_exit && !is_intentional_exit) {
         // Sometimes Erlang exits on initialization. Hanging on exit
         // makes it easier to debug these cases since messages don't
         // keep scrolling on the screen.

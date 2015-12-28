@@ -1,5 +1,5 @@
 
-erlinit: erlinit.c
+erlinit: src/erlinit.c
 	$(CC) -Wall -o $@ $<
 
 test: erlinit
