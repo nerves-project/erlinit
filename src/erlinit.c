@@ -321,7 +321,8 @@ static void child()
     // Set up the minimum networking we need for Erlang.
     setup_networking();
 
-    chdir(options.release_root_dir);
+    if (chdir(options.release_root_dir) < 0)
+        fatal("Cannot chdir to release directory (%s)", options.release_root_dir);
 
     // Start Erlang up
     char erlexec_path[ERLINIT_PATH_MAX];
