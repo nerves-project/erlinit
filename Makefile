@@ -1,6 +1,6 @@
 
-erlinit: src/erlinit.c
-	$(CC) -Wall -o $@ $<
+erlinit: $(wildcard src/*.c)
+	$(CC) -Wall -O2 -o $@ $^
 
 test: erlinit
 	tests/run_tests.sh

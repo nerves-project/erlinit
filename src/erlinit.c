@@ -21,12 +21,11 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <ctype.h>
+#include "erlinit.h"
+
 #include <dirent.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <signal.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,60 +33,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/reboot.h>
 #include <sys/reboot.h>
-#include <sys/types.h>
-#include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <netinet/in.h>
-
-#define PROGRAM_NAME "erlinit"
-
-#define ERLANG_ROOT_DIR "/usr/lib/erlang"
-#define DEFAULT_RELEASE_ROOT_DIR "/srv/erlang"
-
-// This is the maximum number of mounted filesystems that
-// is expected in a running system. It is used on shutdown
-// when trying to unmount everything gracefully.
-#define MAX_MOUNTS 32
-
-#define MAX_ARGC 32
-
-// PATH_MAX wasn't in the musl include files, so rather
-// than pulling an arbitrary number in from linux/limits.h,
-// just define to something that should be trivially safe
-// for erlinit use.
-#define ERLINIT_PATH_MAX 1024
-
-static int merged_argc;
-static char *merged_argv[MAX_ARGC];
-
-struct erlinit_options {
-    int verbose;
-    int print_timing;
-    int regression_test_mode;
-    int hang_on_exit;
-
-    char erts_dir[ERLINIT_PATH_MAX];
-    char release_info_dir[ERLINIT_PATH_MAX];
-    char release_root_dir[ERLINIT_PATH_MAX];
-    char boot_path[ERLINIT_PATH_MAX];
-    char sys_config[ERLINIT_PATH_MAX];
-    char vmargs_path[ERLINIT_PATH_MAX];
-    char *controlling_terminal;
-    char *alternate_exec;
-    char *uniqueid_exec;
-    char *hostname_pattern;
-    char *additional_env;
-    char *release_search_path;
-    char *extra_mounts;
-};
-
-static struct erlinit_options options = {
+struct erlinit_options options = {
     .verbose = 0,
     .print_timing = 0,
     .regression_test_mode = 0,
@@ -102,177 +51,6 @@ static struct erlinit_options options = {
 };
 
 static int desired_reboot_cmd = 0;
-
-static void print_prefix()
-{
-    fprintf(stderr, PROGRAM_NAME ": ");
-}
-
-static void debug(const char *fmt, ...)
-{
-    if (options.verbose) {
-        print_prefix();
-
-        va_list ap;
-        va_start(ap, fmt);
-        vfprintf(stderr, fmt, ap);
-        va_end(ap);
-
-        fprintf(stderr, "\r\n");
-    }
-}
-
-static void warn(const char *fmt, ...)
-{
-    print_prefix();
-
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-
-    fprintf(stderr, "\r\n");
-}
-
-static void fatal(const char *fmt, ...)
-{
-    fprintf(stderr, "\r\n\r\nFATAL ERROR:\r\n");
-
-    print_prefix();
-
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-
-    fprintf(stderr, "\r\n\r\nCANNOT CONTINUE.\r\n");
-
-    if (!options.regression_test_mode)
-        sleep(9999);
-
-    exit(1);
-}
-
-static int readsysfs(const char *path, char *buffer, int maxlen)
-{
-    debug("readsysfs %s", path);
-    int fd = open(path, O_RDONLY);
-    if (fd < 0)
-        return 0;
-
-    int count = read(fd, buffer, maxlen - 1);
-
-    close(fd);
-    if (count <= 0)
-        return 0;
-
-    // Trim trailing \n
-    count--;
-    buffer[count] = 0;
-    return count;
-}
-
-static void set_ctty()
-{
-    debug("set_ctty");
-    if (options.regression_test_mode)
-        return;
-
-    // Set up a controlling terminal for Erlang so that
-    // it's possible to get to shell management mode.
-    // See http://www.busybox.net/FAQ.html#job_control
-    setsid();
-
-    char ttypath[32];
-
-    // Check if the user is forcing the controlling terminal
-    if (options.controlling_terminal &&
-            strlen(options.controlling_terminal) < sizeof(ttypath) - 5) {
-        sprintf(ttypath, "/dev/%s", options.controlling_terminal);
-    } else {
-        // Pick the active console(s)
-        strcpy(ttypath, "/dev/");
-        readsysfs("/sys/class/tty/console/active", &ttypath[5], sizeof(ttypath) - 5);
-
-        // It's possible that multiple consoles are active, so pick the first one.
-        char *sep = strchr(&ttypath[5], ' ');
-        if (sep)
-            *sep = 0;
-    }
-
-    int fd = open(ttypath, O_RDWR);
-    if (fd >= 0) {
-        dup2(fd, 0);
-        dup2(fd, 1);
-        dup2(fd, 2);
-        close(fd);
-    } else {
-        warn("error setting controlling terminal: %s", ttypath);
-    }
-}
-
-int system_cmd(const char *cmd, char *output_buffer, int length)
-{
-    debug("system_cmd '%s'", cmd);
-    int pipefd[2];
-    if (pipe(pipefd) < 0) {
-        warn("pipe");
-        return -1;
-    }
-
-    pid_t pid = fork();
-    if (pid == 0) {
-        // child
-        int devnull = open("/dev/null", O_RDWR);
-        if (devnull < 0) {
-            warn("Couldn't open /dev/null");
-            exit(EXIT_FAILURE);
-        }
-
-        close(pipefd[0]); // no reads from the pipe
-        close(STDIN_FILENO);
-        close(STDOUT_FILENO);
-        if (dup2(devnull, STDIN_FILENO) < 0)
-            warn("dup2 devnull");
-        if (dup2(pipefd[1], STDOUT_FILENO) < 0)
-            warn("dup2 pipe");
-        close(devnull);
-
-        char *cmd_copy = strdup(cmd);
-        char *exec_path = strtok(cmd_copy, " ");
-        char *exec_argv[16];
-        int arg = 0;
-
-        exec_argv[arg++] = exec_path;
-        while ((exec_argv[arg] = strtok(NULL, " ")) != NULL)
-            arg++;
-        exec_argv[arg] = 0;
-        execvp(exec_path, exec_argv);
-
-        // Not supposed to reach here.
-        warn("execvp '%s' failed", cmd);
-        exit(EXIT_FAILURE);
-    } else {
-        // parent
-        close(pipefd[1]); // No writes to the pipe
-
-        length--; // Save room for a '\0'
-        int index = 0;
-        int amt;
-        while (index != length &&
-               (amt = read(pipefd[0], &output_buffer[index], length - index)) > 0)
-            index += amt;
-        output_buffer[index] = '\0';
-        close(pipefd[0]);
-
-        int status;
-        if (waitpid(pid, &status, 0) != pid) {
-            warn("waitpid");
-            return -1;
-        }
-        return status;
-    }
-}
 
 static int starts_with(const char *str, const char *what)
 {
@@ -493,53 +271,6 @@ static void find_release()
     strcpy(options.release_root_dir, ERLANG_ROOT_DIR);
 }
 
-static void trim_whitespace(char *s)
-{
-    char *left = s;
-    while (*left != 0 && isspace(*left))
-        left++;
-    char *right = s + strlen(s) - 1;
-    while (right >= left && isspace(*right))
-        right--;
-
-    int len = right - left + 1;
-    if (len)
-        memmove(s, left, len);
-    s[len] = 0;
-}
-
-static void configure_hostname()
-{
-    debug("configure_hostname");
-    char hostname[128] = "\0";
-
-    if (options.hostname_pattern) {
-        // Set the hostname based on a pattern
-        char unique_id[64] = "xxxxxxxx";
-        if (options.uniqueid_exec)
-            system_cmd(options.uniqueid_exec, unique_id, sizeof(unique_id));
-
-        sprintf(hostname, options.hostname_pattern, unique_id);
-    } else {
-        // Set the hostname from /etc/hostname
-        FILE *fp = fopen("/etc/hostname", "r");
-        if (!fp) {
-            warn("/etc/hostname not found");
-            return;
-        }
-
-        // The hostname should be the first line of the file
-        if (fgets(hostname, sizeof(hostname), fp))
-            trim_whitespace(hostname);
-        fclose(fp);
-    }
-
-    if (*hostname == '\0')
-        warn("Empty hostname");
-    else if (sethostname(hostname, strlen(hostname)) < 0)
-        warn("Error setting hostname: %s", strerror(errno));
-}
-
 static void setup_environment()
 {
     debug("setup_environment");
@@ -571,163 +302,6 @@ static void setup_environment()
         while (envstr) {
             putenv(envstr);
             envstr = strtok(NULL, ";");
-        }
-    }
-}
-
-static void enable_loopback()
-{
-    // Set the loopback interface to up
-    int fd = socket(PF_INET, SOCK_DGRAM, 0);
-    if (fd < 0) {
-        warn("socket(PF_INET) failed");
-        return;
-    }
-
-    struct ifreq ifr;
-    memset(&ifr, 0, sizeof(ifr));
-
-    ifr.ifr_name[0] = 'l';
-    ifr.ifr_name[1] = 'o';
-    ifr.ifr_name[2] = '\0';
-    if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0) {
-        warn("SIOCGIFFLAGS failed on lo");
-        goto cleanup;
-    }
-
-    ifr.ifr_flags |= IFF_UP;
-    if (ioctl(fd, SIOCSIFFLAGS, &ifr)) {
-        warn("SIOCSIFFLAGS failed on lo");
-        goto cleanup;
-    }
-
-    // Currently only configuring IPv4.
-    struct sockaddr_in *addr = (struct sockaddr_in *) &ifr.ifr_addr;
-    addr->sin_family = AF_INET;
-    addr->sin_port = 0;
-    addr->sin_addr.s_addr = htonl(0x7f000001); // 127.0.0.1
-    if (ioctl(fd, SIOCSIFADDR, &ifr)) {
-        warn("SIOCSIFADDR failed on lo");
-        goto cleanup;
-    }
-
-    addr->sin_addr.s_addr = htonl(0xff000000); // 255.0.0.0
-    if (ioctl(fd, SIOCSIFNETMASK, &ifr)) {
-        warn("SIOCSIFNETMASK failed on lo");
-        goto cleanup;
-    }
-
-cleanup:
-    close(fd);
-}
-
-static void setup_networking()
-{
-    debug("setup_networking");
-    if (options.regression_test_mode)
-        return;
-
-    // Bring up the loopback interface (needed if the erlang distribute protocol code gets run)
-    enable_loopback();
-    configure_hostname();
-}
-
-static unsigned long str_to_mountflags(char *s)
-{
-    unsigned long flags = 0;
-
-    // These names correspond to ones used by mount(8)
-    char *flag = strtok(s, ",");
-    while (flag) {
-        if (strcmp(flag, "dirsync") == 0)
-            flags |= MS_DIRSYNC;
-        else if (strcmp(flag, "mand") == 0)
-            flags |= MS_MANDLOCK;
-        else if (strcmp(flag, "noatime") == 0)
-            flags |= MS_NOATIME;
-        else if (strcmp(flag, "nodev") == 0)
-            flags |= MS_NODEV;
-        else if (strcmp(flag, "nodiratime") == 0)
-            flags |= MS_NODIRATIME;
-        else if (strcmp(flag, "noexec") == 0)
-            flags |= MS_NOEXEC;
-        else if (strcmp(flag, "nosuid") == 0)
-            flags |= MS_NOSUID;
-        else if (strcmp(flag, "ro") == 0)
-            flags |= MS_RDONLY;
-        else if (strcmp(flag, "relatime") == 0)
-            flags |= MS_RELATIME;
-        else if (strcmp(flag, "silent") == 0)
-            flags |= MS_SILENT;
-        else if (strcmp(flag, "strictatime") == 0)
-            flags |= MS_STRICTATIME;
-        else if (strcmp(flag, "sync") == 0)
-            flags |= MS_SYNCHRONOUS;
-        else
-            warn("Unrecognized filesystem mount flag: %s", flag);
-
-        flag = strtok(NULL, ",");
-    }
-    return flags;
-}
-
-static void setup_pseudo_filesystems()
-{
-    // Since we can't mount anything in this environment, just return.
-    if (options.regression_test_mode)
-        return;
-
-    if (mount("", "/proc", "proc", 0, NULL) < 0)
-        warn("Cannot mount /proc");
-    if (mount("", "/sys", "sysfs", 0, NULL) < 0)
-        warn("Cannot mount /sys");
-
-    // /dev should be automatically created/mounted by Linux
-    if (mkdir("/dev/pts", 0755) < 0)
-        warn("Cannot create /dev/pts");
-    if (mkdir("/dev/shm", 0755) < 0)
-        warn("Cannot create /dev/shm");
-    if (mount("", "/dev/pts", "devpts", 0, "gid=5,mode=620") < 0)
-        warn("Cannot mount /dev/pts");
-}
-
-static void setup_filesystems()
-{
-    // Since we can't mount anything in this environment, just return.
-    if (options.regression_test_mode)
-        return;
-
-    // Mount /tmp and /run since they're almost always needed and it's
-    // not easy to do it at the right time in Erlang.
-    if (mount("", "/tmp", "tmpfs", 0, "mode=1777,size=10%") < 0)
-        warn("Could not mount tmpfs in /tmp: %s\r\n"
-             "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
-
-    if (mount("", "/run", "tmpfs", MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
-        warn("Could not mount tmpfs in /run: %s", strerror(errno));
-
-    // Mount any filesystems specified by the user. This is best effort.
-    // The user is required to figure out if anything went wrong in their
-    // applications. For example, the filesystem might not be formatted
-    // yet, and erlinit is not smart enough to figure that out.
-    //
-    // An example mount specification looks like:
-    //    /dev/mmcblk0p4:/mnt:vfat::utf8
-    if (options.extra_mounts) {
-        char *temp = options.extra_mounts;
-        const char *source = strsep(&temp, ":");
-        const char *target = strsep(&temp, ":");
-        const char *filesystemtype = strsep(&temp, ":");
-        char *mountflags = strsep(&temp, ":");
-        const char *data = strsep(&temp, ":");
-
-        if (source && target && filesystemtype && mountflags && data) {
-            unsigned long imountflags =
-                    str_to_mountflags(mountflags);
-            if (mount(source, target, filesystemtype, imountflags, data) < 0)
-                warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
-        } else {
-            warn("Invalid parameter to -m. Expecting 5 colon-separated fields");
         }
     }
 }
@@ -806,50 +380,6 @@ static void child()
     fatal("execvp failed to run %s: %s", exec_path, strerror(errno));
 }
 
-static void unmount_all()
-{
-    debug("unmount_all");
-    if (options.regression_test_mode)
-        return;
-
-    FILE *fp = fopen("/proc/mounts", "r");
-    if (!fp) {
-        warn("/proc/mounts not found");
-        return;
-    }
-
-    struct mount_info {
-        char source[256];
-        char target[256];
-        char fstype[32];
-    } mounts[MAX_MOUNTS];
-
-    char options[128];
-    int freq;
-    int passno;
-    int i = 0;
-    while (i < MAX_MOUNTS &&
-           fscanf(fp, "%255s %255s %31s %127s %d %d", mounts[i].source, mounts[i].target, mounts[i].fstype, options, &freq, &passno) >= 3) {
-        i++;
-    }
-    fclose(fp);
-
-    // Unmount as much as we can in reverse order.
-    int num_mounts = i;
-    for (i = num_mounts - 1; i >= 0; i--) {
-        // Whitelist directories that don't unmount or
-        // remount immediately (rootfs)
-        if (strcmp(mounts[i].source, "devtmpfs") == 0 ||
-                strcmp(mounts[i].source, "/dev/root") == 0 ||
-                strcmp(mounts[i].source, "rootfs") == 0)
-            continue;
-
-        debug("unmounting %s(%s)...", mounts[i].source, mounts[i].target);
-        if (umount(mounts[i].target) < 0 && umount(mounts[i].source) < 0)
-            warn("umount %s(%s) failed: %s", mounts[i].source, mounts[i].target, strerror(errno));
-    }
-}
-
 static void signal_handler(int signum);
 
 static void register_signal_handlers()
@@ -922,111 +452,6 @@ static void kill_all()
     sync();
 }
 
-int parse_config_line(char *line, char **argv, int max_args)
-{
-    int argc = 0;
-    char *c = line;
-    char *token = NULL;
-#define STATE_SPACE 0
-#define STATE_TOKEN 1
-#define STATE_QUOTED_TOKEN 2
-    int state = STATE_SPACE;
-    while (*c != '\0') {
-        switch (state) {
-        case STATE_SPACE:
-            if (*c == '#')
-                return argc;
-            else if (isspace(*c))
-                break;
-            else if (*c == '"') {
-                token = c + 1;
-                state = STATE_QUOTED_TOKEN;
-            } else {
-                token = c;
-                state = STATE_TOKEN;
-            }
-            break;
-        case STATE_TOKEN:
-            if (*c == '#' || isspace(*c)) {
-                *argv = strndup(token, c - token);
-                argv++;
-                argc++;
-                token = NULL;
-
-                if (*c == '#' || argc == max_args)
-                    return argc;
-
-                state = STATE_SPACE;
-            }
-            break;
-        case STATE_QUOTED_TOKEN:
-            if (*c == '"') {
-                *argv = strndup(token, c - token);
-                argv++;
-                argc++;
-                token = NULL;
-                state = STATE_SPACE;
-
-                if (argc == max_args)
-                    return argc;
-            }
-            break;
-        }
-        c++;
-    }
-
-    if (token) {
-        *argv = strndup(token, c - token);
-        argc++;
-    }
-
-    return argc;
-}
-
-// This is a very simple config file parser that extracts
-// commandline arguments from the specified file.
-int load_config(const char *filename,
-                char **argv,
-                int max_args)
-{
-    FILE *fp = fopen(filename, "r");
-    if (!fp)
-        return 0;
-
-    int argc = 0;
-    char line[128];
-    while (fgets(line, sizeof(line), fp) && argc < max_args) {
-        int new_args = parse_config_line(line, argv, max_args - argc);
-        argc += new_args;
-        argv += new_args;
-    }
-
-    fclose(fp);
-    return argc;
-}
-
-void merge_config(int argc, char *argv[])
-{
-    // When merging, argv[0] is first, then the
-    // arguments from erlinit.config and then any
-    // additional arguments from the commandline.
-    // This way, the commandline takes precedence.
-    merged_argc = 1;
-    merged_argv[0] = argv[0];
-
-    merged_argc += load_config("/etc/erlinit.config",
-                               &merged_argv[1],
-                               MAX_ARGC - argc);
-
-    if (merged_argc + argc - 1 > MAX_ARGC) {
-        warn("Too many arguments specified between the config file and commandline. Dropping some.");
-        argc = MAX_ARGC - merged_argc + 1;
-    }
-
-    memcpy(&merged_argv[merged_argc], &argv[1], (argc - 1) * sizeof(char**));
-    merged_argc += argc - 1;
-}
-
 int main(int argc, char *argv[])
 {
     // erlinit should be pid 1. Anything else is not expected, so run in
@@ -1035,47 +460,11 @@ int main(int argc, char *argv[])
         options.regression_test_mode = 1;
 
     // Merge the config file and the command line arguments
-    merge_config(argc, argv);
+    static int merged_argc;
+    static char *merged_argv[MAX_ARGC];
+    merge_config(argc, argv, &merged_argc, merged_argv);
 
-    int opt;
-
-    while ((opt = getopt(merged_argc, merged_argv, "c:d:e:hm:n:r:s:tv")) != -1) {
-        switch (opt) {
-        case 'c':
-            options.controlling_terminal = strdup(optarg);
-            break;
-        case 'd':
-            options.uniqueid_exec = strdup(optarg);
-            break;
-        case 'e':
-            options.additional_env = strdup(optarg);
-            break;
-        case 'h':
-            options.hang_on_exit = 1;
-            break;
-        case 'm':
-            options.extra_mounts = strdup(optarg);
-            break;
-        case 'n':
-            options.hostname_pattern = strdup(optarg);
-            break;
-        case 'r':
-            options.release_search_path = strdup(optarg);
-            break;
-        case 's':
-            options.alternate_exec = strdup(optarg);
-            break;
-        case 't':
-            options.print_timing = 1;
-            break;
-        case 'v':
-            options.verbose = 1;
-            break;
-        default:
-            warn("ignoring command line argument '%c'", opt);
-            break;
-        }
-    }
+    parse_args(merged_argc, merged_argv);
 
     if (options.print_timing)
         warn("start");
