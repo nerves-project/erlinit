@@ -1,20 +1,18 @@
 #!/bin/sh
 
 #
-# Test that a nearly parameterless run of erlexec works
+# Test that specifying --verbose on the command line works
 #
 
 $CAT >$CMDLINE_FILE <<EOF
--v -e LANG=en_US.UTF-8;LANGUAGE=en
+--verbose
 EOF
 
 $CAT >$EXPECTED <<EOF
 erlinit: Starting erlinit...
-erlinit: cmdline argc=4, merged argc=4
+erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/erlinit
-erlinit: merged argv[1]=-v
-erlinit: merged argv[2]=-e
-erlinit: merged argv[3]=LANG=en_US.UTF-8;LANGUAGE=en
+erlinit: merged argv[1]=--verbose
 erlinit: set_ctty
 erlinit: Could not mount tmpfs in /tmp: regression test
 Check that tmpfs support is enabled in the kernel config.
@@ -31,8 +29,6 @@ erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
 erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
 erlinit: Env: 'EMU=beam'
 erlinit: Env: 'PROGNAME=erl'
-erlinit: Env: 'LANG=en_US.UTF-8'
-erlinit: Env: 'LANGUAGE=en'
 erlinit: Arg: 'erlexec'
 erlinit: Launching erl...
 Hello from erlexec

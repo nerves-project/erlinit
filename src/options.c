@@ -25,43 +25,70 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <getopt.h>
 #include <string.h>
 
+static struct option long_options[] = {
+    {"ctty",  required_argument, 0, 'c' },
+    {"uniqueid-exec",  required_argument, 0, 'd' },
+    {"hang-on-exit", no_argument, 0, 'h' },
+    {"reboot-on-exit", no_argument, 0, 'H' },
+    {"env", required_argument, 0, 'e' },
+    {"mount", required_argument, 0, 'm' },
+    {"hostname-pattern", required_argument, 0, 'n' },
+    {"release-path", required_argument, 0, 'r' },
+    {"alternate-exec", required_argument, 0, 's' },
+    {"print-timing", no_argument, 0, 't' },
+    {"verbose", no_argument, 0, 'v' },
+    {0,     0,      0, 0 }
+};
+
 void parse_args(int argc, char *argv[])
 {
-    int opt;
-    while ((opt = getopt(argc, argv, "c:d:e:hm:n:r:s:tv")) != -1) {
+    for (;;) {
+        int option_index;
+        int opt = getopt_long(argc,
+                              argv,
+                              "c:d:e:hm:n:r:s:tv",
+                              long_options,
+                              &option_index);
+        if (opt < 0)
+            break;
+
         switch (opt) {
-        case 'c':
+        case 'c': // --ctty ttyS0
             options.controlling_terminal = strdup(optarg);
             break;
-        case 'd':
+        case 'd': // --uniqueid-exec program
             options.uniqueid_exec = strdup(optarg);
             break;
-        case 'e':
+        case 'e': // --env FOO=bar;FOO2=bar2
             options.additional_env = strdup(optarg);
             break;
-        case 'h':
+        case 'h': // --hang-on-exit
             options.hang_on_exit = 1;
             break;
-        case 'm':
+        case 'H': // --reboot-on-exit
+            options.hang_on_exit = 0;
+            break;
+        case 'm': // --mount /dev/mmcblk0p3:/root:vfat::
             options.extra_mounts = strdup(optarg);
             break;
-        case 'n':
+        case 'n': // --hostname-pattern nerves-%.4s
             options.hostname_pattern = strdup(optarg);
             break;
-        case 'r':
+        case 'r': // --release-path /srv/erlang
             options.release_search_path = strdup(optarg);
             break;
-        case 's':
+        case 's': // --alternate-exec "/usr/bin/dtach -N /tmp/iex_prompt"
             options.alternate_exec = strdup(optarg);
             break;
-        case 't':
+        case 't': // --print-timing
             options.print_timing = 1;
             break;
-        case 'v':
+        case 'v': // --verbose
             options.verbose = 1;
             break;
         default:
-            warn("ignoring command line argument '%c'", opt);
+            // Note: We don't print usage, since this
+            warn("ignoring option '%c'. See erlinit documentation.", argv[optind]);
             break;
         }
     }

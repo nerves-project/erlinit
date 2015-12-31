@@ -91,18 +91,16 @@ void setup_pseudo_filesystems()
 
 void setup_filesystems()
 {
-    // Since we can't mount anything in this environment, just return.
-    if (options.regression_test_mode)
-        return;
-
     // Mount /tmp and /run since they're almost always needed and it's
     // not easy to do it at the right time in Erlang.
-    if (mount("", "/tmp", "tmpfs", 0, "mode=1777,size=10%") < 0)
+    if (options.regression_test_mode ||
+            mount("", "/tmp", "tmpfs", 0, "mode=1777,size=10%") < 0)
         warn("Could not mount tmpfs in /tmp: %s\r\n"
-             "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
+             "Check that tmpfs support is enabled in the kernel config.", options.regression_test_mode ? "regression test" : strerror(errno));
 
-    if (mount("", "/run", "tmpfs", MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
-        warn("Could not mount tmpfs in /run: %s", strerror(errno));
+    if (options.regression_test_mode ||
+            mount("", "/run", "tmpfs", MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
+        warn("Could not mount tmpfs in /run: %s", options.regression_test_mode ? "regression test" : strerror(errno));
 
     // Mount any filesystems specified by the user. This is best effort.
     // The user is required to figure out if anything went wrong in their
@@ -122,8 +120,9 @@ void setup_filesystems()
         if (source && target && filesystemtype && mountflags && data) {
             unsigned long imountflags =
                     str_to_mountflags(mountflags);
-            if (mount(source, target, filesystemtype, imountflags, data) < 0)
-                warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
+            if (options.regression_test_mode ||
+                    mount(source, target, filesystemtype, imountflags, data) < 0)
+                warn("Cannot mount %s at %s: %s", source, target, options.regression_test_mode ? "regression test" : strerror(errno));
         } else {
             warn("Invalid parameter to -m. Expecting 5 colon-separated fields");
         }

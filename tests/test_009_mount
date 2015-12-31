@@ -1,53 +1,39 @@
 #!/bin/sh
 
 #
-# Test that starting up a Erlang/OTP release works
+# Test whether the mount option works. We can't easily test
+# that the mount works, so just make sure that it gets close.
 #
 
 $CAT >$CMDLINE_FILE <<EOF
--v -r /mnt/anotherplace:/srv/erlang
+-v --mount /dev/mmcblk0p3:/root:vfat::
 EOF
-
-RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
-$MKDIR -p $RELEASE_PATH
-$TOUCH $RELEASE_PATH/test.boot
-$TOUCH $RELEASE_PATH/sys.config
-$TOUCH $RELEASE_PATH/vm.args
 
 $CAT >$EXPECTED <<EOF
 erlinit: Starting erlinit...
 erlinit: cmdline argc=4, merged argc=4
 erlinit: merged argv[0]=/sbin/erlinit
 erlinit: merged argv[1]=-v
-erlinit: merged argv[2]=-r
-erlinit: merged argv[3]=/mnt/anotherplace:/srv/erlang
+erlinit: merged argv[2]=--mount
+erlinit: merged argv[3]=/dev/mmcblk0p3:/root:vfat::
 erlinit: set_ctty
 erlinit: Could not mount tmpfs in /tmp: regression test
 Check that tmpfs support is enabled in the kernel config.
 erlinit: Could not mount tmpfs in /run: regression test
+erlinit: Cannot mount /dev/mmcblk0p3 at /root: regression test
 erlinit: find_erts_directory
 erlinit: find_release
-erlinit: No release found in /mnt/anotherplace.
-erlinit: Using release in /srv/erlang/releases/0.0.1.
-erlinit: find_sys_config
-erlinit: find_vm_args
-erlinit: find_boot_path
+erlinit: No release found in /srv/erlang.
 erlinit: setup_environment
 erlinit: setup_networking
 erlinit: Env: 'HOME=/root'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
-erlinit: Env: 'ROOTDIR=/srv/erlang'
+erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
 erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
 erlinit: Env: 'EMU=beam'
 erlinit: Env: 'PROGNAME=erl'
 erlinit: Arg: 'erlexec'
-erlinit: Arg: '-config'
-erlinit: Arg: '/srv/erlang/releases/0.0.1/sys.config'
-erlinit: Arg: '-boot'
-erlinit: Arg: '/srv/erlang/releases/0.0.1/test'
-erlinit: Arg: '-args_file'
-erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
 erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited

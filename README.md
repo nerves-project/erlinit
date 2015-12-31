@@ -14,20 +14,20 @@ directory. A typical directory hierarchy would be:
 
     /srv/erlang/my_app*
          ├── lib
-         │   ├── my_app-0.0.1
-         │   │   ├── ebin
-         │   │   └── priv
-         │   ├── kernel-2.16.2
-         │   │   └── ebin
-         │   └── stdlib-1.19.2
+         │   ├── my_app-0.0.1
+         │   │   ├── ebin
+         │   │   └── priv
+         │   ├── kernel-2.16.2
+         │   │   └── ebin
+         │   └── stdlib-1.19.2
          │       └── ebin
          └── releases
              ├── 1
-             │   ├── my_app.boot
-             │   ├── my_app.rel
-             │   ├── my_app.script
-             │   ├── sys.config
-             │   └── vm.args
+             │   ├── my_app.boot
+             │   ├── my_app.rel
+             │   ├── my_app.script
+             │   ├── sys.config
+             │   └── vm.args
              └── RELEASES
 
 In the above release hierarchy, the directory `my_app` at the base is
@@ -64,6 +64,7 @@ The following lists the options:
        id for the board. This is useful with -n
     -e <VAR=value;VAR2=Value2...> Set additional environment variables
     -h Hang the system if Erlang exits. The default is to reboot.
+    -H Don't hang when Erlang exits.
     -m <dev:path:type:flags:options> Mount the specified path
     -n <pattern> Specify a hostname for the system. The pattern is a printf(3)
        pattern. It is passed a unique ID for the board. E.g., "nerves-%.4s"
@@ -73,6 +74,13 @@ The following lists the options:
     -t Print out when erlinit starts and when it launches Erlang (for
        benchmarking)
     -v Enable verbose prints
+
+## Rebooting or hanging when the Erlang VM exits
+
+When you're developing your app, it is useful to hang the platform when something bad
+happens in the Erlang VM. To do this, pass the `-h` option. In production,
+the desired behavior is usually to reboot. Rebooting is the default, but you can
+specify this explicitly by passing `-H` or `reboot-on-exit`.
 
 ## Read-only root file systems
 
