@@ -18,7 +18,6 @@ echo Hello from strace 1>&2
 EOF
 
 $CAT >$EXPECTED <<EOF
-erlinit: Starting erlinit...
 erlinit: cmdline argc=1, merged argc=4
 erlinit: merged argv[0]=/sbin/erlinit
 erlinit: merged argv[1]=-v

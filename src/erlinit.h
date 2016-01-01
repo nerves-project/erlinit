@@ -25,6 +25,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ERLINIT_H
 
 #define PROGRAM_NAME "erlinit"
+#ifndef PROGRAM_VERSION
+#define PROGRAM_VERSION unknown
+#endif
+
+#define xstr(s) str(s)
+#define str(s) #s
+#define PROGRAM_VERSION_STR xstr(PROGRAM_VERSION)
 
 #define ERLANG_ROOT_DIR "/usr/lib/erlang"
 #define DEFAULT_RELEASE_ROOT_DIR "/srv/erlang"

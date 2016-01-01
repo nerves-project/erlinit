@@ -1,6 +1,8 @@
 
+VERSION=0.7.0-dev
+
 erlinit: $(wildcard src/*.c)
-	$(CC) -Wall -O2 -o $@ $^
+	$(CC) -Wall -O2 -DPROGRAM_VERSION=$(VERSION) -o $@ $^
 
 test: check
 check: erlinit

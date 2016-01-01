@@ -16,7 +16,6 @@ $TOUCH $RELEASE_PATH/vm.args
 $MKDIR -p $WORK/srv/erlang/decoydir  # no release in here
 
 $CAT >$EXPECTED <<EOF
-erlinit: Starting erlinit...
 erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/erlinit
 erlinit: merged argv[1]=-v

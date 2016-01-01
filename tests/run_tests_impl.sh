@@ -70,6 +70,7 @@ run() {
 
     # Trim the results of known lines that vary between runs
     $CAT $RESULTS.raw | \
+        $GREP -v "Starting erlinit" | \
         $GREP -vi "erlinit: Env:.*FAKECHROOT" | \
         $GREP -v "erlinit: Env: 'LD_" | \
         $GREP -v "erlinit: Env: 'SHLVL=" | \

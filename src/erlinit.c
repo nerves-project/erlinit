@@ -471,7 +471,7 @@ int main(int argc, char *argv[])
     if (options.print_timing)
         warn("start");
 
-    debug("Starting erlinit...");
+    debug("Starting " PROGRAM_NAME " " PROGRAM_VERSION_STR "...");
 
     debug("cmdline argc=%d, merged argc=%d", argc, merged_argc);
     int i;

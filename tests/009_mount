@@ -10,7 +10,6 @@ $CAT >$CMDLINE_FILE <<EOF
 EOF
 
 $CAT >$EXPECTED <<EOF
-erlinit: Starting erlinit...
 erlinit: cmdline argc=4, merged argc=4
 erlinit: merged argv[0]=/sbin/erlinit
 erlinit: merged argv[1]=-v
