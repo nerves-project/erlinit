@@ -75,18 +75,13 @@ void setup_pseudo_filesystems()
     if (options.regression_test_mode)
         return;
 
-    if (mount("", "/proc", "proc", 0, NULL) < 0)
-        warn("Cannot mount /proc");
-    if (mount("", "/sys", "sysfs", 0, NULL) < 0)
-        warn("Cannot mount /sys");
+    OK_OR_WARN(mount("", "/proc", "proc", 0, NULL), "Cannot mount /proc");
+    OK_OR_WARN(mount("", "/sys", "sysfs", 0, NULL), "Cannot mount /sys");
 
     // /dev should be automatically created/mounted by Linux
-    if (mkdir("/dev/pts", 0755) < 0)
-        warn("Cannot create /dev/pts");
-    if (mkdir("/dev/shm", 0755) < 0)
-        warn("Cannot create /dev/shm");
-    if (mount("", "/dev/pts", "devpts", 0, "gid=5,mode=620") < 0)
-        warn("Cannot mount /dev/pts");
+    OK_OR_WARN(mkdir("/dev/pts", 0755), "Cannot create /dev/pts");
+    OK_OR_WARN(mkdir("/dev/shm", 0755), "Cannot create /dev/shm");
+    OK_OR_WARN(mount("", "/dev/pts", "devpts", 0, "gid=5,mode=620"), "Cannot mount /dev/pts");
 }
 
 void setup_filesystems()
