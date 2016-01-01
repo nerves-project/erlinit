@@ -43,7 +43,8 @@ the system via files in the release.
 `erlinit` pulls its configuration from both the commandline and the file
 `/etc/erlinit.config`. The commandline comes from the Linux kernel arguments
 that that are left over after the kernel processes them. Look at the bootloader
-configuration and the Linux kernel configuration to see how to modify these.
+configuration (e.g. U-Boot) and the Linux kernel configuration (in the case of default args)
+to see how to modify these.
 
 The `erlinit.config` file is parsed line by line. If a line starts with a `#`,
 it is ignored. Parameters are passed via the file similar to a commandline.
@@ -59,21 +60,41 @@ For example, the following is a valid `/etc/erlinit.config`:
 
 The following lists the options:
 
-    -c <tty[n]> Force the controlling terminal (ttyAMA0, tty1, etc.)
-    -d <program and arguments> Run the specified program to get a unique
-       id for the board. This is useful with -n
-    -e <VAR=value;VAR2=Value2...> Set additional environment variables
-    -h Hang the system if Erlang exits. The default is to reboot.
-    -H Don't hang when Erlang exits.
-    -m <dev:path:type:flags:options> Mount the specified path
-    -n <pattern> Specify a hostname for the system. The pattern is a printf(3)
-       pattern. It is passed a unique ID for the board. E.g., "nerves-%.4s"
-    -r <path1[:path2...]> A colon-separated lists of paths to search for
-       Erlang releases. The default is /srv/erlang.
-    -s <program and arguments> Run another program that starts Erlang up
-    -t Print out when erlinit starts and when it launches Erlang (for
-       benchmarking)
-    -v Enable verbose prints
+    -c, --ctty <tty[n]>
+        Force the controlling terminal (ttyAMA0, tty1, etc.)
+
+    -d, --uniqueid-exec <program and arguments>
+        Run the specified program to get a unique id for the board. This is useful with -n
+
+    -e, --env <VAR=value;VAR2=Value2...>
+        Set additional environment variables
+
+    -h, --hang-on-exit
+        Hang the system if Erlang exits. The default is to reboot.
+
+    -H, --reboot-on-exit
+        Reboot when Erlang exits.
+
+    -m, --mount <dev:path:type:flags:options>
+        Mount the specified path. See mount(8) and fstab(5) for fields
+
+    -n, --hostname-pattern <pattern>
+        Specify a hostname for the system. The pattern is a printf(3)
+        pattern. It is passed a unique ID for the board. E.g., "nerves-%.4s"
+
+    -r, --release-path <path1[:path2...]>
+        A colon-separated lists of paths to search for
+        Erlang releases. The default is /srv/erlang.
+
+    -s, --alternate-exec <program and arguments>
+        Run another program that starts Erlang up
+
+    -t, --print-timing
+        Print out when erlinit starts and when it launches Erlang (for
+        benchmarking)
+
+    -v, --verbose
+        Enable verbose prints
 
 ## Rebooting or hanging when the Erlang VM exits
 
@@ -130,7 +151,7 @@ This mounts /dev/mccblk0p4 as a vfat filesystem to the /mnt directory. No flags
 are passed, and the utf8 option is passed to the vfat driver. See mount(8) for
 options.
 
-# Hostnames
+## Hostnames
 
 `erlinit` can set the hostname of the system so that it is available when Erlang
 starts up. The hostname can be hardcoded in the `/etc/hostname` file or it can
@@ -154,3 +175,17 @@ hostname. The configuration would look like:
 
 In theory, the `getmyhostname` program could read an EEPROM or some file on a
 writable partition to return the hostname.
+
+## Chaining programs
+
+It's possible for `erlinit` to run a program that launches `erlexec` so that
+various aspects of the Erlang VM can be modified in an advanced way. This is
+done by specifying `-s` or `--alternate-exec`. The program (and arguments) specified
+are invoked and the `erlexec` and other options that would have been run are passed
+as the last arguments.
+
+One use is running `strace` on the Erlang VM as described in the debugging
+section. Another use is to capture the Erlang console to a pipe and redirect it
+to a GUI or web app. The `dtach` utility is useful for this. An example
+invocation is: `--alternate-exec "/usr/bin/dtach -N /tmp/iex_prompt"`.
+See the `dtach` manpage for details.
