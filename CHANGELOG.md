@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.7.0
+
+  * New features
+    * Added long options to make config files easier to read
+    * Added -H, --reboot-on-exit to override a -h that was specified in
+      the erlinit.config file from the kernel cmdline
+
 ## v0.6.1
 
   * Fixes
