@@ -23,6 +23,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "erlinit.h"
 
+#define _GNU_SOURCE // for asprintf
+
 #include <dirent.h>
 #include <errno.h>
 #include <signal.h>
@@ -285,13 +287,13 @@ static void setup_environment()
     // Erlang environment
 
     // ROOTDIR points to the release unless it wasn't found.
-    char envvar[ERLINIT_PATH_MAX];
-    sprintf(envvar, "ROOTDIR=%s", options.release_root_dir);
-    putenv(strdup(envvar));
+    char *envvar;
+    OK_OR_FATAL(asprintf(&envvar, "ROOTDIR=%s", options.release_root_dir), "asprintf failed");
+    putenv(envvar);
 
     // BINDIR points to the erts bin directory.
-    sprintf(envvar, "BINDIR=%s/bin", options.erts_dir);
-    putenv(strdup(envvar));
+    OK_OR_FATAL(asprintf(&envvar, "BINDIR=%s/bin", options.erts_dir), "asprintf failed");
+    putenv(envvar);
 
     putenv("EMU=beam");
     putenv("PROGNAME=erl");
@@ -300,7 +302,7 @@ static void setup_environment()
     if (options.additional_env) {
         char *envstr = strtok(options.additional_env, ";");
         while (envstr) {
-            putenv(envstr);
+            putenv(strdup(envstr));
             envstr = strtok(NULL, ";");
         }
     }

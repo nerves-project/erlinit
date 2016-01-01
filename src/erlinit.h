@@ -70,6 +70,8 @@ void debug(const char *fmt, ...);
 void warn(const char *fmt, ...);
 void fatal(const char *fmt, ...);
 
+#define OK_OR_FATAL(WORK, MSG, ...) do { if ((WORK) < 0) fatal(MSG, ## __VA_ARGS__); } while (0)
+
 // Configuration loading
 void merge_config(int argc, char *argv[], int *merged_argc, char **merged_argv);
 
