@@ -2,10 +2,11 @@
 erlinit: $(wildcard src/*.c)
 	$(CC) -Wall -O2 -o $@ $^
 
-test: erlinit
+test: check
+check: erlinit
 	tests/run_tests.sh
 
 clean:
 	-rm -f erlinit
 
-.PHONY: test clean
+.PHONY: test clean check
