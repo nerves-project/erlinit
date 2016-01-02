@@ -38,19 +38,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-struct erlinit_options options = {
-    .verbose = 0,
-    .print_timing = 0,
-    .regression_test_mode = 0,
-    .hang_on_exit = 0,
-    .controlling_terminal = NULL,
-    .alternate_exec = NULL,
-    .uniqueid_exec = NULL,
-    .hostname_pattern = NULL,
-    .additional_env = NULL,
-    .release_search_path = NULL,
-    .extra_mounts = NULL
-};
+static char erts_dir[ERLINIT_PATH_MAX];
+static char release_info_dir[ERLINIT_PATH_MAX];
+static char release_root_dir[ERLINIT_PATH_MAX];
+static char boot_path[ERLINIT_PATH_MAX];
+static char sys_config[ERLINIT_PATH_MAX];
+static char vmargs_path[ERLINIT_PATH_MAX];
 
 static int desired_reboot_cmd = 0;
 
@@ -79,7 +72,7 @@ static void find_erts_directory()
     else if (n > 1)
         fatal("Found multiple erts directories. Clean up the installation.");
 
-    sprintf(options.erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
+    sprintf(erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
 
     free(namelist[0]);
     free(namelist);
@@ -106,20 +99,20 @@ static int bootfile_filter(const struct dirent *d)
 static void find_sys_config()
 {
     debug("find_sys_config");
-    sprintf(options.sys_config, "%s/sys.config", options.release_info_dir);
-    if (!file_exists(options.sys_config)) {
-        warn("%s not found?", options.sys_config);
-        *options.sys_config = '\0';
+    sprintf(sys_config, "%s/sys.config", release_info_dir);
+    if (!file_exists(sys_config)) {
+        warn("%s not found?", sys_config);
+        *sys_config = '\0';
     }
 }
 
 static void find_vm_args()
 {
     debug("find_vm_args");
-    sprintf(options.vmargs_path, "%s/vm.args", options.release_info_dir);
-    if (!file_exists(options.vmargs_path)) {
-        warn("%s not found?", options.vmargs_path);
-        *options.vmargs_path = '\0';
+    sprintf(vmargs_path, "%s/vm.args", release_info_dir);
+    if (!file_exists(vmargs_path)) {
+        warn("%s not found?", vmargs_path);
+        *vmargs_path = '\0';
     }
 }
 
@@ -127,21 +120,21 @@ static void find_boot_path()
 {
     debug("find_boot_path");
     struct dirent **namelist;
-    int n = scandir(options.release_info_dir,
+    int n = scandir(release_info_dir,
                     &namelist,
                     bootfile_filter,
                     NULL);
     if (n <= 0)
-        fatal("No boot file found in %s.", options.release_info_dir);
+        fatal("No boot file found in %s.", release_info_dir);
 
     if (n > 1)
         warn("Found more than one boot file. Using %s.", namelist[0]->d_name);
 
     // Use the first
-    sprintf(options.boot_path, "%s/%s", options.release_info_dir, namelist[0]->d_name);
+    sprintf(boot_path, "%s/%s", release_info_dir, namelist[0]->d_name);
 
     // Strip off the .boot since that's what erl wants.
-    char *dot = strrchr(options.boot_path, '.');
+    char *dot = strrchr(boot_path, '.');
     *dot = '\0';
 
     // Free everything
@@ -253,8 +246,8 @@ static void find_release()
     // releases. Pick the first one.
     const char *search_path = strtok(options.release_search_path, ":");
     while (search_path != NULL) {
-        if (find_release_dirs(search_path, 1, options.release_root_dir, options.release_info_dir)) {
-            debug("Using release in %s.", options.release_info_dir);
+        if (find_release_dirs(search_path, 1, release_root_dir, release_info_dir)) {
+            debug("Using release in %s.", release_info_dir);
 
             find_sys_config();
             find_vm_args();
@@ -266,11 +259,11 @@ static void find_release()
         warn("No release found in %s.", search_path);
         search_path = strtok(NULL, ":");
     }
-    *options.release_info_dir = '\0';
-    *options.sys_config = '\0';
-    *options.boot_path = '\0';
+    *release_info_dir = '\0';
+    *sys_config = '\0';
+    *boot_path = '\0';
 
-    strcpy(options.release_root_dir, ERLANG_ROOT_DIR);
+    strcpy(release_root_dir, ERLANG_ROOT_DIR);
 }
 
 static void setup_environment()
@@ -288,11 +281,11 @@ static void setup_environment()
 
     // ROOTDIR points to the release unless it wasn't found.
     char *envvar;
-    OK_OR_FATAL(asprintf(&envvar, "ROOTDIR=%s", options.release_root_dir), "asprintf failed");
+    OK_OR_FATAL(asprintf(&envvar, "ROOTDIR=%s", release_root_dir), "asprintf failed");
     putenv(envvar);
 
     // BINDIR points to the erts bin directory.
-    OK_OR_FATAL(asprintf(&envvar, "BINDIR=%s/bin", options.erts_dir), "asprintf failed");
+    OK_OR_FATAL(asprintf(&envvar, "BINDIR=%s/bin", erts_dir), "asprintf failed");
     putenv(envvar);
 
     putenv("EMU=beam");
@@ -323,11 +316,11 @@ static void child()
     // Set up the minimum networking we need for Erlang.
     setup_networking();
 
-    OK_OR_FATAL(chdir(options.release_root_dir), "Cannot chdir to release directory (%s)", options.release_root_dir);
+    OK_OR_FATAL(chdir(release_root_dir), "Cannot chdir to release directory (%s)", release_root_dir);
 
     // Start Erlang up
     char erlexec_path[ERLINIT_PATH_MAX];
-    sprintf(erlexec_path, "%s/bin/erlexec", options.erts_dir);
+    sprintf(erlexec_path, "%s/bin/erlexec", erts_dir);
     char *exec_path = erlexec_path;
 
     char *exec_argv[32];
@@ -345,17 +338,17 @@ static void child()
     } else
         exec_argv[arg++] = "erlexec";
 
-    if (*options.sys_config) {
+    if (*sys_config) {
         exec_argv[arg++] = "-config";
-        exec_argv[arg++] = options.sys_config;
+        exec_argv[arg++] = sys_config;
     }
-    if (*options.boot_path) {
+    if (*boot_path) {
         exec_argv[arg++] = "-boot";
-        exec_argv[arg++] = options.boot_path;
+        exec_argv[arg++] = boot_path;
     }
-    if (*options.vmargs_path) {
+    if (*vmargs_path) {
         exec_argv[arg++] = "-args_file";
-        exec_argv[arg++] = options.vmargs_path;
+        exec_argv[arg++] = vmargs_path;
     }
 
     exec_argv[arg] = NULL;

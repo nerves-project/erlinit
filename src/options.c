@@ -25,6 +25,21 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <getopt.h>
 #include <string.h>
 
+// Initialize the default options
+struct erlinit_options options = {
+    .verbose = 0,
+    .print_timing = 0,
+    .regression_test_mode = 0,
+    .hang_on_exit = 0,
+    .controlling_terminal = NULL,
+    .alternate_exec = NULL,
+    .uniqueid_exec = NULL,
+    .hostname_pattern = NULL,
+    .additional_env = NULL,
+    .release_search_path = NULL,
+    .extra_mounts = NULL
+};
+
 static struct option long_options[] = {
     {"ctty",  required_argument, 0, 'c' },
     {"uniqueid-exec",  required_argument, 0, 'd' },

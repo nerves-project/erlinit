@@ -54,13 +54,6 @@ struct erlinit_options {
     int print_timing;
     int regression_test_mode;
     int hang_on_exit;
-
-    char erts_dir[ERLINIT_PATH_MAX];
-    char release_info_dir[ERLINIT_PATH_MAX];
-    char release_root_dir[ERLINIT_PATH_MAX];
-    char boot_path[ERLINIT_PATH_MAX];
-    char sys_config[ERLINIT_PATH_MAX];
-    char vmargs_path[ERLINIT_PATH_MAX];
     char *controlling_terminal;
     char *alternate_exec;
     char *uniqueid_exec;
