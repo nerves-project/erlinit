@@ -23,6 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "erlinit.h"
 #include <getopt.h>
+#include <stdlib.h>
 #include <string.h>
 
 // Initialize the default options
@@ -55,6 +56,8 @@ static struct option long_options[] = {
     {0,     0,      0, 0 }
 };
 
+#define SET_STRING_OPTION(opt) if (opt) free(opt); opt = strdup(optarg);
+
 void parse_args(int argc, char *argv[])
 {
     for (;;) {
@@ -69,13 +72,13 @@ void parse_args(int argc, char *argv[])
 
         switch (opt) {
         case 'c': // --ctty ttyS0
-            options.controlling_terminal = strdup(optarg);
+            SET_STRING_OPTION(options.controlling_terminal)
             break;
         case 'd': // --uniqueid-exec program
-            options.uniqueid_exec = strdup(optarg);
+            SET_STRING_OPTION(options.uniqueid_exec)
             break;
         case 'e': // --env FOO=bar;FOO2=bar2
-            options.additional_env = strdup(optarg);
+            SET_STRING_OPTION(options.additional_env)
             break;
         case 'h': // --hang-on-exit
             options.hang_on_exit = 1;
@@ -84,16 +87,16 @@ void parse_args(int argc, char *argv[])
             options.hang_on_exit = 0;
             break;
         case 'm': // --mount /dev/mmcblk0p3:/root:vfat::
-            options.extra_mounts = strdup(optarg);
+            SET_STRING_OPTION(options.extra_mounts)
             break;
         case 'n': // --hostname-pattern nerves-%.4s
-            options.hostname_pattern = strdup(optarg);
+            SET_STRING_OPTION(options.hostname_pattern)
             break;
         case 'r': // --release-path /srv/erlang
-            options.release_search_path = strdup(optarg);
+            SET_STRING_OPTION(options.release_search_path)
             break;
         case 's': // --alternate-exec "/usr/bin/dtach -N /tmp/iex_prompt"
-            options.alternate_exec = strdup(optarg);
+            SET_STRING_OPTION(options.alternate_exec)
             break;
         case 't': // --print-timing
             options.print_timing = 1;
