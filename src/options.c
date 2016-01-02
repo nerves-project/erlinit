@@ -105,8 +105,7 @@ void parse_args(int argc, char *argv[])
             options.verbose = 1;
             break;
         default:
-            // Note: We don't print usage, since this
-            warn("ignoring option '%c'. See erlinit documentation.", argv[optind]);
+            // getopt prints a warning, so we don't have to
             break;
         }
     }
