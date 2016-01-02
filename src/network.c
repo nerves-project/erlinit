@@ -144,14 +144,22 @@ static void configure_hostname()
         fclose(fp);
     }
 
-    if (*hostname == '\0')
-        warn("Empty hostname");
-    else if (sethostname(hostname, strlen(hostname)) < 0)
-        warn("Error setting hostname: %s", strerror(errno));
+    if (*hostname == '\0') {
+        warn("Not setting empty hostname");
+        return;
+    }
+
+    debug("Hostname: %s", hostname);
+    if (!options.regression_test_mode) {
+        OK_OR_WARN(sethostname(hostname, strlen(hostname)), "Error setting hostname: %s", strerror(errno));
+    }
 }
 
 static void enable_loopback()
 {
+    if (options.regression_test_mode)
+        return;
+
     // Set the loopback interface to up
     int fd = socket(PF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
@@ -199,8 +207,6 @@ cleanup:
 void setup_networking()
 {
     debug("setup_networking");
-    if (options.regression_test_mode)
-        return;
 
     // Bring up the loopback interface (needed if the erlang distribute protocol code gets run)
     enable_loopback();
