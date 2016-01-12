@@ -3,6 +3,8 @@
 ## v0.7.0
 
   * New features
+    * Added --warn-unused-tty to display warning when multiple tty's
+      are available, but only one is used.
     * Added long options to make config files easier to read
     * Added -H, --reboot-on-exit to override a -h that was specified in
       the erlinit.config file from the kernel cmdline
