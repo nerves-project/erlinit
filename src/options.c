@@ -30,8 +30,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct erlinit_options options = {
     .verbose = 0,
     .print_timing = 0,
-    .regression_test_mode = 0,
     .hang_on_exit = 0,
+    .warn_unused_tty = 0,
     .controlling_terminal = NULL,
     .alternate_exec = NULL,
     .uniqueid_exec = NULL,
@@ -53,6 +53,7 @@ static struct option long_options[] = {
     {"alternate-exec", required_argument, 0, 's' },
     {"print-timing", no_argument, 0, 't' },
     {"verbose", no_argument, 0, 'v' },
+    {"warn-unused-tty", no_argument, 0, '!' },
     {0,     0,      0, 0 }
 };
 
@@ -103,6 +104,9 @@ void parse_args(int argc, char *argv[])
             break;
         case 'v': // --verbose
             options.verbose = 1;
+            break;
+        case '!': // --warn-unused-tty
+            options.warn_unused_tty = 1;
             break;
         default:
             // getopt prints a warning, so we don't have to

@@ -19,7 +19,7 @@ CHROOT=/usr/sbin/chroot
 TESTS_DIR=$(dirname $(readlink -f $0))
 
 WORK=$TESTS_DIR/work
-ERLINIT=$TESTS_DIR/../erlinit
+ERLINIT=$TESTS_DIR/../erlinit-test
 FAKE_ERLEXEC=$TESTS_DIR/fake_erlexec
 RESULTS=$WORK/results
 
@@ -51,6 +51,12 @@ run() {
     $LN -s $ERLINIT $WORK/sbin/erlinit
     $MKDIR -p $FAKE_ERTS_DIR/bin
     $LN -s $FAKE_ERLEXEC $FAKE_ERTS_DIR/bin/erlexec
+
+    # Fake the active console (need to use fakesys rather than sys due to fakechroot limitation)
+    mkdir -p $WORK/fakesys/class/tty/console
+    $CAT >$WORK/fakesys/class/tty/console/active << EOF
+tty1
+EOF
 
     # Run the test script to setup files for the test
     source $TESTS_DIR/$TEST

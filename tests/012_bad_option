@@ -15,9 +15,6 @@ erlinit: merged argv[0]=/sbin/erlinit
 erlinit: merged argv[1]=-v
 erlinit: merged argv[2]=--unknown-option
 erlinit: set_ctty
-erlinit: Could not mount tmpfs in /tmp: regression test
-Check that tmpfs support is enabled in the kernel config.
-erlinit: Could not mount tmpfs in /run: regression test
 erlinit: find_erts_directory
 erlinit: find_release
 erlinit: No release found in /srv/erlang.

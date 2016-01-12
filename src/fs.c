@@ -30,6 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifndef UNITTEST
 static unsigned long str_to_mountflags(char *s)
 {
     unsigned long flags = 0;
@@ -68,13 +69,12 @@ static unsigned long str_to_mountflags(char *s)
     }
     return flags;
 }
+#endif
 
 void setup_pseudo_filesystems()
 {
-    // Since we can't mount anything in this environment, just return.
-    if (options.regression_test_mode)
-        return;
-
+    // This only works in the real environment.
+#ifndef UNITTEST
     OK_OR_WARN(mount("", "/proc", "proc", 0, NULL), "Cannot mount /proc");
     OK_OR_WARN(mount("", "/sys", "sysfs", 0, NULL), "Cannot mount /sys");
 
@@ -82,20 +82,21 @@ void setup_pseudo_filesystems()
     OK_OR_WARN(mkdir("/dev/pts", 0755), "Cannot create /dev/pts");
     OK_OR_WARN(mkdir("/dev/shm", 0755), "Cannot create /dev/shm");
     OK_OR_WARN(mount("", "/dev/pts", "devpts", 0, "gid=5,mode=620"), "Cannot mount /dev/pts");
+#endif
 }
 
 void setup_filesystems()
 {
+#ifndef UNITTEST
     // Mount /tmp and /run since they're almost always needed and it's
     // not easy to do it at the right time in Erlang.
-    if (options.regression_test_mode ||
-            mount("", "/tmp", "tmpfs", 0, "mode=1777,size=10%") < 0)
+    if (mount("", "/tmp", "tmpfs", 0, "mode=1777,size=10%") < 0)
         warn("Could not mount tmpfs in /tmp: %s\r\n"
-             "Check that tmpfs support is enabled in the kernel config.", options.regression_test_mode ? "regression test" : strerror(errno));
+             "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
 
-    if (options.regression_test_mode ||
-            mount("", "/run", "tmpfs", MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
-        warn("Could not mount tmpfs in /run: %s", options.regression_test_mode ? "regression test" : strerror(errno));
+    if (mount("", "/run", "tmpfs", MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
+        warn("Could not mount tmpfs in /run: %s", strerror(errno));
+#endif
 
     // Mount any filesystems specified by the user. This is best effort.
     // The user is required to figure out if anything went wrong in their
@@ -113,11 +114,14 @@ void setup_filesystems()
         const char *data = strsep(&temp, ":");
 
         if (source && target && filesystemtype && mountflags && data) {
+#ifndef UNITTEST
             unsigned long imountflags =
                     str_to_mountflags(mountflags);
-            if (options.regression_test_mode ||
-                    mount(source, target, filesystemtype, imountflags, data) < 0)
-                warn("Cannot mount %s at %s: %s", source, target, options.regression_test_mode ? "regression test" : strerror(errno));
+            if (mount(source, target, filesystemtype, imountflags, data) < 0)
+                warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
+#else
+            warn("Cannot mount %s at %s: %s", source, target, "regression test");
+#endif
         } else {
             warn("Invalid parameter to -m. Expecting 5 colon-separated fields");
         }
@@ -127,9 +131,8 @@ void setup_filesystems()
 void unmount_all()
 {
     debug("unmount_all");
-    if (options.regression_test_mode)
-        return;
 
+#ifndef UNITTEST
     FILE *fp = fopen("/proc/mounts", "r");
     if (!fp) {
         warn("/proc/mounts not found");
@@ -166,4 +169,5 @@ void unmount_all()
         if (umount(mounts[i].target) < 0 && umount(mounts[i].source) < 0)
             warn("umount %s(%s) failed: %s", mounts[i].source, mounts[i].target, strerror(errno));
     }
+#endif
 }

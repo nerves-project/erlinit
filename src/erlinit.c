@@ -431,9 +431,8 @@ void signal_handler(int signum)
 static void kill_all()
 {
     debug("kill_all");
-    if (options.regression_test_mode)
-        return;
 
+#ifndef UNITTEST
     // Kill processes the nice way
     kill(-1, SIGTERM);
     warn("Sending SIGTERM to all processes");
@@ -445,14 +444,18 @@ static void kill_all()
     kill(-1, SIGKILL);
     warn("Sending SIGKILL to all processes");
     sync();
+#endif
 }
 
 int main(int argc, char *argv[])
 {
-    // erlinit should be pid 1. Anything else is not expected, so run in
-    // regression test mode.
+#ifndef UNITTEST
     if (getpid() != 1)
-        options.regression_test_mode = 1;
+        fatal("Refusing to run since not pid 1");
+#else
+    if (getpid() == 1)
+        fatal("Trying to run unit test version of erlinit for real. This won't work.");
+#endif
 
     // Merge the config file and the command line arguments
     static int merged_argc;

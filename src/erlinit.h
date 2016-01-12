@@ -52,8 +52,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct erlinit_options {
     int verbose;
     int print_timing;
-    int regression_test_mode;
     int hang_on_exit;
+    int warn_unused_tty;
     char *controlling_terminal;
     char *alternate_exec;
     char *uniqueid_exec;

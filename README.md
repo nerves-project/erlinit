@@ -96,6 +96,9 @@ The following lists the options:
     -v, --verbose
         Enable verbose prints
 
+    --warn-unused-tty
+        Print a message on ttys receiving kernel logs, but not an Erlang console
+
 ## Rebooting or hanging when the Erlang VM exits
 
 When you're developing your app, it is useful to hang the platform when something bad
@@ -189,3 +192,12 @@ section. Another use is to capture the Erlang console to a pipe and redirect it
 to a GUI or web app. The `dtach` utility is useful for this. An example
 invocation is: `--alternate-exec "/usr/bin/dtach -N /tmp/iex_prompt"`.
 See the `dtach` manpage for details.
+
+## Multiple consoles
+
+Some targets such as the Raspberry Pi have multiple locations where the Erlang shell
+could be sent. Currently, `erlinit` only supports a console on one of the locations.
+This can cause some confusion and look like a hang. To address this, `erlinit` can
+print a warning message on the unused consoles using the `--warn-unused-tty` option.
+For example, if the user specifies that the Erlang shell is on `ttyAMA0` (the UART
+port), a message will be printed on `tty0` (the HDMI output).

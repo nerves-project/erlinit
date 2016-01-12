@@ -29,9 +29,6 @@ erlinit: merged argv[3]=nerves-%.4s
 erlinit: merged argv[4]=--uniqueid-exec
 erlinit: merged argv[5]=/usr/bin/make-unique-id
 erlinit: set_ctty
-erlinit: Could not mount tmpfs in /tmp: regression test
-Check that tmpfs support is enabled in the kernel config.
-erlinit: Could not mount tmpfs in /run: regression test
 erlinit: find_erts_directory
 erlinit: find_release
 erlinit: No release found in /srv/erlang.

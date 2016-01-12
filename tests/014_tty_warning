@@ -1,0 +1,53 @@
+#!/bin/sh
+
+#
+# Test that when the kernel is printing output on multiple ttys that warnings
+# are displayed on the ones that aren't going to show the prompt.
+#
+
+$CAT >$CMDLINE_FILE <<EOF
+-v -c tty1 --warn-unused-tty
+EOF
+
+# This command line example is from the Raspberry PI. It logs kernel messages
+# on the HDMI display (tty1) and the first serial port (ttyAMA0)
+mkdir -p $WORK/fakeproc
+$CAT >$WORK/fakeproc/cmdline << EOF
+dwc_otg.fiq_fix_enable=1 sdhci-bcm2708.sync_after_dma=0 dwc_otg.lpm_enable=0 console=tty1 console=ttyAMA0,115200 root=/dev/mmcblk0p2 rootwait
+EOF
+mkdir -p $WORK/fakesys/class/tty/console
+$CAT >$WORK/fakesys/class/tty/console/active << EOF
+tty1 ttyAMA0
+EOF
+
+$CAT >$EXPECTED <<EOF
+erlinit: cmdline argc=5, merged argc=5
+erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=-c
+erlinit: merged argv[3]=tty1
+erlinit: merged argv[4]=--warn-unused-tty
+erlinit: set_ctty
+erlinit: warn_unused_tty
+erlinit: tty 'ttyAMA0' is not used
+erlinit: find_erts_directory
+erlinit: find_release
+erlinit: No release found in /srv/erlang.
+erlinit: setup_environment
+erlinit: setup_networking
+erlinit: configure_hostname
+erlinit: /etc/hostname not found
+erlinit: Env: 'HOME=/root'
+erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
+erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
+erlinit: Env: 'EMU=beam'
+erlinit: Env: 'PROGNAME=erl'
+erlinit: Arg: 'erlexec'
+erlinit: Launching erl...
+Hello from erlexec
+erlinit: Erlang VM exited
+erlinit: kill_all
+erlinit: unmount_all
+EOF

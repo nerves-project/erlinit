@@ -150,16 +150,14 @@ static void configure_hostname()
     }
 
     debug("Hostname: %s", hostname);
-    if (!options.regression_test_mode) {
-        OK_OR_WARN(sethostname(hostname, strlen(hostname)), "Error setting hostname: %s", strerror(errno));
-    }
+#ifndef UNITTEST
+    OK_OR_WARN(sethostname(hostname, strlen(hostname)), "Error setting hostname: %s", strerror(errno));
+#endif
 }
 
 static void enable_loopback()
 {
-    if (options.regression_test_mode)
-        return;
-
+#ifndef UNITTEST
     // Set the loopback interface to up
     int fd = socket(PF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
@@ -202,6 +200,7 @@ static void enable_loopback()
 
 cleanup:
     close(fd);
+#endif
 }
 
 void setup_networking()

@@ -72,8 +72,9 @@ void fatal(const char *fmt, ...)
 
     fprintf(stderr, "\r\n\r\nCANNOT CONTINUE.\r\n");
 
-    if (!options.regression_test_mode)
-        sleep(9999);
+#ifndef UNITTEST
+    sleep(9999);
+#endif
 
     exit(1);
 }
