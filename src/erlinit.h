@@ -52,7 +52,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct erlinit_options {
     int verbose;
     int print_timing;
-    int hang_on_exit;
+    int unintentional_exit_cmd; // Invoked when erlang exits. See linux/reboot.h for options
+    int fatal_reboot_cmd;       // Invoked on fatal() log message. See linux/reboot.h for options
     int warn_unused_tty;
     char *controlling_terminal;
     char *alternate_exec;

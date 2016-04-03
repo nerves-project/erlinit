@@ -75,12 +75,25 @@ The following lists the options:
     -H, --reboot-on-exit
         Reboot when Erlang exits.
 
+    --hang-on-fatal
+        Hang if a fatal error is detected in erlinit. This is the default.
+
     -m, --mount <dev:path:type:flags:options>
         Mount the specified path. See mount(8) and fstab(5) for fields
 
     -n, --hostname-pattern <pattern>
         Specify a hostname for the system. The pattern is a printf(3)
         pattern. It is passed a unique ID for the board. E.g., "nerves-%.4s"
+
+    --poweroff-on-exit
+        Power off when Erlang exits. This is similar to --hang-on-exit except it's for
+        platforms without a reset button or an easy way to restart
+
+    --poweroff-on-fatal
+        Power off if a fatal error is detected in erlinit.
+
+    --reboot-on-fatal
+        Reboot if a fatal error is detected in erlinit.
 
     -r, --release-path <path1[:path2...]>
         A colon-separated lists of paths to search for

@@ -26,11 +26,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
+#include <linux/reboot.h>
+
 // Initialize the default options
 struct erlinit_options options = {
     .verbose = 0,
     .print_timing = 0,
-    .hang_on_exit = 0,
+    .unintentional_exit_cmd = LINUX_REBOOT_CMD_RESTART,
+    .fatal_reboot_cmd = LINUX_REBOOT_CMD_HALT,
     .warn_unused_tty = 0,
     .controlling_terminal = NULL,
     .alternate_exec = NULL,
@@ -46,6 +49,10 @@ static struct option long_options[] = {
     {"uniqueid-exec",  required_argument, 0, 'd' },
     {"hang-on-exit", no_argument, 0, 'h' },
     {"reboot-on-exit", no_argument, 0, 'H' },
+    {"poweroff-on-exit", no_argument, 0, '+' },
+    {"hang-on-fatal", no_argument, 0, 'z' },
+    {"reboot-on-fatal", no_argument, 0, 'Z' },
+    {"poweroff-on-fatal", no_argument, 0, '$' },
     {"env", required_argument, 0, 'e' },
     {"mount", required_argument, 0, 'm' },
     {"hostname-pattern", required_argument, 0, 'n' },
@@ -82,10 +89,22 @@ void parse_args(int argc, char *argv[])
             SET_STRING_OPTION(options.additional_env)
             break;
         case 'h': // --hang-on-exit
-            options.hang_on_exit = 1;
+            options.unintentional_exit_cmd = LINUX_REBOOT_CMD_HALT;
             break;
         case 'H': // --reboot-on-exit
-            options.hang_on_exit = 0;
+            options.unintentional_exit_cmd = LINUX_REBOOT_CMD_RESTART;
+            break;
+        case '+': // --poweroff-on-exit
+            options.unintentional_exit_cmd = LINUX_REBOOT_CMD_POWER_OFF;
+            break;
+        case 'z': // --hang-on-fatal
+            options.fatal_reboot_cmd = LINUX_REBOOT_CMD_HALT;
+            break;
+        case 'Z': // --reboot-on-fatal
+            options.fatal_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
+            break;
+        case '$': // --poweroff-on-fatal
+            options.fatal_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
             break;
         case 'm': // --mount /dev/mmcblk0p3:/root:vfat::
             SET_STRING_OPTION(options.extra_mounts)

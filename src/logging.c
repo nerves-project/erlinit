@@ -28,6 +28,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <sys/reboot.h>
+
 static void print_prefix()
 {
     fprintf(stderr, PROGRAM_NAME ": ");
@@ -73,7 +75,11 @@ void fatal(const char *fmt, ...)
     fprintf(stderr, "\r\n\r\nCANNOT CONTINUE.\r\n");
 
 #ifndef UNITTEST
-    sleep(9999);
+    // Sleep so that the message can be printed
+    sleep(1);
+
+    // Halt/reboot/poweroff
+    reboot(options.fatal_reboot_cmd);
 #endif
 
     exit(1);
