@@ -45,7 +45,7 @@ static char boot_path[ERLINIT_PATH_MAX];
 static char sys_config[ERLINIT_PATH_MAX];
 static char vmargs_path[ERLINIT_PATH_MAX];
 
-static int desired_reboot_cmd = 0;
+static int desired_reboot_cmd = 0; // 0 = no request to reboot
 
 static int starts_with(const char *str, const char *what)
 {
@@ -492,19 +492,19 @@ int main(int argc, char *argv[])
     // Register signal handlers to catch requests to exit
     register_signal_handlers();
 
-    // If Erlang exits, then something went wrong, so handle it.
+    // Wait on Erlang until it exits or we receive a signal.
     int is_intentional_exit = 0;
     if (waitpid(pid, 0, 0) < 0) {
         debug("signal or error terminated waitpid. clean up");
 
-        // If waitpid fails and it's not because of a signal, print a warning.
-        if (desired_reboot_cmd < 0) {
-            warn("unexpected error from waitpid(): %s", strerror(errno));
-            desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
-        } else {
+        if (desired_reboot_cmd != 0) {
             // A signal is sent from commands like poweroff, reboot, and halt
             // This is usually intentional.
             is_intentional_exit = 1;
+        } else {
+            // If waitpid returns error and it wasn't from a handled signal, print a warning.
+            warn("unexpected error from waitpid(): %s", strerror(errno));
+            desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
         }
     } else {
         debug("Erlang VM exited");
