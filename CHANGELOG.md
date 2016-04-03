@@ -2,8 +2,12 @@
 
 ## v0.7.1
 
+  * New features
+    * Support powering off on errors and fatals for platforms without
+      and easy way to get out of a hang.
+
   * Fixes
-    * Fix harmless kernel oops at poweroff on slow platforms
+    * The 'halt' command works now.
 
 ## v0.7.0
 
