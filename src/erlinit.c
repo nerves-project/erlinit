@@ -533,8 +533,10 @@ int main(int argc, char *argv[])
         sleep(5);
     }
 
+#ifndef UNITTEST
     // Reboot/poweroff/halt
     reboot(desired_reboot_cmd);
+#endif
 
     // If we get here, oops the kernel.
     return 0;
