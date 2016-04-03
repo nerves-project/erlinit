@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.7.1
+
+  * Fixes
+    * Fix harmless kernel oops at poweroff on slow platforms
+
 ## v0.7.0
 
   * New features
