@@ -6,17 +6,15 @@
 #
 
 $CAT >$CMDLINE_FILE <<EOF
--v --mount /dev/mmcblk0p3:/root:vfat:: /dev/mmcblk0p4:/mnt:vfat::
+-v --mount "/dev/mmcblk0p3:/root:vfat:: /dev/mmcblk0p4:/mnt:vfat::"
 EOF
 
 $CAT >$EXPECTED <<EOF
 erlinit: cmdline argc=4, merged argc=4
-erlinit: cmdline argc=4, merged argc=4
 erlinit: merged argv[0]=/sbin/erlinit
 erlinit: merged argv[1]=-v
 erlinit: merged argv[2]=--mount
-erlinit: merged argv[3]=/dev/mmcblk0p3:/root:vfat::
-erlinit: merged argv[4]=/dev/mmcblk0p4:/mnt:vfat::
+erlinit: merged argv[3]="/dev/mmcblk0p3:/root:vfat:: /dev/mmcblk0p4:/mnt:vfat::"
 erlinit: set_ctty
 erlinit: Cannot mount /dev/mmcblk0p3 at /root: regression test
 erlinit: find_erts_directory
