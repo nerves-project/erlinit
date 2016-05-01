@@ -106,24 +106,26 @@ void setup_filesystems()
     // An example mount specification looks like:
     //    /dev/mmcblk0p4:/mnt:vfat::utf8
     if (options.extra_mounts) {
-        char *temp = options.extra_mounts;
-        const char *source = strsep(&temp, ":");
-        const char *target = strsep(&temp, ":");
-        const char *filesystemtype = strsep(&temp, ":");
-        char *mountflags = strsep(&temp, ":");
-        const char *data = strsep(&temp, ":");
+        char *mnt = strtok(options.extra_mounts, " ");
+        while (mnt) {
+          const char *source = strsep(&mnt, ":");
+          const char *target = strsep(&mnt, ":");
+          const char *filesystemtype = strsep(&mnt, ":");
+          char *mountflags = strsep(&mnt, ":");
+          const char *data = strsep(&mnt, ":");
 
-        if (source && target && filesystemtype && mountflags && data) {
-#ifndef UNITTEST
-            unsigned long imountflags =
-                    str_to_mountflags(mountflags);
-            if (mount(source, target, filesystemtype, imountflags, data) < 0)
-                warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
-#else
-            warn("Cannot mount %s at %s: %s", source, target, "regression test");
-#endif
-        } else {
-            warn("Invalid parameter to -m. Expecting 5 colon-separated fields");
+          if (source && target && filesystemtype && mountflags && data) {
+  #ifndef UNITTEST
+              unsigned long imountflags =
+                      str_to_mountflags(mountflags);
+              if (mount(source, target, filesystemtype, imountflags, data) < 0)
+                  warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
+  #else
+              warn("Cannot mount %s at %s: %s", source, target, "regression test");
+  #endif
+          } else {
+              warn("Invalid parameter to -m. Expecting 5 colon-separated fields");
+          }
         }
     }
 }
