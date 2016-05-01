@@ -6,10 +6,11 @@
 #
 
 $CAT >$CMDLINE_FILE <<EOF
--v --mount /dev/mmcblk0p3:/root:vfat:: /dev/mmcblk0p4:/mnt:vfat:: 
+-v --mount /dev/mmcblk0p3:/root:vfat:: /dev/mmcblk0p4:/mnt:vfat::
 EOF
 
 $CAT >$EXPECTED <<EOF
+erlinit: cmdline argc=5, merged argc=5
 erlinit: cmdline argc=4, merged argc=4
 erlinit: merged argv[0]=/sbin/erlinit
 erlinit: merged argv[1]=-v
