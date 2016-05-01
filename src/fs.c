@@ -106,7 +106,7 @@ void setup_filesystems()
     // An example mount specification looks like:
     //    /dev/mmcblk0p4:/mnt:vfat::utf8
     if (options.extra_mounts) {
-        char *mnt = strtok(options.extra_mounts, ",");
+        char *mnt = strtok(options.extra_mounts, " ");
         while (mnt) {
           const char *source = strsep(&mnt, ":");
           const char *target = strsep(&mnt, ":");

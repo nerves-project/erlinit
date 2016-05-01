@@ -6,7 +6,7 @@
 #
 
 $CAT >$CMDLINE_FILE <<EOF
--v --mount /dev/mmcblk0p3:/root:vfat::
+-v --mount /dev/mmcblk0p3:/root:vfat:: /dev/mmcblk0p4:/mnt:vfat:: 
 EOF
 
 $CAT >$EXPECTED <<EOF
