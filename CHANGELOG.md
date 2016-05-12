@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.7.2
+
+  * New features
+    * Print out the hostname on non-controlling terminals in case the
+      user can connect over the network
+    * Support passing --mount multiple times for more than one mount
+
 ## v0.7.1
 
   * New features

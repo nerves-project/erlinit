@@ -1,5 +1,5 @@
 
-VERSION=0.7.1
+VERSION=0.7.2
 
 erlinit: $(wildcard src/*.c)
 	$(CC) -Wall -O2 -DPROGRAM_VERSION=$(VERSION) -o $@ $^
