@@ -80,6 +80,7 @@ The following lists the options:
 
     -m, --mount <dev:path:type:flags:options>
         Mount the specified path. See mount(8) and fstab(5) for fields
+        Specify multiple times for more than one path to mount.
 
     -n, --hostname-pattern <pattern>
         Specify a hostname for the system. The pattern is a printf(3)

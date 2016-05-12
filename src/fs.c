@@ -105,13 +105,14 @@ void setup_filesystems()
     //
     // An example mount specification looks like:
     //    /dev/mmcblk0p4:/mnt:vfat::utf8
-    if (options.extra_mounts) {
-        char *temp = options.extra_mounts;
+    char *temp = options.extra_mounts;
+
+    while (temp) {
         const char *source = strsep(&temp, ":");
         const char *target = strsep(&temp, ":");
         const char *filesystemtype = strsep(&temp, ":");
         char *mountflags = strsep(&temp, ":");
-        const char *data = strsep(&temp, ":");
+        const char *data = strsep(&temp, ";"); // multi-mount separator
 
         if (source && target && filesystemtype && mountflags && data) {
 #ifndef UNITTEST

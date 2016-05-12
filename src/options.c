@@ -22,8 +22,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "erlinit.h"
+
+#define _GNU_SOURCE // for asprintf
+
 #include <getopt.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <linux/reboot.h>
@@ -65,6 +69,16 @@ static struct option long_options[] = {
 };
 
 #define SET_STRING_OPTION(opt) if (opt) free(opt); opt = strdup(optarg);
+#define APPEND_STRING_OPTION(opt, sep) if (opt) opt = append_string_option(opt, sep, optarg); else opt = strdup(optarg);
+
+static char *append_string_option(char *previous_opt, char sep, const char *arg)
+{
+    char *new_opt;
+    if (asprintf(&new_opt, "%s%c%s", previous_opt, sep, arg) < 0)
+        fatal("asprintf failed");
+    free(previous_opt);
+    return new_opt;
+}
 
 void parse_args(int argc, char *argv[])
 {
@@ -86,7 +100,7 @@ void parse_args(int argc, char *argv[])
             SET_STRING_OPTION(options.uniqueid_exec)
             break;
         case 'e': // --env FOO=bar;FOO2=bar2
-            SET_STRING_OPTION(options.additional_env)
+            APPEND_STRING_OPTION(options.additional_env, ';')
             break;
         case 'h': // --hang-on-exit
             options.unintentional_exit_cmd = LINUX_REBOOT_CMD_HALT;
@@ -107,7 +121,7 @@ void parse_args(int argc, char *argv[])
             options.fatal_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
             break;
         case 'm': // --mount /dev/mmcblk0p3:/root:vfat::
-            SET_STRING_OPTION(options.extra_mounts)
+            APPEND_STRING_OPTION(options.extra_mounts, ';')
             break;
         case 'n': // --hostname-pattern nerves-%.4s
             SET_STRING_OPTION(options.hostname_pattern)
