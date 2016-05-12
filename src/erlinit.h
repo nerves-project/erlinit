@@ -90,6 +90,7 @@ void unmount_all();
 
 // Terminal
 void set_ctty();
+void warn_unused_tty();
 
 #endif // ERLINIT_H
 

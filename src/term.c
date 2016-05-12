@@ -61,9 +61,16 @@ static int readsysfs(const char *path, char *buffer, int maxlen)
     return count;
 }
 
-void warn_unused_tty(const char *used_tty)
+void warn_unused_tty()
 {
     debug("warn_unused_tty");
+
+    // warn_unused_tty must be called after set_ctty to ensure this is set.
+    const char *used_tty = options.controlling_terminal;
+
+    char hostname[32];
+    if (gethostname(hostname, sizeof(hostname)) < 0)
+        strcpy(hostname, "unknown");
 
     char all_ttys[TTY_MAX_PATH_LENGTH];
     readsysfs(SYSFS_ACTIVE_CONSOLE, all_ttys, sizeof(all_ttys));
@@ -74,14 +81,16 @@ void warn_unused_tty(const char *used_tty)
 #ifndef UNITTEST
             char ttypath[TTY_MAX_PATH_LENGTH + 1] = TTY_PREFIX;
             strcat(&ttypath[TTY_PREFIX_LENGTH], tty);
+
             int fd = open(ttypath, O_WRONLY);
             if (fd >= 0) {
                 char *msg;
                 int len = asprintf(&msg,
                                    PROGRAM_NAME ": The shell will be launched on tty '%s'.\r\n"
                                    PROGRAM_NAME ": If you would like the shell to be on this tty,\r\n"
-                                   PROGRAM_NAME ": configure erlinit with '-c %s'.\r\n",
-                                   used_tty, tty);
+                                   PROGRAM_NAME ": configure erlinit with '-c %s'.\r\n"
+                                   PROGRAM_NAME ": The hostname is '%s'.\r\n",
+                                   used_tty, tty, hostname);
                 ssize_t ignored = write(fd, msg, len);
                 (void) ignored;
                 close(fd);
@@ -124,6 +133,9 @@ void set_ctty()
         char *sep = strchr(&ttypath[TTY_PREFIX_LENGTH], ' ');
         if (sep)
             *sep = 0;
+
+        // Save the chosen controlling terminal
+        options.controlling_terminal = strdup(&ttypath[TTY_PREFIX_LENGTH]);
     }
 
 #ifndef UNITTEST
@@ -137,7 +149,4 @@ void set_ctty()
         warn("error setting controlling terminal: %s", ttypath);
     }
 #endif
-
-    if (options.warn_unused_tty)
-        warn_unused_tty(&ttypath[TTY_PREFIX_LENGTH]);
 }

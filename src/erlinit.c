@@ -316,6 +316,10 @@ static void child()
     // Set up the minimum networking we need for Erlang.
     setup_networking();
 
+    // Warn the user if they're on an inactive TTY
+    if (options.warn_unused_tty)
+        warn_unused_tty();
+
     OK_OR_FATAL(chdir(release_root_dir), "Cannot chdir to release directory (%s)", release_root_dir);
 
     // Start Erlang up

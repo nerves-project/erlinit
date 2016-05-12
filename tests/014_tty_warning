@@ -28,8 +28,6 @@ erlinit: merged argv[2]=-c
 erlinit: merged argv[3]=tty1
 erlinit: merged argv[4]=--warn-unused-tty
 erlinit: set_ctty
-erlinit: warn_unused_tty
-erlinit: tty 'ttyAMA0' is not used
 erlinit: find_erts_directory
 erlinit: find_release
 erlinit: No release found in /srv/erlang.
@@ -37,6 +35,8 @@ erlinit: setup_environment
 erlinit: setup_networking
 erlinit: configure_hostname
 erlinit: /etc/hostname not found
+erlinit: warn_unused_tty
+erlinit: tty 'ttyAMA0' is not used
 erlinit: Env: 'HOME=/root'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
