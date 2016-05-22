@@ -25,6 +25,8 @@ erlinit: merged argv[2]=-s
 erlinit: merged argv[3]=/usr/bin/strace -f
 erlinit: set_ctty
 erlinit: find_erts_directory
+erlinit: find_erts_library_directory
+erlinit: directory /usr/lib/erlang/lib not found?
 erlinit: find_release
 erlinit: No release found in /srv/erlang.
 erlinit: setup_environment

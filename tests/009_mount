@@ -18,6 +18,8 @@ erlinit: merged argv[3]=/dev/mmcblk0p3:/root:vfat::
 erlinit: set_ctty
 erlinit: Cannot mount /dev/mmcblk0p3 at /root: regression test
 erlinit: find_erts_directory
+erlinit: find_erts_library_directory
+erlinit: directory /usr/lib/erlang/lib not found?
 erlinit: find_release
 erlinit: No release found in /srv/erlang.
 erlinit: setup_environment
