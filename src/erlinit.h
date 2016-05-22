@@ -34,6 +34,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define PROGRAM_VERSION_STR xstr(PROGRAM_VERSION)
 
 #define ERLANG_ROOT_DIR "/usr/lib/erlang"
+
+// If the system libraries exist on the target, they would
+// be found here. Note that Nerves strips this directory
+// since the system libraries are bundled with the release.
+#define ERLANG_ERTS_LIB_DIR ERLANG_ROOT_DIR "/lib"
+
 #define DEFAULT_RELEASE_ROOT_DIR "/srv/erlang"
 
 // This is the maximum number of mounted filesystems that

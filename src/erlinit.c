@@ -266,6 +266,16 @@ static void find_release()
     strcpy(release_root_dir, ERLANG_ROOT_DIR);
 }
 
+static int has_erts_library_directory()
+{
+    // Nerves packages the ERTS libraries in with the release, but on
+    // systems that don't do this, we need to pass the directory in the Erlang
+    // commandline arguments. Currently, the directory is hardcoded in a
+    // similar way to ERLANG_ROOT_DIR, so we just check whether it exists.
+    // See https://github.com/nerves-project/erlinit/pull/4 for more details.
+    return is_directory(ERLANG_ERTS_LIB_DIR);
+}
+
 static void setup_environment()
 {
     debug("setup_environment");
@@ -353,6 +363,11 @@ static void child()
     if (*vmargs_path) {
         exec_argv[arg++] = "-args_file";
         exec_argv[arg++] = vmargs_path;
+    }
+    if (has_erts_library_directory()) {
+        exec_argv[arg++] = "-boot_var";
+        exec_argv[arg++] = "ERTS_LIB_DIR";
+        exec_argv[arg++] = ERLANG_ERTS_LIB_DIR;
     }
 
     exec_argv[arg] = NULL;
