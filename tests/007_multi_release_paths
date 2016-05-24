@@ -22,6 +22,8 @@ erlinit: merged argv[2]=-r
 erlinit: merged argv[3]=/mnt/anotherplace:/srv/erlang
 erlinit: set_ctty
 erlinit: find_erts_directory
+erlinit: find_erts_library_directory
+erlinit: directory /usr/lib/erlang/lib not found?
 erlinit: find_release
 erlinit: No release found in /mnt/anotherplace.
 erlinit: Using release in /srv/erlang/releases/0.0.1.

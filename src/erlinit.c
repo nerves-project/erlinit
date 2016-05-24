@@ -44,6 +44,7 @@ static char release_root_dir[ERLINIT_PATH_MAX];
 static char boot_path[ERLINIT_PATH_MAX];
 static char sys_config[ERLINIT_PATH_MAX];
 static char vmargs_path[ERLINIT_PATH_MAX];
+static char erts_lib_dir[ERLINIT_PATH_MAX];
 
 static int desired_reboot_cmd = 0; // 0 = no request to reboot
 
@@ -266,6 +267,17 @@ static void find_release()
     strcpy(release_root_dir, ERLANG_ROOT_DIR);
 }
 
+static void find_erts_library_directory()
+{
+    debug("find_erts_library_directory");
+    sprintf(erts_lib_dir, "%s/lib", ERLANG_ROOT_DIR);
+    if (!is_directory(erts_lib_dir)) {
+        warn("directory %s not found?", erts_lib_dir);
+        *erts_lib_dir = '\0';
+    }
+}
+
+
 static void setup_environment()
 {
     debug("setup_environment");
@@ -308,6 +320,7 @@ static void child()
     // Locate everything needed to configure the environment
     // and pass to erlexec.
     find_erts_directory();
+    find_erts_library_directory();
     find_release();
 
     // Set up the environment for running erlang.
@@ -353,6 +366,11 @@ static void child()
     if (*vmargs_path) {
         exec_argv[arg++] = "-args_file";
         exec_argv[arg++] = vmargs_path;
+    }
+    if (*erts_lib_dir) {
+        exec_argv[arg++] = "-boot_var";
+        exec_argv[arg++] = "ERTS_LIB_DIR";
+        exec_argv[arg++] = erts_lib_dir;
     }
 
     exec_argv[arg] = NULL;

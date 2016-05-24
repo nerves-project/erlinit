@@ -1,21 +1,22 @@
 #!/bin/sh
 
 #
-# Test that specifying --verbose on the command line works
+# Test that the boot_arg parameter for erlexec works
 #
 
 $CAT >$CMDLINE_FILE <<EOF
---verbose
+-v
 EOF
+
+$MKDIR -p $FAKE_ERTS_DIR/../lib
 
 $CAT >$EXPECTED <<EOF
 erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/erlinit
-erlinit: merged argv[1]=--verbose
+erlinit: merged argv[1]=-v
 erlinit: set_ctty
 erlinit: find_erts_directory
 erlinit: find_erts_library_directory
-erlinit: directory /usr/lib/erlang/lib not found?
 erlinit: find_release
 erlinit: No release found in /srv/erlang.
 erlinit: setup_environment
@@ -30,6 +31,9 @@ erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
 erlinit: Env: 'EMU=beam'
 erlinit: Env: 'PROGNAME=erl'
 erlinit: Arg: 'erlexec'
+erlinit: Arg: '-boot_var'
+erlinit: Arg: 'ERTS_LIB_DIR'
+erlinit: Arg: '/usr/lib/erlang/lib'
 erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited

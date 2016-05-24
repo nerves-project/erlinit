@@ -16,6 +16,8 @@ erlinit: merged argv[2]=-e
 erlinit: merged argv[3]=LANG=en_US.UTF-8;LANGUAGE=en
 erlinit: set_ctty
 erlinit: find_erts_directory
+erlinit: find_erts_library_directory
+erlinit: directory /usr/lib/erlang/lib not found?
 erlinit: find_release
 erlinit: No release found in /srv/erlang.
 erlinit: setup_environment
