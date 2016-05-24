@@ -1,12 +1,14 @@
 
 VERSION=0.7.2
 
+CFLAGS+=-Wall -Wextra -O2 -DPROGRAM_VERSION=$(VERSION)
+
 erlinit: $(wildcard src/*.c)
-	$(CC) -Wall -O2 -DPROGRAM_VERSION=$(VERSION) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^
 
 # This is a special version of erlinit that can be unit tested
 erlinit-test: $(wildcard src/*.c)
-	$(CC) -Wall -O2 -DPROGRAM_VERSION=$(VERSION) -DUNITTEST -o $@ $^
+	$(CC) $(CFLAGS) -DUNITTEST -o $@ $^
 
 test: check
 check: erlinit erlinit-test
