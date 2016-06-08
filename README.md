@@ -69,6 +69,9 @@ The following lists the options:
     -e, --env <VAR=value;VAR2=Value2...>
         Set additional environment variables
 
+    --gid <id>
+        Run the Erlang VM under the specified group ID
+
     -h, --hang-on-exit
         Hang the system if Erlang exits. The default is to reboot.
 
@@ -112,6 +115,9 @@ The following lists the options:
 
     -v, --verbose
         Enable verbose prints
+
+    --uid <id>
+        Run the Erlang VM under the specified user ID
 
     --warn-unused-tty
         Print a message on ttys receiving kernel logs, but not an Erlang console
@@ -230,3 +236,11 @@ This can cause some confusion and look like a hang. To address this, `erlinit` c
 print a warning message on the unused consoles using the `--warn-unused-tty` option.
 For example, if the user specifies that the Erlang shell is on `ttyAMA0` (the UART
 port), a message will be printed on `tty0` (the HDMI output).
+
+## Privilege
+
+By default, `erlinit` starts the Erlang VM with superuser privilege. It is possible
+to reduce privilege by specifying the `--uid` and `--gid` options. Before doing
+this, make sure that your embedded Erlang/OTP application can support this. When
+dealing with hardware, it is quite easy to run into situations requiring elevated
+privileges.

@@ -69,6 +69,8 @@ struct erlinit_options {
     char *release_search_path;
     char *extra_mounts;
     char *run_on_exit;
+    int uid;
+    int gid;
 };
 
 extern struct erlinit_options options;

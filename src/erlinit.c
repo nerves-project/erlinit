@@ -311,6 +311,24 @@ static void setup_environment()
     }
 }
 
+static void drop_privileges()
+{
+    if (options.gid > 0) {
+        debug("setting gid to %d", options.gid);
+
+#ifndef UNITTEST
+        OK_OR_FATAL(setgid(options.gid), "setgid failed");
+#endif
+    }
+    if (options.uid > 0) {
+        debug("setting uid to %d", options.uid);
+
+#ifndef UNITTEST
+        OK_OR_FATAL(setuid(options.uid), "setuid failed");
+#endif
+    }
+}
+
 static void child()
 {
     setup_filesystems();
@@ -331,6 +349,9 @@ static void child()
         warn_unused_tty();
 
     OK_OR_FATAL(chdir(release_root_dir), "Cannot chdir to release directory (%s)", release_root_dir);
+
+    // Optionally drop privileges
+    drop_privileges();
 
     // Start Erlang up
     char erlexec_path[ERLINIT_PATH_MAX];

@@ -46,7 +46,9 @@ struct erlinit_options options = {
     .additional_env = NULL,
     .release_search_path = NULL,
     .extra_mounts = NULL,
-    .run_on_exit = NULL
+    .run_on_exit = NULL,
+    .gid = 0,
+    .uid = 0
 };
 
 static struct option long_options[] = {
@@ -67,6 +69,8 @@ static struct option long_options[] = {
     {"print-timing", no_argument, 0, 't' },
     {"verbose", no_argument, 0, 'v' },
     {"warn-unused-tty", no_argument, 0, '!' },
+    {"uid", required_argument, 0, '^' },
+    {"gid", required_argument, 0, '&' },
     {0,     0,      0, 0 }
 };
 
@@ -145,6 +149,12 @@ void parse_args(int argc, char *argv[])
             break;
         case '!': // --warn-unused-tty
             options.warn_unused_tty = 1;
+            break;
+        case '^': // --uid 100
+            options.uid = strtol(optarg, NULL, 0);
+            break;
+        case '&': // --gid 200
+            options.gid = strtol(optarg, NULL, 0);
             break;
         default:
             // getopt prints a warning, so we don't have to
