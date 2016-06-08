@@ -466,6 +466,38 @@ static void kill_all()
 #endif
 }
 
+static int run_cmd(const char *cmd)
+{
+    debug("run_cmd '%s'", cmd);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        // child
+        char *cmd_copy = strdup(cmd);
+        char *exec_path = strtok(cmd_copy, " ");
+        char *exec_argv[16];
+        int arg = 0;
+
+        exec_argv[arg++] = exec_path;
+        while ((exec_argv[arg] = strtok(NULL, " ")) != NULL)
+            arg++;
+        exec_argv[arg] = 0;
+        execvp(exec_path, exec_argv);
+
+        // Not supposed to reach here.
+        warn("execvp '%s' failed", cmd);
+        exit(EXIT_FAILURE);
+    } else {
+        // parent
+        int status;
+        if (waitpid(pid, &status, 0) != pid) {
+            warn("waitpid");
+            return -1;
+        }
+        return status;
+    }
+}
+
 int main(int argc, char *argv[])
 {
 #ifndef UNITTEST
@@ -530,6 +562,10 @@ int main(int argc, char *argv[])
 
         desired_reboot_cmd = options.unintentional_exit_cmd;
     }
+
+    // If the user specified a command to run on an unexpected exit, run it.
+    if (options.run_on_exit && !is_intentional_exit)
+        run_cmd(options.run_on_exit);
 
     // Exit everything that's still running.
     kill_all();

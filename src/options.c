@@ -45,7 +45,8 @@ struct erlinit_options options = {
     .hostname_pattern = NULL,
     .additional_env = NULL,
     .release_search_path = NULL,
-    .extra_mounts = NULL
+    .extra_mounts = NULL,
+    .run_on_exit = NULL
 };
 
 static struct option long_options[] = {
@@ -61,6 +62,7 @@ static struct option long_options[] = {
     {"mount", required_argument, 0, 'm' },
     {"hostname-pattern", required_argument, 0, 'n' },
     {"release-path", required_argument, 0, 'r' },
+    {"run-on-exit", required_argument, 0, '%' },
     {"alternate-exec", required_argument, 0, 's' },
     {"print-timing", no_argument, 0, 't' },
     {"verbose", no_argument, 0, 'v' },
@@ -128,6 +130,9 @@ void parse_args(int argc, char *argv[])
             break;
         case 'r': // --release-path /srv/erlang
             SET_STRING_OPTION(options.release_search_path)
+            break;
+        case '%': // --run-on-exit /bin/sh
+            SET_STRING_OPTION(options.run_on_exit);
             break;
         case 's': // --alternate-exec "/usr/bin/dtach -N /tmp/iex_prompt"
             SET_STRING_OPTION(options.alternate_exec)

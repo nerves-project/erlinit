@@ -100,6 +100,9 @@ The following lists the options:
         A colon-separated lists of paths to search for
         Erlang releases. The default is /srv/erlang.
 
+    --run-on-exit <program and arguments>
+        Run the specified command on exit.
+
     -s, --alternate-exec <program and arguments>
         Run another program that starts Erlang up
 
@@ -115,10 +118,22 @@ The following lists the options:
 
 ## Rebooting or hanging when the Erlang VM exits
 
-When you're developing your app, it is useful to hang the platform when something bad
-happens in the Erlang VM. To do this, pass the `-h` option. In production,
-the desired behavior is usually to reboot. Rebooting is the default, but you can
-specify this explicitly by passing `-H` or `reboot-on-exit`.
+In production, if the Erlang VM exits for any reason, the desired behavior is
+usually to reboot. This is the default. When developing your app, you'll quickly
+find that this is frustrating since it makes it more difficult to gather debug
+information. The following other options are available:
+
+  1. `-h` or `--hang-on-exit` - `erlinit` instructs the kernel to halt. On most
+     systems this will cause the kernel to hang. Some systems reboot after a long
+     delay - for example, a watchdog timer could trigger a reboot.
+  2. `--poweroff-on-exit` - `erlinit` instructs the kernel to power off.
+  3. `--run-on-exit` - `erlinit` runs the specified program on exit.
+
+The 3rd option can be particularly useful for debugging since it allows you to manually
+collect debug data. For example, specifying `--run-on-exit /bin/sh` launches a
+shell. Another use is to invoke a program that reverts back to a known good version
+of the application. When the command exits, `erlinit` will either reboot, hang, or
+poweroff depending on whether `--hang-on-exit` or `--poweroff-on-exit` were passed.
 
 ## Read-only root file systems
 
