@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.7.3
+
+  * New features
+    * Run a program when the Erlang VM exits. For example, run `sh` so
+      that you can look around to gather debug information, or run
+      another program to revert to a known good image.
+    * Run the Erlang VM with non-superuser privileges (`--uid` and `--gid`
+      options. Thanks to @ches for discussion on this topic.
+
+  * Fixes
+    * Pass `-boot_var ERTS_LIB_DIR ...` to `erlexec` for platforms using
+      the system libraries (Not Nerves). This is required for at least
+      the use of `erlinit` in Yocto. Thanks to chrta for the fix.
+
 ## v0.7.2
 
   * New features
