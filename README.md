@@ -89,6 +89,9 @@ The following lists the options:
         Specify a hostname for the system. The pattern is a printf(3)
         pattern. It is passed a unique ID for the board. E.g., "nerves-%.4s"
 
+    --pre-run-exec <program and arguments>
+        Run the specified command before Erlang starts
+
     --poweroff-on-exit
         Power off when Erlang exits. This is similar to --hang-on-exit except it's for
         platforms without a reset button or an easy way to restart
@@ -107,7 +110,7 @@ The following lists the options:
         Run the specified command on exit.
 
     -s, --alternate-exec <program and arguments>
-        Run another program that starts Erlang up
+        Run another program that starts Erlang up. The arguments to `erlexec` are passed afterwards.
 
     -t, --print-timing
         Print out when erlinit starts and when it launches Erlang (for

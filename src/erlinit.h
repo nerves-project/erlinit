@@ -69,6 +69,7 @@ struct erlinit_options {
     char *release_search_path;
     char *extra_mounts;
     char *run_on_exit;
+    char *pre_run_exec;
     int uid;
     int gid;
 };

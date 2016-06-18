@@ -311,6 +311,38 @@ static void setup_environment()
     }
 }
 
+static int run_cmd(const char *cmd)
+{
+    debug("run_cmd '%s'", cmd);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        // child
+        char *cmd_copy = strdup(cmd);
+        char *exec_path = strtok(cmd_copy, " ");
+        char *exec_argv[16];
+        int arg = 0;
+
+        exec_argv[arg++] = exec_path;
+        while ((exec_argv[arg] = strtok(NULL, " ")) != NULL)
+            arg++;
+        exec_argv[arg] = 0;
+        execvp(exec_path, exec_argv);
+
+        // Not supposed to reach here.
+        warn("execvp '%s' failed", cmd);
+        exit(EXIT_FAILURE);
+    } else {
+        // parent
+        int status;
+        if (waitpid(pid, &status, 0) != pid) {
+            warn("waitpid");
+            return -1;
+        }
+        return status;
+    }
+}
+
 static void drop_privileges()
 {
     if (options.gid > 0) {
@@ -349,6 +381,10 @@ static void child()
         warn_unused_tty();
 
     OK_OR_FATAL(chdir(release_root_dir), "Cannot chdir to release directory (%s)", release_root_dir);
+
+    // Optionally run a "pre-run" program
+    if (options.pre_run_exec)
+        run_cmd(options.pre_run_exec);
 
     // Optionally drop privileges
     drop_privileges();
@@ -485,38 +521,6 @@ static void kill_all()
     warn("Sending SIGKILL to all processes");
     sync();
 #endif
-}
-
-static int run_cmd(const char *cmd)
-{
-    debug("run_cmd '%s'", cmd);
-
-    pid_t pid = fork();
-    if (pid == 0) {
-        // child
-        char *cmd_copy = strdup(cmd);
-        char *exec_path = strtok(cmd_copy, " ");
-        char *exec_argv[16];
-        int arg = 0;
-
-        exec_argv[arg++] = exec_path;
-        while ((exec_argv[arg] = strtok(NULL, " ")) != NULL)
-            arg++;
-        exec_argv[arg] = 0;
-        execvp(exec_path, exec_argv);
-
-        // Not supposed to reach here.
-        warn("execvp '%s' failed", cmd);
-        exit(EXIT_FAILURE);
-    } else {
-        // parent
-        int status;
-        if (waitpid(pid, &status, 0) != pid) {
-            warn("waitpid");
-            return -1;
-        }
-        return status;
-    }
 }
 
 int main(int argc, char *argv[])
