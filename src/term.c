@@ -73,7 +73,8 @@ void warn_unused_tty()
         strcpy(hostname, "unknown");
 
     char all_ttys[TTY_MAX_PATH_LENGTH];
-    readsysfs(SYSFS_ACTIVE_CONSOLE, all_ttys, sizeof(all_ttys));
+    if (readsysfs(SYSFS_ACTIVE_CONSOLE, all_ttys, sizeof(all_ttys)) == 0)
+        return;
 
     char *tty = strtok(all_ttys, " ");
     while (tty != NULL) {

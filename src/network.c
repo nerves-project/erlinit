@@ -76,7 +76,8 @@ static int system_cmd(const char *cmd, char *output_buffer, int length)
         while ((exec_argv[arg] = strtok(NULL, " ")) != NULL)
             arg++;
         exec_argv[arg] = 0;
-        execvp(exec_path, exec_argv);
+        if (exec_path)
+            execvp(exec_path, exec_argv);
 
         // Not supposed to reach here.
         warn("execvp '%s' failed", cmd);
