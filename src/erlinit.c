@@ -41,7 +41,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 static char erts_dir[ERLINIT_PATH_MAX];
 static char release_info_dir[ERLINIT_PATH_MAX];
 static char release_root_dir[ERLINIT_PATH_MAX];
-static char boot_path[ERLINIT_PATH_MAX];
+static char *boot_path = NULL;
 static char sys_config[ERLINIT_PATH_MAX];
 static char vmargs_path[ERLINIT_PATH_MAX];
 
@@ -119,6 +119,33 @@ static void find_vm_args()
 static void find_boot_path()
 {
     debug("find_boot_path");
+    if (boot_path) {
+        free(boot_path);
+        boot_path = NULL;
+    }
+
+    if (options.boot_path) {
+        // Handle a user-specified boot file. Absolute or relative is ok.
+        if (options.boot_path[0] == '/')
+            OK_OR_FATAL(asprintf(&boot_path, "%s", options.boot_path), "asprintf failed");
+        else
+            OK_OR_FATAL(asprintf(&boot_path, "%s/%s", release_info_dir, options.boot_path), "asprintf failed");
+
+        // Check that the file exists.
+        if (file_exists(boot_path))
+            return;
+
+        char *boot_path_with_dotboot;
+        OK_OR_FATAL(asprintf(&boot_path_with_dotboot, "%s.boot", boot_path), "asprintf failed");
+        if (file_exists(boot_path_with_dotboot)) {
+            free(boot_path_with_dotboot);
+            return;
+        }
+
+        free(boot_path_with_dotboot);
+        warn("Specified boot file '%s' not found. Auto-detecting.", options.boot_path);
+    }
+
     struct dirent **namelist;
     int n = scandir(release_info_dir,
                     &namelist,
@@ -131,7 +158,7 @@ static void find_boot_path()
         warn("Found more than one boot file. Using %s.", namelist[0]->d_name);
 
     // Use the first
-    sprintf(boot_path, "%s/%s", release_info_dir, namelist[0]->d_name);
+    OK_OR_FATAL(asprintf(&boot_path, "%s/%s", release_info_dir, namelist[0]->d_name), "asprintf failed");
 
     // Strip off the .boot since that's what erl wants.
     char *dot = strrchr(boot_path, '.');
@@ -261,7 +288,10 @@ static void find_release()
     }
     *release_info_dir = '\0';
     *sys_config = '\0';
-    *boot_path = '\0';
+    if (boot_path) {
+        free(boot_path);
+        boot_path = NULL;
+    }
 
     strcpy(release_root_dir, ERLANG_ROOT_DIR);
 }
@@ -414,7 +444,7 @@ static void child()
         exec_argv[arg++] = "-config";
         exec_argv[arg++] = sys_config;
     }
-    if (*boot_path) {
+    if (boot_path) {
         exec_argv[arg++] = "-boot";
         exec_argv[arg++] = boot_path;
     }

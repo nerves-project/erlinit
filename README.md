@@ -60,6 +60,11 @@ For example, the following is a valid `/etc/erlinit.config`:
 
 The following lists the options:
 
+    -b, --boot <path>
+        Specify a specific .boot file for the Erlang VM to load
+        Normally, the .boot file is automatically detected. The .boot extension is
+        optional. A relative path is relative to the release directory.
+
     -c, --ctty <tty[n]>
         Force the controlling terminal (ttyAMA0, tty1, etc.)
 

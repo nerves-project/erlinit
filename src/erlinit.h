@@ -70,6 +70,7 @@ struct erlinit_options {
     char *extra_mounts;
     char *run_on_exit;
     char *pre_run_exec;
+    char *boot_path;
     int uid;
     int gid;
 };

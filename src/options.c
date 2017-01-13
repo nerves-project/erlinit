@@ -48,11 +48,13 @@ struct erlinit_options options = {
     .extra_mounts = NULL,
     .run_on_exit = NULL,
     .pre_run_exec = NULL,
+    .boot_path = NULL,
     .gid = 0,
     .uid = 0
 };
 
 static struct option long_options[] = {
+    {"boot", required_argument, 0, 'b' },
     {"ctty",  required_argument, 0, 'c' },
     {"uniqueid-exec",  required_argument, 0, 'd' },
     {"hang-on-exit", no_argument, 0, 'h' },
@@ -94,21 +96,24 @@ void parse_args(int argc, char *argv[])
         int option_index;
         int opt = getopt_long(argc,
                               argv,
-                              "c:d:e:hm:n:r:s:tv",
+                              "b:c:d:e:hm:n:r:s:tv",
                               long_options,
                               &option_index);
         if (opt < 0)
             break;
 
         switch (opt) {
+        case 'b': // --boot path
+            SET_STRING_OPTION(options.boot_path);
+            break;
         case 'c': // --ctty ttyS0
-            SET_STRING_OPTION(options.controlling_terminal)
+            SET_STRING_OPTION(options.controlling_terminal);
             break;
         case 'd': // --uniqueid-exec program
-            SET_STRING_OPTION(options.uniqueid_exec)
+            SET_STRING_OPTION(options.uniqueid_exec);
             break;
         case 'e': // --env FOO=bar;FOO2=bar2
-            APPEND_STRING_OPTION(options.additional_env, ';')
+            APPEND_STRING_OPTION(options.additional_env, ';');
             break;
         case 'h': // --hang-on-exit
             options.unintentional_exit_cmd = LINUX_REBOOT_CMD_HALT;
@@ -129,19 +134,19 @@ void parse_args(int argc, char *argv[])
             options.fatal_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
             break;
         case 'm': // --mount /dev/mmcblk0p3:/root:vfat::
-            APPEND_STRING_OPTION(options.extra_mounts, ';')
+            APPEND_STRING_OPTION(options.extra_mounts, ';');
             break;
         case 'n': // --hostname-pattern nerves-%.4s
-            SET_STRING_OPTION(options.hostname_pattern)
+            SET_STRING_OPTION(options.hostname_pattern);
             break;
         case 'r': // --release-path /srv/erlang
-            SET_STRING_OPTION(options.release_search_path)
+            SET_STRING_OPTION(options.release_search_path);
             break;
         case '%': // --run-on-exit /bin/sh
             SET_STRING_OPTION(options.run_on_exit);
             break;
         case 's': // --alternate-exec "/usr/bin/dtach -N /tmp/iex_prompt"
-            SET_STRING_OPTION(options.alternate_exec)
+            SET_STRING_OPTION(options.alternate_exec);
             break;
         case 't': // --print-timing
             options.print_timing = 1;
