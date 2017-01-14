@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <dirent.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,14 +39,28 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-static char erts_dir[ERLINIT_PATH_MAX];
 static char release_info_dir[ERLINIT_PATH_MAX];
 static char release_root_dir[ERLINIT_PATH_MAX];
+
+static char *erts_dir = NULL;
 static char *boot_path = NULL;
-static char sys_config[ERLINIT_PATH_MAX];
-static char vmargs_path[ERLINIT_PATH_MAX];
+static char *sys_config = NULL;
+static char *vmargs_path = NULL;
 
 static int desired_reboot_cmd = 0; // 0 = no request to reboot
+
+static void erlinit_asprintf(char **strp, const char *fmt, ...)
+{
+    // Free *strp if this is being called a second time.
+    // (Be careful with string pointers)
+    if (*strp)
+        free(*strp);
+
+    va_list ap;
+    va_start(ap, fmt);
+    OK_OR_FATAL(vasprintf(strp, fmt, ap), "asprintf failed");
+    va_end(ap);
+}
 
 static int starts_with(const char *str, const char *what)
 {
@@ -72,7 +87,7 @@ static void find_erts_directory()
     else if (n > 1)
         fatal("Found multiple erts directories. Clean up the installation.");
 
-    sprintf(erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
+    erlinit_asprintf(&erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
 
     free(namelist[0]);
     free(namelist);
@@ -99,53 +114,49 @@ static int bootfile_filter(const struct dirent *d)
 static void find_sys_config()
 {
     debug("find_sys_config");
-    sprintf(sys_config, "%s/sys.config", release_info_dir);
+    erlinit_asprintf(&sys_config, "%s/sys.config", release_info_dir);
     if (!file_exists(sys_config)) {
         warn("%s not found?", sys_config);
-        *sys_config = '\0';
+        free(sys_config);
+        sys_config = NULL;
     }
 }
 
 static void find_vm_args()
 {
     debug("find_vm_args");
-    sprintf(vmargs_path, "%s/vm.args", release_info_dir);
+    erlinit_asprintf(&vmargs_path, "%s/vm.args", release_info_dir);
     if (!file_exists(vmargs_path)) {
         warn("%s not found?", vmargs_path);
-        *vmargs_path = '\0';
+        free(vmargs_path);
+        vmargs_path = NULL;
     }
 }
 
 static void find_boot_path()
 {
     debug("find_boot_path");
-    if (boot_path) {
-        free(boot_path);
-        boot_path = NULL;
-    }
 
     if (options.boot_path) {
         // Handle a user-specified boot file. Absolute or relative is ok.
         if (options.boot_path[0] == '/')
-            OK_OR_FATAL(asprintf(&boot_path, "%s", options.boot_path), "asprintf failed");
+            erlinit_asprintf(&boot_path, "%s", options.boot_path);
         else
-            OK_OR_FATAL(asprintf(&boot_path, "%s/%s", release_info_dir, options.boot_path), "asprintf failed");
+            erlinit_asprintf(&boot_path, "%s/%s", release_info_dir, options.boot_path);
 
         // Check that the file exists.
         if (file_exists(boot_path))
             return;
 
-        char *boot_path_with_dotboot;
-        OK_OR_FATAL(asprintf(&boot_path_with_dotboot, "%s.boot", boot_path), "asprintf failed");
+        char *boot_path_with_dotboot = NULL;
+        erlinit_asprintf(&boot_path_with_dotboot, "%s.boot", boot_path);
         if (file_exists(boot_path_with_dotboot)) {
             free(boot_path_with_dotboot);
             return;
         }
-
         free(boot_path_with_dotboot);
         warn("Specified boot file '%s' not found. Auto-detecting.", options.boot_path);
     }
-
     struct dirent **namelist;
     int n = scandir(release_info_dir,
                     &namelist,
@@ -158,7 +169,7 @@ static void find_boot_path()
         warn("Found more than one boot file. Using %s.", namelist[0]->d_name);
 
     // Use the first
-    OK_OR_FATAL(asprintf(&boot_path, "%s/%s", release_info_dir, namelist[0]->d_name), "asprintf failed");
+    erlinit_asprintf(&boot_path, "%s/%s", release_info_dir, namelist[0]->d_name);
 
     // Strip off the .boot since that's what erl wants.
     char *dot = strrchr(boot_path, '.');
@@ -287,7 +298,10 @@ static void find_release()
         search_path = strtok(NULL, ":");
     }
     *release_info_dir = '\0';
-    *sys_config = '\0';
+    if (sys_config) {
+        free(sys_config);
+        sys_config = NULL;
+    }
     if (boot_path) {
         free(boot_path);
         boot_path = NULL;
@@ -320,13 +334,15 @@ static void setup_environment()
     // Erlang environment
 
     // ROOTDIR points to the release unless it wasn't found.
-    char *envvar;
-    OK_OR_FATAL(asprintf(&envvar, "ROOTDIR=%s", release_root_dir), "asprintf failed");
+    char *envvar = NULL;
+    erlinit_asprintf(&envvar, "ROOTDIR=%s", release_root_dir);
     putenv(envvar);
+    envvar = NULL; // putenv owns memory
 
     // BINDIR points to the erts bin directory.
-    OK_OR_FATAL(asprintf(&envvar, "BINDIR=%s/bin", erts_dir), "asprintf failed");
+    erlinit_asprintf(&envvar, "BINDIR=%s/bin", erts_dir);
     putenv(envvar);
+    envvar = NULL; // putenv owns memory
 
     putenv("EMU=beam");
     putenv("PROGNAME=erl");
@@ -440,7 +456,7 @@ static void child()
     } else
         exec_argv[arg++] = "erlexec";
 
-    if (*sys_config) {
+    if (sys_config) {
         exec_argv[arg++] = "-config";
         exec_argv[arg++] = sys_config;
     }
@@ -448,7 +464,7 @@ static void child()
         exec_argv[arg++] = "-boot";
         exec_argv[arg++] = boot_path;
     }
-    if (*vmargs_path) {
+    if (vmargs_path) {
         exec_argv[arg++] = "-args_file";
         exec_argv[arg++] = vmargs_path;
     }

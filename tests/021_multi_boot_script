@@ -1,0 +1,55 @@
+#!/bin/sh
+
+#
+# Test that automatically picking a boot script picks the first one
+#
+
+$CAT >$CMDLINE_FILE <<EOF
+-v
+EOF
+
+RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
+$MKDIR -p $RELEASE_PATH
+$TOUCH $RELEASE_PATH/a.boot
+$TOUCH $RELEASE_PATH/b.boot
+$TOUCH $RELEASE_PATH/c.boot
+$TOUCH $RELEASE_PATH/d.boot
+$TOUCH $RELEASE_PATH/sys.config
+$TOUCH $RELEASE_PATH/vm.args
+
+$CAT >$EXPECTED <<EOF
+erlinit: cmdline argc=2, merged argc=2
+erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[1]=-v
+erlinit: set_ctty
+erlinit: find_erts_directory
+erlinit: find_release
+erlinit: Using release in /srv/erlang/releases/0.0.1.
+erlinit: find_sys_config
+erlinit: find_vm_args
+erlinit: find_boot_path
+erlinit: Found more than one boot file. Using a.boot.
+erlinit: setup_environment
+erlinit: setup_networking
+erlinit: configure_hostname
+erlinit: /etc/hostname not found
+erlinit: Env: 'HOME=/root'
+erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'ROOTDIR=/srv/erlang'
+erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
+erlinit: Env: 'EMU=beam'
+erlinit: Env: 'PROGNAME=erl'
+erlinit: Arg: 'erlexec'
+erlinit: Arg: '-config'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/sys.config'
+erlinit: Arg: '-boot'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/a'
+erlinit: Arg: '-args_file'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
+erlinit: Launching erl...
+Hello from erlexec
+erlinit: Erlang VM exited
+erlinit: kill_all
+erlinit: unmount_all
+EOF
