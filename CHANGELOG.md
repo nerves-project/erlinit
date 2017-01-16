@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.8.0
+
+  * New features
+    * Add -b/--boot parameter to specify which `.boot` file to run.
+    * Add support for running a program before launching the Erlang VM.
+      This simplifies a use case where wrapping the call to run the VM
+      was too much work.
+
 ## v0.7.3
 
   * New features
