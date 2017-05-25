@@ -1,18 +1,30 @@
 #!/bin/sh
 
 #
-# Test that starting up a Erlang/OTP release works
+# Test that the start_erl.data file is read when picking a release to run.
 #
 
 $CAT >$CMDLINE_FILE <<EOF
 -v
 EOF
 
-RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
-$MKDIR -p $RELEASE_PATH
-$TOUCH $RELEASE_PATH/test.boot
-$TOUCH $RELEASE_PATH/sys.config
-$TOUCH $RELEASE_PATH/vm.args
+RELEASE_PATH1=$WORK/srv/erlang/releases/0.0.1
+RELEASE_PATH2=$WORK/srv/erlang/releases/0.0.2
+RELEASE_PATH3=$WORK/srv/erlang/releases/0.0.3
+
+for RPATH in $RELEASE_PATH1 $RELEASE_PATH2 $RELEASE_PATH3; do
+    $MKDIR -p $RPATH
+    $TOUCH $RPATH/a.boot
+    $TOUCH $RPATH/b.boot
+    $TOUCH $RPATH/c.boot
+    $TOUCH $RPATH/d.boot
+    $TOUCH $RPATH/sys.config
+    $TOUCH $RPATH/vm.args
+done
+
+$CAT >$WORK/srv/erlang/releases/start_erl.data <<EOF
+8.3 0.0.2
+EOF
 
 $CAT >$EXPECTED <<EOF
 erlinit: cmdline argc=2, merged argc=2
@@ -21,11 +33,11 @@ erlinit: merged argv[1]=-v
 erlinit: set_ctty
 erlinit: find_erts_directory
 erlinit: find_release
-erlinit: /srv/erlang/releases/start_erl.data not found.
-erlinit: Using release in /srv/erlang/releases/0.0.1.
+erlinit: Using release in /srv/erlang/releases/0.0.2.
 erlinit: find_sys_config
 erlinit: find_vm_args
 erlinit: find_boot_path
+erlinit: Found more than one boot file. Using a.boot.
 erlinit: setup_environment
 erlinit: setup_networking
 erlinit: configure_hostname
@@ -39,11 +51,11 @@ erlinit: Env: 'EMU=beam'
 erlinit: Env: 'PROGNAME=erl'
 erlinit: Arg: 'erlexec'
 erlinit: Arg: '-config'
-erlinit: Arg: '/srv/erlang/releases/0.0.1/sys.config'
+erlinit: Arg: '/srv/erlang/releases/0.0.2/sys.config'
 erlinit: Arg: '-boot'
-erlinit: Arg: '/srv/erlang/releases/0.0.1/test'
+erlinit: Arg: '/srv/erlang/releases/0.0.2/a'
 erlinit: Arg: '-args_file'
-erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
+erlinit: Arg: '/srv/erlang/releases/0.0.2/vm.args'
 erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited

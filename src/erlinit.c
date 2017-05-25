@@ -188,24 +188,66 @@ static int is_directory(const char *path)
             S_ISDIR(sb.st_mode);
 }
 
+static int read_start_erl(const char *path, char *release_version)
+{
+    FILE *fp = fopen(path, "r");
+    if (!fp) {
+        warn("%s not found.", path);
+        return 0;
+    }
+
+    char erts_version[17];
+    if (fscanf(fp, "%16s %16s", erts_version, release_version) != 2) {
+        warn("%s doesn't contain expected contents. Skipping.", path);
+        fclose(fp);
+        return 0;
+    }
+
+    fclose(fp);
+    return 1;
+}
+
+static int reverse_alphasort(const struct dirent **e1,
+                             const struct dirent **e2)
+{
+    return -alphasort(e1, e2);
+}
+
 static int find_release_info_dir(const char *releases_dir,
                                  char *info_dir)
 {
+    char path[ERLINIT_PATH_MAX];
+
+    // Check for a start_erl.data file. If one exists, then it will say
+    // which release version to use.
+    sprintf(path, "%s/start_erl.data", releases_dir);
+    char release_version[17];
+    if (read_start_erl(path, release_version)) {
+        // Check if the release_version corresponds to a good path.
+        sprintf(path, "%s/%s", releases_dir, release_version);
+
+        if (is_directory(path)) {
+            strcpy(info_dir, path);
+            return 1;
+        }
+        warn("start_erl.data specifies %s, but %s isn't a directory", release_version, path);
+    }
+
+    // No start_erl.data, so pick the first subdirectory.
     struct dirent **namelist;
     int n = scandir(releases_dir,
                     &namelist,
                     dotfile_filter,
-                    NULL);
+                    reverse_alphasort);
     int i;
     int success = 0;
     for (i = 0; i < n; i++) {
-        char dirpath[ERLINIT_PATH_MAX];
-        sprintf(dirpath, "%s/%s", releases_dir, namelist[i]->d_name);
+        sprintf(path, "%s/%s", releases_dir, namelist[i]->d_name);
 
         // Pick the first directory. There should only be one directory
         // anyway.
-        if (is_directory(dirpath)) {
-            strcpy(info_dir, dirpath);
+        if (is_directory(path)) {
+            strcpy(info_dir, path);
             success = 1;
             break;
         }
