@@ -39,14 +39,31 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-static char release_info_dir[ERLINIT_PATH_MAX];
-static char release_root_dir[ERLINIT_PATH_MAX];
-static char release_name[ERLINIT_PATH_MAX];
+struct erl_run_info {
+    // This is the root directory of the release
+    // e.g., <base>/<release_name>/releases
+    char *release_root_dir;
 
-static char *erts_dir = NULL;
-static char *boot_path = NULL;
-static char *sys_config = NULL;
-static char *vmargs_path = NULL;
+    // This is the directory containing the release start scripts
+    // e.g., <base>/<release_name>/releases/<version>
+    char *release_version_dir;
+
+    // This is the name of the release. It could be empty if there's
+    // no name.
+    char *release_name;
+
+    // The directory containing ERTS
+    char *erts_dir;
+
+    // This is the path to the .boot file
+    char *boot_path;
+
+    // This is the path to sys.config
+    char *sys_config;
+
+    // This is the path to vm.args
+    char *vmargs_path;
+};
 
 static int desired_reboot_cmd = 0; // 0 = no request to reboot
 
@@ -73,7 +90,7 @@ static int erts_filter(const struct dirent *d)
     return starts_with(d->d_name, "erts-");
 }
 
-static void find_erts_directory()
+static void find_erts_directory(char **erts_dir)
 {
     debug("find_erts_directory");
     struct dirent **namelist;
@@ -88,7 +105,7 @@ static void find_erts_directory()
     else if (n > 1)
         fatal("Found multiple erts directories. Clean up the installation.");
 
-    erlinit_asprintf(&erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
+    erlinit_asprintf(erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
 
     free(namelist[0]);
     free(namelist);
@@ -112,45 +129,45 @@ static int bootfile_filter(const struct dirent *d)
     return strstr(d->d_name, ".boot") != NULL;
 }
 
-static void find_sys_config()
+static void find_sys_config(const char *release_version_dir, char **sys_config)
 {
     debug("find_sys_config");
-    erlinit_asprintf(&sys_config, "%s/sys.config", release_info_dir);
-    if (!file_exists(sys_config)) {
-        warn("%s not found?", sys_config);
-        free(sys_config);
-        sys_config = NULL;
+    erlinit_asprintf(sys_config, "%s/sys.config", release_version_dir);
+    if (!file_exists(*sys_config)) {
+        warn("%s not found?", *sys_config);
+        free(*sys_config);
+        *sys_config = NULL;
     }
 }
 
-static void find_vm_args()
+static void find_vm_args(const char *release_version_dir, char **vmargs_path)
 {
     debug("find_vm_args");
-    erlinit_asprintf(&vmargs_path, "%s/vm.args", release_info_dir);
-    if (!file_exists(vmargs_path)) {
-        warn("%s not found?", vmargs_path);
-        free(vmargs_path);
-        vmargs_path = NULL;
+    erlinit_asprintf(vmargs_path, "%s/vm.args", release_version_dir);
+    if (!file_exists(*vmargs_path)) {
+        warn("%s not found?", *vmargs_path);
+        free(*vmargs_path);
+        *vmargs_path = NULL;
     }
 }
 
-static int find_boot_path_user()
+static int find_boot_path_user(const char *release_version_dir, char **boot_path)
 {
     if (options.boot_path) {
         // Handle a user-specified boot file. Absolute or relative is ok.
         if (options.boot_path[0] == '/')
-            erlinit_asprintf(&boot_path, "%s", options.boot_path);
+            erlinit_asprintf(boot_path, "%s", options.boot_path);
         else
-            erlinit_asprintf(&boot_path, "%s/%s", release_info_dir, options.boot_path);
+            erlinit_asprintf(boot_path, "%s/%s", release_version_dir, options.boot_path);
 
         // If the file exists, then everything is ok.
-        if (file_exists(boot_path))
+        if (file_exists(*boot_path))
             return 1;
 
         // Erlang also appends .boot the the path, so if a path with .boot
         // exists, we're ok as well.
         char *boot_path_with_dotboot = NULL;
-        erlinit_asprintf(&boot_path_with_dotboot, "%s.boot", boot_path);
+        erlinit_asprintf(&boot_path_with_dotboot, "%s.boot", *boot_path);
         if (file_exists(boot_path_with_dotboot)) {
             free(boot_path_with_dotboot);
             return 1;
@@ -162,41 +179,44 @@ static int find_boot_path_user()
     return 0;
 }
 
-static int find_boot_path_by_release_name()
+static int find_boot_path_by_release_name(const char *release_version_dir, const char *release_name, char **boot_path)
 {
-    // If not release name, skip this option.
-    if (release_name[0] == '\0')
+    // If not a named release, skip this option.
+    if (release_name == NULL || *release_name == '\0')
         return 0;
 
-    erlinit_asprintf(&boot_path, "%s/%s.boot", release_info_dir, release_name);
-    if (!file_exists(boot_path))
+    erlinit_asprintf(boot_path, "%s/%s.boot", release_version_dir, release_name);
+    if (!file_exists(*boot_path)) {
+        free(*boot_path);
+        *boot_path = NULL;
         return 0;
+    }
 
     // Strip off the .boot since that's what erl wants.
-    char *dot = strrchr(boot_path, '.');
+    char *dot = strrchr(*boot_path, '.');
     *dot = '\0';
 
     return 1;
 }
 
-static void find_boot_path_auto()
+static void find_boot_path_auto(const char *release_version_dir, char **boot_path)
 {
     struct dirent **namelist;
-    int n = scandir(release_info_dir,
+    int n = scandir(release_version_dir,
                     &namelist,
                     bootfile_filter,
                     alphasort);
     if (n <= 0)
-        fatal("No boot file found in %s.", release_info_dir);
+        fatal("No boot file found in %s.", release_version_dir);
 
     if (n > 1)
         warn("Found more than one boot file. Using %s.", namelist[0]->d_name);
 
     // Use the first
-    erlinit_asprintf(&boot_path, "%s/%s", release_info_dir, namelist[0]->d_name);
+    erlinit_asprintf(boot_path, "%s/%s", release_version_dir, namelist[0]->d_name);
 
     // Strip off the .boot since that's what erl wants.
-    char *dot = strrchr(boot_path, '.');
+    char *dot = strrchr(*boot_path, '.');
     *dot = '\0';
 
     // Free everything
@@ -205,13 +225,13 @@ static void find_boot_path_auto()
     free(namelist);
 }
 
-static void find_boot_path()
+static void find_boot_path(const char *release_version_dir, const char *release_name, char **boot_path)
 {
     debug("find_boot_path");
 
-    if (!find_boot_path_user() &&
-        !find_boot_path_by_release_name())
-        find_boot_path_auto();
+    if (!find_boot_path_user(release_version_dir, boot_path) &&
+        !find_boot_path_by_release_name(release_version_dir, release_name, boot_path))
+        find_boot_path_auto(release_version_dir, boot_path);
 }
 
 static int is_directory(const char *path)
@@ -221,21 +241,28 @@ static int is_directory(const char *path)
             S_ISDIR(sb.st_mode);
 }
 
-static int read_start_erl(const char *path, char *release_version)
+static int read_start_erl(const char *releases_dir, char **release_version)
 {
-    FILE *fp = fopen(path, "r");
+    char *start_erl_path = NULL;
+    erlinit_asprintf(&start_erl_path, "%s/start_erl.data", releases_dir);
+    FILE *fp = fopen(start_erl_path, "r");
     if (!fp) {
-        warn("%s not found.", path);
+        warn("%s not found.", start_erl_path);
+        free(start_erl_path);
         return 0;
     }
 
     char erts_version[17];
-    if (fscanf(fp, "%16s %16s", erts_version, release_version) != 2) {
-        warn("%s doesn't contain expected contents. Skipping.", path);
+    char rel_version[17];
+    if (fscanf(fp, "%16s %16s", erts_version, rel_version) != 2) {
+        warn("%s doesn't contain expected contents. Skipping.", start_erl_path);
+        free(start_erl_path);
         fclose(fp);
         return 0;
     }
+    erlinit_asprintf(release_version, "%s", rel_version);
 
+    free(start_erl_path);
     fclose(fp);
     return 1;
 }
@@ -246,24 +273,21 @@ static int reverse_alphasort(const struct dirent **e1,
     return -alphasort(e1, e2);
 }
 
-static int find_release_info_dir(const char *releases_dir,
-                                 char *info_dir)
+static int find_release_version_dir(const char *releases_dir,
+                                    char **version_dir)
 {
-    char path[ERLINIT_PATH_MAX];
-
     // Check for a start_erl.data file. If one exists, then it will say
     // which release version to use.
-    sprintf(path, "%s/start_erl.data", releases_dir);
-    char release_version[17];
-    if (read_start_erl(path, release_version)) {
+    char *version = NULL;
+    if (read_start_erl(releases_dir, &version)) {
         // Check if the release_version corresponds to a good path.
-        sprintf(path, "%s/%s", releases_dir, release_version);
+        erlinit_asprintf(version_dir, "%s/%s", releases_dir, version);
 
-        if (is_directory(path)) {
-            strcpy(info_dir, path);
+        if (is_directory(*version_dir))
             return 1;
-        }
-        warn("start_erl.data specifies %s, but %s isn't a directory", release_version, path);
+
+        warn("start_erl.data specifies %s, but %s isn't a directory", version, *version_dir);
+        free(version);
     }
 
     // No start_erl.data, so pick the first subdirectory.
@@ -275,12 +299,11 @@ static int find_release_info_dir(const char *releases_dir,
     int i;
     int success = 0;
     for (i = 0; i < n; i++) {
-        sprintf(path, "%s/%s", releases_dir, namelist[i]->d_name);
+        erlinit_asprintf(version_dir, "%s/%s", releases_dir, namelist[i]->d_name);
 
         // Pick the first directory. There should only be one directory
         // anyway.
-        if (is_directory(path)) {
-            strcpy(info_dir, path);
+        if (is_directory(*version_dir)) {
             success = 1;
             break;
         }
@@ -297,21 +320,19 @@ static int find_release_info_dir(const char *releases_dir,
 
 static int find_release_dirs(const char *base,
                              int depth,
-                             char *release_name,
-                             char *root_dir,
-                             char *info_dir)
+                             struct erl_run_info *run_info)
 {
     // The "releases" directory could either be in the current folder
     // or one directory immediately below. For example,
     //
-    // <base/releases/<release_version>
+    // <base>/releases/<release_version>
     //
     // -or-
     //
     // <base>/<release_name>/releases/<release_version>
     //
-    // Check for both. On return, root_dir is set to the path containing the
-    // releases directory, and info_dir is set to one of the paths above.
+    // Check for both. On a successful return, run_info's release_root_dir,
+    // release_version_dir, release_name and release_version fields are set.
     int success = 0;
     struct dirent **namelist;
     int n = scandir(base,
@@ -327,15 +348,15 @@ static int find_release_dirs(const char *base,
             continue;
 
         if (strcmp(namelist[i]->d_name, "releases") == 0 &&
-                find_release_info_dir(dirpath, info_dir)) {
-            strcpy(root_dir, base);
+                find_release_version_dir(dirpath, &run_info->release_version_dir)) {
+            erlinit_asprintf(&run_info->release_root_dir, "%s", base);
             success = 1;
             break;
         }
 
         // Recurse to the next directory down if allowed.
-        if (depth && find_release_dirs(dirpath, depth - 1, release_name, root_dir, info_dir)) {
-            strcpy(release_name, namelist[i]->d_name);
+        if (depth && find_release_dirs(dirpath, depth - 1, run_info)) {
+            erlinit_asprintf(&run_info->release_name, "%s", namelist[i]->d_name);
             success = 1;
             break;
         }
@@ -350,7 +371,7 @@ static int find_release_dirs(const char *base,
     return success;
 }
 
-static void find_release()
+static void find_release(struct erl_run_info *run_info)
 {
     debug("find_release");
 
@@ -361,12 +382,12 @@ static void find_release()
     // releases. Pick the first one.
     const char *search_path = strtok(options.release_search_path, ":");
     while (search_path != NULL) {
-        if (find_release_dirs(search_path, 1, release_name, release_root_dir, release_info_dir)) {
-            debug("Using release in %s.", release_info_dir);
+        if (find_release_dirs(search_path, 1, run_info)) {
+            debug("Using release in %s.", run_info->release_version_dir);
 
-            find_sys_config();
-            find_vm_args();
-            find_boot_path();
+            find_sys_config(run_info->release_version_dir, &run_info->sys_config);
+            find_vm_args(run_info->release_version_dir, &run_info->vmargs_path);
+            find_boot_path(run_info->release_version_dir, run_info->release_name, &run_info->boot_path);
 
             return;
         }
@@ -374,7 +395,7 @@ static void find_release()
         warn("No release found in %s.", search_path);
         search_path = strtok(NULL, ":");
     }
-    *release_info_dir = '\0';
+#if 0
     if (sys_config) {
         free(sys_config);
         sys_config = NULL;
@@ -383,8 +404,8 @@ static void find_release()
         free(boot_path);
         boot_path = NULL;
     }
-
-    strcpy(release_root_dir, ERLANG_ROOT_DIR);
+#endif
+    erlinit_asprintf(&run_info->release_root_dir, "%s", ERLANG_ROOT_DIR);
 }
 
 static int has_erts_library_directory()
@@ -397,7 +418,7 @@ static int has_erts_library_directory()
     return is_directory(ERLANG_ERTS_LIB_DIR);
 }
 
-static void setup_environment()
+static void setup_environment(const struct erl_run_info *run_info)
 {
     debug("setup_environment");
     // Set up the environment for running erlang.
@@ -412,12 +433,12 @@ static void setup_environment()
 
     // ROOTDIR points to the release unless it wasn't found.
     char *envvar = NULL;
-    erlinit_asprintf(&envvar, "ROOTDIR=%s", release_root_dir);
+    erlinit_asprintf(&envvar, "ROOTDIR=%s", run_info->release_root_dir);
     putenv(envvar);
     envvar = NULL; // putenv owns memory
 
     // BINDIR points to the erts bin directory.
-    erlinit_asprintf(&envvar, "BINDIR=%s/bin", erts_dir);
+    erlinit_asprintf(&envvar, "BINDIR=%s/bin", run_info->erts_dir);
     putenv(envvar);
     envvar = NULL; // putenv owns memory
 
@@ -491,11 +512,14 @@ static void child()
 
     // Locate everything needed to configure the environment
     // and pass to erlexec.
-    find_erts_directory();
-    find_release();
+    struct erl_run_info run_info;
+    memset(&run_info, 0, sizeof(run_info));
+
+    find_erts_directory(&run_info.erts_dir);
+    find_release(&run_info);
 
     // Set up the environment for running erlang.
-    setup_environment();
+    setup_environment(&run_info);
 
     // Set up the minimum networking we need for Erlang.
     setup_networking();
@@ -504,7 +528,7 @@ static void child()
     if (options.warn_unused_tty)
         warn_unused_tty();
 
-    OK_OR_FATAL(chdir(release_root_dir), "Cannot chdir to release directory (%s)", release_root_dir);
+    OK_OR_FATAL(chdir(run_info.release_root_dir), "Cannot chdir to release directory (%s)", run_info.release_root_dir);
 
     // Optionally run a "pre-run" program
     if (options.pre_run_exec)
@@ -515,7 +539,7 @@ static void child()
 
     // Start Erlang up
     char erlexec_path[ERLINIT_PATH_MAX];
-    sprintf(erlexec_path, "%s/bin/erlexec", erts_dir);
+    sprintf(erlexec_path, "%s/bin/erlexec", run_info.erts_dir);
     char *exec_path = erlexec_path;
 
     char *exec_argv[32];
@@ -533,17 +557,17 @@ static void child()
     } else
         exec_argv[arg++] = "erlexec";
 
-    if (sys_config) {
+    if (run_info.sys_config) {
         exec_argv[arg++] = "-config";
-        exec_argv[arg++] = sys_config;
+        exec_argv[arg++] = run_info.sys_config;
     }
-    if (boot_path) {
+    if (run_info.boot_path) {
         exec_argv[arg++] = "-boot";
-        exec_argv[arg++] = boot_path;
+        exec_argv[arg++] = run_info.boot_path;
     }
-    if (vmargs_path) {
+    if (run_info.vmargs_path) {
         exec_argv[arg++] = "-args_file";
-        exec_argv[arg++] = vmargs_path;
+        exec_argv[arg++] = run_info.vmargs_path;
     }
     if (has_erts_library_directory()) {
         exec_argv[arg++] = "-boot_var";
