@@ -41,6 +41,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static char release_info_dir[ERLINIT_PATH_MAX];
 static char release_root_dir[ERLINIT_PATH_MAX];
+static char release_name[ERLINIT_PATH_MAX];
 
 static char *erts_dir = NULL;
 static char *boot_path = NULL;
@@ -133,10 +134,8 @@ static void find_vm_args()
     }
 }
 
-static void find_boot_path()
+static int find_boot_path_user()
 {
-    debug("find_boot_path");
-
     if (options.boot_path) {
         // Handle a user-specified boot file. Absolute or relative is ok.
         if (options.boot_path[0] == '/')
@@ -144,24 +143,49 @@ static void find_boot_path()
         else
             erlinit_asprintf(&boot_path, "%s/%s", release_info_dir, options.boot_path);
 
-        // Check that the file exists.
+        // If the file exists, then everything is ok.
         if (file_exists(boot_path))
-            return;
+            return 1;
 
+        // Erlang also appends .boot the the path, so if a path with .boot
+        // exists, we're ok as well.
         char *boot_path_with_dotboot = NULL;
         erlinit_asprintf(&boot_path_with_dotboot, "%s.boot", boot_path);
         if (file_exists(boot_path_with_dotboot)) {
             free(boot_path_with_dotboot);
-            return;
+            return 1;
         }
         free(boot_path_with_dotboot);
         warn("Specified boot file '%s' not found. Auto-detecting.", options.boot_path);
     }
+
+    return 0;
+}
+
+static int find_boot_path_by_release_name()
+{
+    // If not release name, skip this option.
+    if (release_name[0] == '\0')
+        return 0;
+
+    erlinit_asprintf(&boot_path, "%s/%s.boot", release_info_dir, release_name);
+    if (!file_exists(boot_path))
+        return 0;
+
+    // Strip off the .boot since that's what erl wants.
+    char *dot = strrchr(boot_path, '.');
+    *dot = '\0';
+
+    return 1;
+}
+
+static void find_boot_path_auto()
+{
     struct dirent **namelist;
     int n = scandir(release_info_dir,
                     &namelist,
                     bootfile_filter,
-                    NULL);
+                    alphasort);
     if (n <= 0)
         fatal("No boot file found in %s.", release_info_dir);
 
@@ -179,6 +203,15 @@ static void find_boot_path()
     while (--n >= 0)
         free(namelist[n]);
     free(namelist);
+}
+
+static void find_boot_path()
+{
+    debug("find_boot_path");
+
+    if (!find_boot_path_user() &&
+        !find_boot_path_by_release_name())
+        find_boot_path_auto();
 }
 
 static int is_directory(const char *path)
@@ -264,6 +297,7 @@ static int find_release_info_dir(const char *releases_dir,
 
 static int find_release_dirs(const char *base,
                              int depth,
+                             char *release_name,
                              char *root_dir,
                              char *info_dir)
 {
@@ -300,7 +334,8 @@ static int find_release_dirs(const char *base,
         }
 
         // Recurse to the next directory down if allowed.
-        if (depth && find_release_dirs(dirpath, depth - 1, root_dir, info_dir)) {
+        if (depth && find_release_dirs(dirpath, depth - 1, release_name, root_dir, info_dir)) {
+            strcpy(release_name, namelist[i]->d_name);
             success = 1;
             break;
         }
@@ -326,7 +361,7 @@ static void find_release()
     // releases. Pick the first one.
     const char *search_path = strtok(options.release_search_path, ":");
     while (search_path != NULL) {
-        if (find_release_dirs(search_path, 1, release_root_dir, release_info_dir)) {
+        if (find_release_dirs(search_path, 1, release_name, release_root_dir, release_info_dir)) {
             debug("Using release in %s.", release_info_dir);
 
             find_sys_config();
