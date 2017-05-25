@@ -317,7 +317,7 @@ static int find_release_dirs(const char *base,
     int n = scandir(base,
                     &namelist,
                     dotfile_filter,
-                    NULL);
+                    alphasort);
     int i;
     for (i = 0; i < n; i++) {
         char dirpath[ERLINIT_PATH_MAX];
