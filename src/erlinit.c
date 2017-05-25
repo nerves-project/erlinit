@@ -69,8 +69,10 @@ static void erlinit_asprintf(char **strp, const char *fmt, ...)
 {
     // Free *strp if this is being called a second time.
     // (Be careful with string pointers)
-    if (*strp)
+    if (*strp) {
         free(*strp);
+        *strp = NULL;
+    }
 
     va_list ap;
     va_start(ap, fmt);
@@ -657,6 +659,9 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
 {
     sigset_t mask;
     sigset_t orig_mask;
+
+    *is_intentional_exit = 0;
+    *desired_reboot_cmd = 0;
 
     sigemptyset(&mask);
     sigaddset(&mask, SIGCHLD);

@@ -81,7 +81,7 @@ void warn_unused_tty()
         if (strcmp(used_tty, tty) != 0) {
 #ifndef UNITTEST
             char ttypath[TTY_MAX_PATH_LENGTH + 1] = TTY_PREFIX;
-            strcat(&ttypath[TTY_PREFIX_LENGTH], tty);
+            strncat(&ttypath[TTY_PREFIX_LENGTH], tty, sizeof(ttypath) - TTY_PREFIX_LENGTH - 1);
 
             int fd = open(ttypath, O_WRONLY);
             if (fd >= 0) {
