@@ -22,6 +22,7 @@ erlinit: merged argv[1]=-v
 erlinit: set_ctty
 erlinit: find_erts_directory
 erlinit: find_release
+erlinit: /srv/erlang/myrelease/releases/start_erl.data not found.
 erlinit: Using release in /srv/erlang/myrelease/releases/0.0.1.
 erlinit: find_sys_config
 erlinit: find_vm_args
