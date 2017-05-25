@@ -526,7 +526,13 @@ static void child()
     if (options.warn_unused_tty)
         warn_unused_tty();
 
-    OK_OR_FATAL(chdir(run_info.release_root_dir), "Cannot chdir to release directory (%s)", run_info.release_root_dir);
+    // Set the working directory. First try a directory specified
+    // in the options, but if that doesn't work, go to the root of
+    // the release.
+    if (options.working_directory == NULL ||
+        chdir(options.working_directory) < 0) {
+        OK_OR_FATAL(chdir(run_info.release_root_dir), "Cannot chdir to release directory (%s)", run_info.release_root_dir);
+    }
 
     // Optionally run a "pre-run" program
     if (options.pre_run_exec)

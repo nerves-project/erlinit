@@ -130,6 +130,9 @@ The following lists the options:
     --warn-unused-tty
         Print a message on ttys receiving kernel logs, but not an Erlang console
 
+    --working_directory <path>
+        Set the working directory
+
 ## Rebooting or hanging when the Erlang VM exits
 
 In production, if the Erlang VM exits for any reason, the desired behavior is

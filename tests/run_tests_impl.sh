@@ -53,6 +53,7 @@ run() {
     $MKDIR -p $WORK/sbin
     $MKDIR -p $WORK/bin
     $MKDIR -p $WORK/etc
+    $MKDIR -p $WORK/tmp
     $MKDIR -p $WORK/usr/bin
     $LN -s $ECHO $WORK/$ECHO
     $LN -s $SH $WORK/$SH

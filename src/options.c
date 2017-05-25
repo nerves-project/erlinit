@@ -49,6 +49,7 @@ struct erlinit_options options = {
     .run_on_exit = NULL,
     .pre_run_exec = NULL,
     .boot_path = NULL,
+    .working_directory = NULL,
     .gid = 0,
     .uid = 0
 };
@@ -72,6 +73,7 @@ static struct option long_options[] = {
     {"print-timing", no_argument, 0, 't' },
     {"verbose", no_argument, 0, 'v' },
     {"warn-unused-tty", no_argument, 0, '!' },
+    {"working-directory", required_argument, 0, '@'},
     {"uid", required_argument, 0, '^' },
     {"gid", required_argument, 0, '&' },
     {"pre-run-exec", required_argument, 0, '*' },
@@ -165,6 +167,9 @@ void parse_args(int argc, char *argv[])
             break;
         case '*': // --pre-run-exec /bin/special-init
             SET_STRING_OPTION(options.pre_run_exec);
+            break;
+        case '@': // --working_directory /root
+            SET_STRING_OPTION(options.working_directory);
             break;
         default:
             // getopt prints a warning, so we don't have to
