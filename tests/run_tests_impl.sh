@@ -3,6 +3,7 @@
 # Set absolute paths to utilities since this should be started in an empty
 # environment so simulate how erlinit runs.
 CAT=/bin/cat
+CUT=/usr/bin/cut
 ECHO=/bin/echo
 GREP=/bin/grep
 LN=/bin/ln
@@ -10,6 +11,7 @@ LS=/bin/ls
 MKDIR=/bin/mkdir
 RM=/bin/rm
 SH=/bin/sh
+SLEEP=/bin/sleep
 DIFF=/usr/bin/diff
 FAKECHROOT=/usr/bin/fakechroot
 SORT=/usr/bin/sort
@@ -52,8 +54,12 @@ run() {
     $MKDIR -p $WORK/bin
     $MKDIR -p $WORK/etc
     $MKDIR -p $WORK/usr/bin
-    $LN -s $ECHO $WORK/bin/echo
-    $LN -s $SH $WORK/bin/sh
+    $LN -s $ECHO $WORK/$ECHO
+    $LN -s $SH $WORK/$SH
+    $LN -s $CAT $WORK/$CAT
+    $LN -s $CUT $WORK/$CUT
+    $LN -s $GREP $WORK/$GREP
+    $LN -s $SLEEP $WORK/$SLEEP
     $LN -s $ERLINIT $WORK/sbin/erlinit
     $MKDIR -p $FAKE_ERTS_DIR/bin
     $LN -s $FAKE_ERLEXEC $FAKE_ERTS_DIR/bin/erlexec

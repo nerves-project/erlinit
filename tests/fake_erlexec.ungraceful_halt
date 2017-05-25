@@ -1,0 +1,11 @@
+#!/bin/sh
+
+echo "erlexec is sending signal to halt" 1>&2
+
+ppid=$(cat /proc/$$/status | grep PPid | cut -f2)
+kill -USR1 $ppid
+
+# This is longer than the graceful power down timer, so
+# it should incur an ungraceful termination
+sleep 60
+

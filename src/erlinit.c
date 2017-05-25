@@ -65,8 +65,6 @@ struct erl_run_info {
     char *vmargs_path;
 };
 
-static int desired_reboot_cmd = 0; // 0 = no request to reboot
-
 static void erlinit_asprintf(char **strp, const char *fmt, ...)
 {
     // Free *strp if this is being called a second time.
@@ -599,59 +597,6 @@ static void child()
     fatal("execvp failed to run %s: %s", exec_path, strerror(errno));
 }
 
-static void signal_handler(int signum);
-
-static void register_signal_handlers()
-{
-    struct sigaction act;
-
-    act.sa_handler = signal_handler;
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;
-
-    sigaction(SIGPWR, &act, NULL);
-    sigaction(SIGUSR1, &act, NULL);
-    sigaction(SIGTERM, &act, NULL);
-    sigaction(SIGUSR2, &act, NULL);
-}
-
-static void unregister_signal_handlers()
-{
-    struct sigaction act;
-
-    act.sa_handler = SIG_IGN;
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;
-
-    sigaction(SIGPWR, &act, NULL);
-    sigaction(SIGUSR1, &act, NULL);
-    sigaction(SIGTERM, &act, NULL);
-    sigaction(SIGUSR2, &act, NULL);
-}
-
-void signal_handler(int signum)
-{
-    switch (signum) {
-    case SIGPWR:
-    case SIGUSR1:
-        desired_reboot_cmd = LINUX_REBOOT_CMD_HALT;
-        break;
-    case SIGTERM:
-        desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
-        break;
-    case SIGUSR2:
-        desired_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
-        break;
-    default:
-        warn("received unexpected signal %d", signum);
-        desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
-        break;
-    }
-
-    // Handling the signal is a one-time action. Now we're done.
-    unregister_signal_handlers();
-}
-
 static void kill_all()
 {
     debug("kill_all");
@@ -669,6 +614,112 @@ static void kill_all()
     warn("Sending SIGKILL to all processes");
     sync();
 #endif
+}
+
+static void wait_for_graceful_shutdown(pid_t pid)
+{
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGCHLD);
+
+    struct timespec timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_nsec = 0;
+
+    for (;;) {
+        debug("waiting for graceful shutdown");
+        int rc = sigtimedwait(&mask, NULL, &timeout);
+        if (rc == SIGCHLD) {
+            return;
+        }
+
+        if (rc < 0) {
+            if (errno == EINTR)
+                continue;
+            else if (errno == EAGAIN) {
+                // Timeout. Brutal kill our child so that the shutdown process can continue.
+                warn("Wait for Erlang VM to exit gracefully expired. Killing...");
+                kill(pid, SIGKILL);
+                return;
+            }
+        }
+        fatal("Unexpected result from sigtimewait: %d %d", rc, errno);
+    }
+}
+
+static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
+{
+    sigset_t mask;
+    sigset_t orig_mask;
+
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGCHLD);
+    sigaddset(&mask, SIGPWR);
+    sigaddset(&mask, SIGUSR1);
+    sigaddset(&mask, SIGUSR2);
+    sigaddset(&mask, SIGTERM);
+
+    // Block signals from the child process so that they're
+    // handled by sigtimedwait.
+    if (sigprocmask(SIG_BLOCK, &mask, &orig_mask) < 0)
+        fatal("sigprocmask failed");
+
+    // Do most of the work in a child process so that if it
+    // crashes, we can handle the crash.
+    pid_t pid = fork();
+    if (pid == 0) {
+        child();
+        exit(1);
+    }
+
+    for (;;) {
+        int rc = sigwaitinfo(&mask, NULL);
+        if (rc == SIGCHLD) {
+            // Child process exited.
+            break;
+        } else if (rc < 0) {
+            // An error occurred.
+            if (errno != EINTR)
+                fatal("Unexpected error from sigwaitinfo: %d", errno);
+        } else if (rc == SIGPWR || rc == SIGUSR1) {
+            // Halt request
+            debug("sigpwr|sigusr1 -> halt");
+            *desired_reboot_cmd = LINUX_REBOOT_CMD_HALT;
+            wait_for_graceful_shutdown(pid);
+            break;
+        } else if (rc == SIGTERM) {
+            // Reboot request
+            debug("sigterm -> reboot");
+            *desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
+            wait_for_graceful_shutdown(pid);
+            break;
+        } else if (rc == SIGUSR2) {
+            debug("sigusr2 -> power off");
+            *desired_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
+            wait_for_graceful_shutdown(pid);
+            break;
+        }
+    }
+
+    // Check if this was a clean exit.
+    *is_intentional_exit = 0;
+    if (waitpid(pid, NULL, 0) < 0) {
+        debug("signal or error terminated waitpid. clean up");
+
+        if (*desired_reboot_cmd != 0) {
+            // A signal is sent from commands like poweroff, reboot, and halt
+            // This is usually intentional.
+            *is_intentional_exit = 1;
+        } else {
+            // If waitpid returns error and it wasn't from a handled signal, print a warning.
+            warn("unexpected error from waitpid(): %s", strerror(errno));
+            *desired_reboot_cmd = options.unintentional_exit_cmd;
+        }
+    } else {
+        debug("Erlang VM exited");
+
+        *desired_reboot_cmd = options.unintentional_exit_cmd;
+    }
 }
 
 int main(int argc, char *argv[])
@@ -705,36 +756,9 @@ int main(int argc, char *argv[])
     // terminal and the CTRL keys work in the shell..
     set_ctty();
 
-    // Do most of the work in a child process so that if it
-    // crashes, we can handle the crash.
-    pid_t pid = fork();
-    if (pid == 0) {
-        child();
-        exit(1);
-    }
-
-    // Register signal handlers to catch requests to exit
-    register_signal_handlers();
-
-    // Wait on Erlang until it exits or we receive a signal.
-    int is_intentional_exit = 0;
-    if (waitpid(pid, 0, 0) < 0) {
-        debug("signal or error terminated waitpid. clean up");
-
-        if (desired_reboot_cmd != 0) {
-            // A signal is sent from commands like poweroff, reboot, and halt
-            // This is usually intentional.
-            is_intentional_exit = 1;
-        } else {
-            // If waitpid returns error and it wasn't from a handled signal, print a warning.
-            warn("unexpected error from waitpid(): %s", strerror(errno));
-            desired_reboot_cmd = options.unintentional_exit_cmd;
-        }
-    } else {
-        debug("Erlang VM exited");
-
-        desired_reboot_cmd = options.unintentional_exit_cmd;
-    }
+    int is_intentional_exit;
+    int desired_reboot_cmd;
+    fork_and_wait(&is_intentional_exit, &desired_reboot_cmd);
 
     // If the user specified a command to run on an unexpected exit, run it.
     if (options.run_on_exit && !is_intentional_exit)

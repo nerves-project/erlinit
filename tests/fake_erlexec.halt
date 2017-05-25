@@ -1,0 +1,9 @@
+#!/bin/sh
+
+echo "erlexec is sending signal to halt" 1>&2
+
+ppid=$(cat /proc/$$/status | grep PPid | cut -f2)
+kill -USR1 $ppid
+
+sleep 1
+
