@@ -25,6 +25,12 @@ RESULTS=$WORK/results
 
 FAKE_ERTS_DIR=$WORK/usr/lib/erlang/erts-6.0
 
+# Collect the tests from the commandline
+TESTS=$*
+if [ -z $TESTS ]; then
+    TESTS=$($LS $TESTS_DIR/[0-9][0-9][0-9]_* | $SORT)
+fi
+
 # Just in case there are some leftover from a previous test, clear it out
 $RM -fr $WORK
 
@@ -93,7 +99,6 @@ EOF
 }
 
 # Test command line arguments
-TESTS=$($LS $TESTS_DIR/[0-9][0-9][0-9]_* | $SORT)
 for TEST_CONFIG in $TESTS; do
     TEST=$(/usr/bin/basename $TEST_CONFIG .expected)
     run $TEST
