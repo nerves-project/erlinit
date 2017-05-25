@@ -703,16 +703,20 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
 
     // Check if this was a clean exit.
     *is_intentional_exit = 0;
-    if (waitpid(pid, NULL, 0) < 0) {
-        debug("signal or error terminated waitpid. clean up");
-
+    int status;
+    if (waitpid(pid, &status, 0) < 0 || WIFSIGNALED(status)) {
         if (*desired_reboot_cmd != 0) {
+            debug("Ignoring unexpected error during shutdown.");
+
             // A signal is sent from commands like poweroff, reboot, and halt
             // This is usually intentional.
             *is_intentional_exit = 1;
+        } else if (WIFSIGNALED(status)) {
+            warn("child terminated due to signal %d", WTERMSIG(status));
+            *desired_reboot_cmd = options.unintentional_exit_cmd;
         } else {
             // If waitpid returns error and it wasn't from a handled signal, print a warning.
-            warn("unexpected error from waitpid(): %s", strerror(errno));
+            warn("unexpected error from waitpid(): %d", errno);
             *desired_reboot_cmd = options.unintentional_exit_cmd;
         }
     } else {

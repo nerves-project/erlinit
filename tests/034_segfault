@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# Test that a halt that hangs the system gets handled.
+# Test that a segfault is caught and handled appropriately
 #
 
 $CAT >$CMDLINE_FILE <<EOF
@@ -13,7 +13,7 @@ $MKDIR -p $RELEASE_PATH
 $TOUCH $RELEASE_PATH/test.boot
 $TOUCH $RELEASE_PATH/sys.config
 $TOUCH $RELEASE_PATH/vm.args
-$LN -sf $FAKE_ERLEXEC.ungraceful_halt $FAKE_ERTS_DIR/bin/erlexec
+$LN -sf $FAKE_ERLEXEC.segfault $FAKE_ERTS_DIR/bin/erlexec
 
 $CAT >$EXPECTED <<EOF
 erlinit: cmdline argc=2, merged argc=2
@@ -46,11 +46,8 @@ erlinit: Arg: '/srv/erlang/releases/0.0.1/test'
 erlinit: Arg: '-args_file'
 erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
 erlinit: Launching erl...
-erlexec is sending signal to halt
-erlinit: sigpwr|sigusr1 -> halt
-erlinit: waiting for graceful shutdown
-erlinit: Wait for Erlang VM to exit gracefully expired. Killing...
-erlinit: Ignoring unexpected error during shutdown.
+erlexec is going to crash
+erlinit: child terminated due to signal 11
 erlinit: kill_all
 erlinit: unmount_all
 EOF

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+echo "erlexec is going to crash" 1>&2
+
+kill -SEGV $$
+
+sleep 1000
+
