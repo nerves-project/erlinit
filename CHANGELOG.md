@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.0
+
+  * New features
+    * Added support for graceful shutdowns. Now requests to reboot, halt,
+      and power off won't immediately terminate the Erlang VM. It will get
+      about 10 seconds to shut down graceful before it's killed.
+    * Added support for reading `start_erl.data` to decide which version
+      of a release to run.
+    * Sorted all directory scans so that they're deterministic. Previously
+      the order that files were read in a directory could determine what was
+      run. While the order appeared stable in practice, it wasn't guaranteed.
+    * Added `--working-directory` to change the current directory to
+      something else. This was useful for OTP applications that wrote to
+      the current directory.
+    * Added quite a few more regression tests.
+
 ## v0.8.0
 
   * New features
