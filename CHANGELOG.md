@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.1
+
+  * Fixes
+    * Fix Erlang VM exit detection breakage introduced by graceful shutdown.
+
 ## v1.0.0
 
   * New features
