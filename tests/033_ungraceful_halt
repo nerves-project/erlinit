@@ -50,7 +50,6 @@ erlexec is sending signal to halt
 erlinit: sigpwr|sigusr1 -> halt
 erlinit: waiting for graceful shutdown
 erlinit: Wait for Erlang VM to exit gracefully expired. Killing...
-erlinit: Ignoring unexpected error during shutdown.
 erlinit: kill_all
 erlinit: unmount_all
 EOF

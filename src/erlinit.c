@@ -624,7 +624,7 @@ static void kill_all()
 #endif
 }
 
-static void wait_for_graceful_shutdown(pid_t pid)
+static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
 {
     sigset_t mask;
     sigemptyset(&mask);
@@ -638,7 +638,14 @@ static void wait_for_graceful_shutdown(pid_t pid)
         debug("waiting for graceful shutdown");
         int rc = sigtimedwait(&mask, NULL, &timeout);
         if (rc == SIGCHLD) {
-            return;
+            rc = waitpid(pid, wait_status, WNOHANG);
+            if (rc == pid) {
+                debug("graceful shutdown detected");
+                return;
+            } else if (rc < 0)
+                fatal("Unexpected error from waitpid %d", errno);
+            else
+                warn("Ignoring SIGCHLD from pid %d", rc);
         }
 
         if (rc < 0) {
@@ -683,57 +690,59 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
         exit(1);
     }
 
+    int wait_status = 0;
     for (;;) {
         int rc = sigwaitinfo(&mask, NULL);
         if (rc == SIGCHLD) {
-            // Child process exited.
-            break;
+            // Child process exited -> check that it's the right one
+            rc = waitpid(pid, &wait_status, WNOHANG);
+            if (rc == pid)
+                break;
+            else if (rc < 0)
+                fatal("Unexpected error from waitpid: %d", errno);
+            debug("ignoring sigchld for pid=%d", rc);
         } else if (rc < 0) {
             // An error occurred.
+            debug("sigwaitinfo->errno %d", errno);
             if (errno != EINTR)
                 fatal("Unexpected error from sigwaitinfo: %d", errno);
         } else if (rc == SIGPWR || rc == SIGUSR1) {
             // Halt request
             debug("sigpwr|sigusr1 -> halt");
             *desired_reboot_cmd = LINUX_REBOOT_CMD_HALT;
-            wait_for_graceful_shutdown(pid);
+            wait_for_graceful_shutdown(pid, &wait_status);
             break;
         } else if (rc == SIGTERM) {
             // Reboot request
             debug("sigterm -> reboot");
             *desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
-            wait_for_graceful_shutdown(pid);
+            wait_for_graceful_shutdown(pid, &wait_status);
             break;
         } else if (rc == SIGUSR2) {
             debug("sigusr2 -> power off");
             *desired_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
-            wait_for_graceful_shutdown(pid);
+            wait_for_graceful_shutdown(pid, &wait_status);
             break;
+        } else {
+            debug("sigwaitinfo unexpected rc=%d", rc);
         }
     }
 
     // Check if this was a clean exit.
-    *is_intentional_exit = 0;
-    int status;
-    if (waitpid(pid, &status, 0) < 0 || WIFSIGNALED(status)) {
-        if (*desired_reboot_cmd != 0) {
-            debug("Ignoring unexpected error during shutdown.");
+    if (*desired_reboot_cmd != 0) {
+        // Intentional exit since reboot/poweroff/halt was called.
+        *is_intentional_exit = 1;
 
-            // A signal is sent from commands like poweroff, reboot, and halt
-            // This is usually intentional.
-            *is_intentional_exit = 1;
-        } else if (WIFSIGNALED(status)) {
-            warn("child terminated due to signal %d", WTERMSIG(status));
-            *desired_reboot_cmd = options.unintentional_exit_cmd;
-        } else {
-            // If waitpid returns error and it wasn't from a handled signal, print a warning.
-            warn("unexpected error from waitpid(): %d", errno);
-            *desired_reboot_cmd = options.unintentional_exit_cmd;
-        }
+        if (WIFSIGNALED(wait_status))
+            warn("Ignoring unexpected error during shutdown.");
     } else {
-        debug("Erlang VM exited");
-
+        // Unintentional exit either due to a crash or an actual call to exit()
+        *is_intentional_exit = 0;
         *desired_reboot_cmd = options.unintentional_exit_cmd;
+        if (WIFSIGNALED(wait_status))
+            warn("Erlang terminated due to signal %d", WTERMSIG(wait_status));
+        else
+            warn("Erlang VM exited");
     }
 }
 

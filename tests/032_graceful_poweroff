@@ -49,7 +49,7 @@ erlinit: Launching erl...
 erlexec is sending signal to poweroff
 erlinit: sigusr2 -> poweroff
 erlinit: waiting for graceful shutdown
-erlinit: Erlang VM exited
+erlinit: graceful shutdown detected
 erlinit: kill_all
 erlinit: unmount_all
 EOF

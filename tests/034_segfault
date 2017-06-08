@@ -47,7 +47,7 @@ erlinit: Arg: '-args_file'
 erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
 erlinit: Launching erl...
 erlexec is going to crash
-erlinit: child terminated due to signal 11
+erlinit: Erlang terminated due to signal 11
 erlinit: kill_all
 erlinit: unmount_all
 EOF
