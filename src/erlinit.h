@@ -74,6 +74,7 @@ struct erlinit_options {
     char *working_directory;
     int uid;
     int gid;
+    int graceful_shutdown_timeout_ms;
 };
 
 extern struct erlinit_options options;

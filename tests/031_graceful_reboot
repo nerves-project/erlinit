@@ -48,7 +48,7 @@ erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
 erlinit: Launching erl...
 erlexec is sending signal to reboot
 erlinit: sigterm -> reboot
-erlinit: waiting for graceful shutdown
+erlinit: waiting 10000 ms for graceful shutdown
 erlinit: graceful shutdown detected
 erlinit: kill_all
 erlinit: unmount_all

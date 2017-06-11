@@ -51,7 +51,8 @@ struct erlinit_options options = {
     .boot_path = NULL,
     .working_directory = NULL,
     .gid = 0,
-    .uid = 0
+    .uid = 0,
+    .graceful_shutdown_timeout_ms = 10000,
 };
 
 static struct option long_options[] = {
@@ -77,6 +78,7 @@ static struct option long_options[] = {
     {"uid", required_argument, 0, '^' },
     {"gid", required_argument, 0, '&' },
     {"pre-run-exec", required_argument, 0, '*' },
+    {"graceful-shutdown-timeout", required_argument, 0, '(' },
     {0,     0,      0, 0 }
 };
 
@@ -170,6 +172,9 @@ void parse_args(int argc, char *argv[])
             break;
         case '@': // --working_directory /root
             SET_STRING_OPTION(options.working_directory);
+            break;
+        case '(': // --graceful-shutdown-timeout 10000
+            options.graceful_shutdown_timeout_ms = strtol(optarg, NULL, 0);
             break;
         default:
             // getopt prints a warning, so we don't have to

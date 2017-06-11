@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.0-dev
+
+  * New features
+    * Add graceful-shutdown-timeout option to specify longer or shorter
+      timeouts for waiting for the Erlang VM to exit gracefully.
+
 ## v1.0.1
 
   * Fixes

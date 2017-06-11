@@ -5,7 +5,7 @@
 #
 
 $CAT >$CMDLINE_FILE <<EOF
--v
+-v --graceful-shutdown-timeout 15000
 EOF
 
 RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
@@ -16,9 +16,11 @@ $TOUCH $RELEASE_PATH/vm.args
 $LN -sf $FAKE_ERLEXEC.halt $FAKE_ERTS_DIR/bin/erlexec
 
 $CAT >$EXPECTED <<EOF
-erlinit: cmdline argc=2, merged argc=2
+erlinit: cmdline argc=4, merged argc=4
 erlinit: merged argv[0]=/sbin/erlinit
 erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=--graceful-shutdown-timeout
+erlinit: merged argv[3]=15000
 erlinit: set_ctty
 erlinit: find_erts_directory
 erlinit: find_release
@@ -48,7 +50,7 @@ erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
 erlinit: Launching erl...
 erlexec is sending signal to halt
 erlinit: sigpwr|sigusr1 -> halt
-erlinit: waiting 10000 ms for graceful shutdown
+erlinit: waiting 15000 ms for graceful shutdown
 erlinit: graceful shutdown detected
 erlinit: kill_all
 erlinit: unmount_all

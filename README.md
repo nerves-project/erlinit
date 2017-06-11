@@ -77,6 +77,10 @@ The following lists the options:
     --gid <id>
         Run the Erlang VM under the specified group ID
 
+    --graceful-shutdown-timeout <milliseconds>
+        After the application signals that it wants to reboot, poweroff, or halt,
+        wait this many milliseconds for it to cleanup and exit.
+
     -h, --hang-on-exit
         Hang the system if Erlang exits. The default is to reboot.
 

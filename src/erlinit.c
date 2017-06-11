@@ -630,12 +630,17 @@ static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
     sigemptyset(&mask);
     sigaddset(&mask, SIGCHLD);
 
+    // Timeout note: The timer gets reset every time we get a signal
+    // that's ignored. That doesn't appear to happen in practice, but
+    // if it ever did, the total timeout would be longer than you'd expect.
     struct timespec timeout;
-    timeout.tv_sec = 10;
-    timeout.tv_nsec = 0;
+    if (options.graceful_shutdown_timeout_ms <= 0)
+        options.graceful_shutdown_timeout_ms = 1;
+    timeout.tv_sec = options.graceful_shutdown_timeout_ms / 1000;
+    timeout.tv_nsec = (options.graceful_shutdown_timeout_ms % 1000) * 1000;
 
     for (;;) {
-        debug("waiting for graceful shutdown");
+        debug("waiting %d ms for graceful shutdown", options.graceful_shutdown_timeout_ms);
         int rc = sigtimedwait(&mask, NULL, &timeout);
         if (rc == SIGCHLD) {
             rc = waitpid(pid, wait_status, WNOHANG);
