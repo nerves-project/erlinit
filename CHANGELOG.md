@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.1.0-dev
+## v1.1.0
 
   * New features
     * Add graceful-shutdown-timeout option to specify longer or shorter
