@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define PROGRAM_NAME "erlinit"
 #ifndef PROGRAM_VERSION
-#define PROGRAM_VERSION unknown
+#error PROGRAM_VERSION is undefined
 #endif
 
 #define xstr(s) str(s)
