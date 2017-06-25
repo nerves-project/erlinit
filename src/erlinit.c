@@ -643,14 +643,17 @@ static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
         debug("waiting %d ms for graceful shutdown", options.graceful_shutdown_timeout_ms);
         int rc = sigtimedwait(&mask, NULL, &timeout);
         if (rc == SIGCHLD) {
-            rc = waitpid(pid, wait_status, WNOHANG);
+            rc = waitpid(-1, wait_status, WNOHANG);
             if (rc == pid) {
                 debug("graceful shutdown detected");
                 return;
-            } else if (rc < 0)
-                fatal("Unexpected error from waitpid %d", errno);
-            else
-                warn("Ignoring SIGCHLD from pid %d", rc);
+            } else if (rc < 0) {
+                warn("Unexpected error from waitpid %d", errno);
+                return;
+            } else {
+                debug("Ignoring SIGCHLD from pid %d", rc);
+                continue;
+            }
         }
 
         if (rc < 0) {
@@ -663,7 +666,8 @@ static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
                 return;
             }
         }
-        fatal("Unexpected result from sigtimewait: %d %d", rc, errno);
+        warn("Unexpected result from sigtimewait: %d %d", rc, errno);
+        return;
     }
 }
 
@@ -700,12 +704,13 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
         int rc = sigwaitinfo(&mask, NULL);
         if (rc == SIGCHLD) {
             // Child process exited -> check that it's the right one
-            rc = waitpid(pid, &wait_status, WNOHANG);
+            rc = waitpid(-1, &wait_status, WNOHANG);
             if (rc == pid)
                 break;
             else if (rc < 0)
                 fatal("Unexpected error from waitpid: %d", errno);
-            debug("ignoring sigchld for pid=%d", rc);
+
+            debug("reaping pid %d", rc);
         } else if (rc < 0) {
             // An error occurred.
             debug("sigwaitinfo->errno %d", errno);
