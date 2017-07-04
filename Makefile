@@ -3,12 +3,15 @@ VERSION=1.1.1
 
 CFLAGS+=-Wall -Wextra -O2
 
+# _GNU_SOURCE is for asprintf
+EXTRA_CFLAGS= -D_GNU_SOURCE -DPROGRAM_VERSION=$(VERSION)
+
 erlinit: $(wildcard src/*.c)
-	$(CC) $(CFLAGS) -DPROGRAM_VERSION=$(VERSION) -o $@ $^
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -o $@ $^
 
 # This is a special version of erlinit that can be unit tested
 erlinit-test: $(wildcard src/*.c)
-	$(CC) $(CFLAGS) -DPROGRAM_VERSION=$(VERSION) -DUNITTEST -o $@ $^
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -DUNITTEST -o $@ $^
 
 test: check
 check: erlinit erlinit-test

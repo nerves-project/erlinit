@@ -23,7 +23,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "erlinit.h"
 
-#define _GNU_SOURCE // for asprintf(3)
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
