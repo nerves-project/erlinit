@@ -80,6 +80,7 @@ struct erlinit_options {
 extern struct erlinit_options options;
 
 // Logging functions
+void log_init();
 void debug(const char *fmt, ...);
 void warn(const char *fmt, ...);
 void fatal(const char *fmt, ...);

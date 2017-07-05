@@ -28,51 +28,82 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include <sys/reboot.h>
 
-static void print_prefix()
+static int log_fd = -1;
+
+void log_init()
 {
-    fprintf(stderr, PROGRAM_NAME ": ");
+#ifndef UNITTEST
+    log_fd = open("/dev/kmsg", O_WRONLY | O_CLOEXEC);
+#endif
+
+    if (log_fd < 0)
+        log_fd = STDERR_FILENO;
+}
+
+static int format_message(char **strp, const char *fmt, va_list ap)
+{
+    char *msg;
+    if (vasprintf(&msg, fmt, ap) < 0) {
+        return -1;
+    }
+
+    int rc = asprintf(strp, PROGRAM_NAME ": %s\r\n", msg);
+    free(msg);
+
+    return rc;
+}
+
+static void log_write(const char *str, size_t len)
+{
+    int ignore = write(log_fd, str, len);
+    (void) ignore;
+}
+
+static void log_format(const char *fmt, va_list ap)
+{
+    char *line;
+    int len = format_message(&line, fmt, ap);
+
+    if (len >= 0) {
+        log_write(line, len);
+        free(line);
+    }
 }
 
 void debug(const char *fmt, ...)
 {
     if (options.verbose) {
-        print_prefix();
-
         va_list ap;
         va_start(ap, fmt);
-        vfprintf(stderr, fmt, ap);
+        log_format(fmt, ap);
         va_end(ap);
-
-        fprintf(stderr, "\r\n");
     }
 }
 
 void warn(const char *fmt, ...)
 {
-    print_prefix();
-
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    log_format(fmt, ap);
     va_end(ap);
-
-    fprintf(stderr, "\r\n");
 }
 
 void fatal(const char *fmt, ...)
 {
-    fprintf(stderr, "\r\n\r\nFATAL ERROR:\r\n");
-
-    print_prefix();
+    log_write("\r\n\r\nFATAL ERROR:\r\n", 18);
 
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    log_format(fmt, ap);
     va_end(ap);
 
-    fprintf(stderr, "\r\n\r\nCANNOT CONTINUE.\r\n");
+    log_write("\r\n\r\nCANNOT CONTINUE.\r\n", 22);
 
 #ifndef UNITTEST
     // Sleep so that the message can be printed

@@ -756,6 +756,8 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
 
 int main(int argc, char *argv[])
 {
+    log_init();
+
 #ifndef UNITTEST
     if (getpid() != 1)
         fatal("Refusing to run since not pid 1");
