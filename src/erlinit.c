@@ -661,7 +661,7 @@ static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
                 continue;
             else if (errno == EAGAIN) {
                 // Timeout. Brutal kill our child so that the shutdown process can continue.
-                warn("Wait for Erlang VM to exit gracefully expired. Killing...");
+                warn("Timed out while waiting for Erlang VM to exit. Killing...");
                 kill(pid, SIGKILL);
                 return;
             }
