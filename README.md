@@ -171,6 +171,14 @@ references new directories for code. The
 [relsync](https://github.com/fhunleth/relsync) program does this to dynamically
 update Erlang code via the Erlang distribution protocol.
 
+## Logging
+
+`erlinit` logs to `/dev/kmsg` and the messages can be viewed by running `dmesg`.
+For debug purposes and if `/dev/kmsg` cannot be opened, logging goes to
+`stderr`. This latter situation isn't desirable for normal use since writing to
+`stderr` can block. In some scenarios, it can block indefinitely (e.g., logging
+to a gadget serial device).
+
 ## Debugging erlinit
 
 Since `erlinit` is the first user process run, it can be a little tricky

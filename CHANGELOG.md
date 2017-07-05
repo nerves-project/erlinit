@@ -1,6 +1,13 @@
 # Changelog
 
-## v1.1.1-dev
+## v1.1.2
+
+  * Bug fixes
+    * Log to `/dev/kmsg` to avoid blocking on `stderr` due to error messages
+      being printed. This fixes an issue blocking reboots when logging to a
+      gadget serial port.
+
+## v1.1.1
 
   * Bug fixes
     * Reap orphaned zombie processes
