@@ -1,6 +1,14 @@
 # Changelog
 
-## v1.1.3-dev
+## v1.1.3
+
+  * Bug fixes
+    * Improve debug on graceful shutdown to help debug errors in the future.
+      Also, handle some error returns that were not being handled before.
+    * Change default to `--reboot-on-fatal` so that fatal errors from `erlinit`
+      don't result in hung boards. This is the expectation in production, so
+      users debugging `erlinit` issues should add `--hang-on-fatal` to their
+      `erlinit.config` files from now on.
 
 ## v1.1.2
 

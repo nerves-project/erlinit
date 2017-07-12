@@ -1,5 +1,5 @@
 
-VERSION=1.1.3-dev
+VERSION=1.1.3
 
 CFLAGS+=-Wall -Wextra -O2
 
