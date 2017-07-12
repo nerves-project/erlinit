@@ -49,7 +49,7 @@ erlinit: Launching erl...
 erlexec is sending signal to halt
 erlinit: sigpwr|sigusr1 -> halt
 erlinit: waiting 10000 ms for graceful shutdown
-erlinit: Timed out while waiting for Erlang VM to exit. Killing...
+erlinit: Timed out while waiting for Erlang VM to exit.
 erlinit: kill_all
 erlinit: unmount_all
 EOF

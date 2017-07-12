@@ -647,25 +647,27 @@ static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
                 return;
             } else if (rc < 0) {
                 warn("Unexpected error from waitpid %d", errno);
-                return;
+                break;
+            } else if (rc == 0) {
+                // No child exited
+                debug("Ignoring spurious SIGCHLD");
             } else {
                 debug("Ignoring SIGCHLD from pid %d", rc);
-                continue;
             }
-        }
-
-        if (rc < 0) {
-            if (errno == EINTR)
-                continue;
-            else if (errno == EAGAIN) {
+        } else if (rc == 0) {
+            warn("Ignoring unexpected return from sigtimedwait");
+        } else if (rc < 0) {
+            if (errno == EAGAIN) {
                 // Timeout. Brutal kill our child so that the shutdown process can continue.
-                warn("Timed out while waiting for Erlang VM to exit. Killing...");
-                kill(pid, SIGKILL);
-                return;
+                warn("Timed out while waiting for Erlang VM to exit.");
+                break;
+            } else if (errno != EINTR) {
+                warn("Unexpected errno %d from sigtimedwait", errno);
+                break;
             }
+        } else if (rc > 0) {
+            warn("Ignoring signal %d while waiting for graceful shutdown", rc);
         }
-        warn("Unexpected result from sigtimewait: %d %d", rc, errno);
-        return;
     }
 }
 
