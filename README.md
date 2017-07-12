@@ -88,7 +88,7 @@ The following lists the options:
         Reboot when Erlang exits.
 
     --hang-on-fatal
-        Hang if a fatal error is detected in erlinit. This is the default.
+        Hang if a fatal error is detected in erlinit.
 
     -m, --mount <dev:path:type:flags:options>
         Mount the specified path. See mount(8) and fstab(5) for fields
@@ -109,7 +109,7 @@ The following lists the options:
         Power off if a fatal error is detected in erlinit.
 
     --reboot-on-fatal
-        Reboot if a fatal error is detected in erlinit.
+        Reboot if a fatal error is detected in erlinit. This is the default.
 
     -r, --release-path <path1[:path2...]>
         A colon-separated lists of paths to search for
