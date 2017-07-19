@@ -822,6 +822,14 @@ int main(int argc, char *argv[])
     }
 
 #ifndef UNITTEST
+    // Close stdio filehandles to avoid hanging the musb driver when running
+    // g_serial. Not all platforms hang when these are left open, but it seems
+    // like a reasonable thing to do especially since we can't use them
+    // anyway.
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
     // Reboot/poweroff/halt
     reboot(desired_reboot_cmd);
 #endif
