@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.4
+
+  * Bug fixes
+    * Fix reboot hang on the BBB when using the g_serial driver and sending the
+      IEx prompt out the virtual serial port.
+
 ## v1.1.3
 
   * Bug fixes
