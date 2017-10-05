@@ -23,6 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "erlinit.h"
 
+#include <glob.h>
 #include <dirent.h>
 #include <errno.h>
 #include <signal.h>
@@ -47,6 +48,11 @@ struct erl_run_info {
     // This is the directory containing the release start scripts
     // e.g., <release_base_dir>/releases/<version>
     char *releases_version_dir;
+
+    // This is the search path for the .beams created by
+    // Elixir's Protocol consolidation code.
+    // e.g., <release_base_dir>/lib/*/consolidated
+    char *consolidated_protocols_path;
 
     // This is the name of the release. It could be empty if there's
     // no name and this is typical for Nerves.
@@ -234,6 +240,34 @@ static void find_boot_path(const char *release_version_dir, const char *release_
         find_boot_path_auto(release_version_dir, boot_path);
 }
 
+static int find_consolidated_dirs(const char *release_base_dir,
+                                  struct erl_run_info *run_info)
+{
+    // Elixir creates a special `consolidated` directory that contains
+    // .beam files. It speeds up the use of Elixir Protocols
+    // significantly so it should be loaded if available.
+    //
+    // It's found in directories of the following form:
+    // <release_base_dir>/lib/<application-version>/consolidated
+    //
+    char *search_path = NULL;
+    erlinit_asprintf(&search_path, "%s/lib/*/consolidated", release_base_dir);
+
+    glob_t globbuf;
+    globbuf.gl_offs = 0;
+    OK_OR_FATAL(glob(search_path, 0, NULL, &globbuf), "glob failed when searching for '%s'", search_path);
+
+    if (globbuf.gl_pathc > 1)
+        warn("More than one consolidated directory found. Using '%s'", globbuf.gl_pathv[0]);
+
+    if (globbuf.gl_pathc >= 1)
+        run_info->consolidated_protocols_path = strdup(globbuf.gl_pathv[0]);
+
+    globfree(&globbuf);
+
+    return 0;
+}
+
 static int is_directory(const char *path)
 {
     struct stat sb;
@@ -388,6 +422,7 @@ static void find_release(struct erl_run_info *run_info)
             find_sys_config(run_info->releases_version_dir, &run_info->sys_config);
             find_vm_args(run_info->releases_version_dir, &run_info->vmargs_path);
             find_boot_path(run_info->releases_version_dir, run_info->release_name, &run_info->boot_path);
+            find_consolidated_dirs(run_info->release_base_dir, run_info);
 
             return;
         }
@@ -563,6 +598,10 @@ static void child()
     } else
         exec_argv[arg++] = "erlexec";
 
+    if (run_info.consolidated_protocols_path) {
+        exec_argv[arg++] = "-pa";
+        exec_argv[arg++] = run_info.consolidated_protocols_path;
+    }
     if (run_info.sys_config) {
         exec_argv[arg++] = "-config";
         exec_argv[arg++] = run_info.sys_config;
