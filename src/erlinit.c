@@ -38,16 +38,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/wait.h>
 
 struct erl_run_info {
-    // This is the root directory of the release
-    // e.g., <base>/<release_name>/releases
-    char *release_root_dir;
+    // This is the base directory for the release
+    // e.g., <base>/[release_name]
+    // The release_name directory is optional and may not be included. It
+    // is normally omitted by Nerves.
+    char *release_base_dir;
 
     // This is the directory containing the release start scripts
-    // e.g., <base>/<release_name>/releases/<version>
-    char *release_version_dir;
+    // e.g., <release_base_dir>/releases/<version>
+    char *releases_version_dir;
 
     // This is the name of the release. It could be empty if there's
-    // no name.
+    // no name and this is typical for Nerves.
     char *release_name;
 
     // The directory containing ERTS
@@ -346,8 +348,8 @@ static int find_release_dirs(const char *base,
             continue;
 
         if (strcmp(namelist[i]->d_name, "releases") == 0 &&
-                find_release_version_dir(dirpath, &run_info->release_version_dir)) {
-            erlinit_asprintf(&run_info->release_root_dir, "%s", base);
+                find_release_version_dir(dirpath, &run_info->releases_version_dir)) {
+            erlinit_asprintf(&run_info->release_base_dir, "%s", base);
             success = 1;
             break;
         }
@@ -381,11 +383,11 @@ static void find_release(struct erl_run_info *run_info)
     const char *search_path = strtok(options.release_search_path, ":");
     while (search_path != NULL) {
         if (find_release_dirs(search_path, 1, run_info)) {
-            debug("Using release in %s.", run_info->release_version_dir);
+            debug("Using release in %s.", run_info->releases_version_dir);
 
-            find_sys_config(run_info->release_version_dir, &run_info->sys_config);
-            find_vm_args(run_info->release_version_dir, &run_info->vmargs_path);
-            find_boot_path(run_info->release_version_dir, run_info->release_name, &run_info->boot_path);
+            find_sys_config(run_info->releases_version_dir, &run_info->sys_config);
+            find_vm_args(run_info->releases_version_dir, &run_info->vmargs_path);
+            find_boot_path(run_info->releases_version_dir, run_info->release_name, &run_info->boot_path);
 
             return;
         }
@@ -403,7 +405,7 @@ static void find_release(struct erl_run_info *run_info)
         boot_path = NULL;
     }
 #endif
-    erlinit_asprintf(&run_info->release_root_dir, "%s", ERLANG_ROOT_DIR);
+    erlinit_asprintf(&run_info->release_base_dir, "%s", ERLANG_ROOT_DIR);
 }
 
 static int has_erts_library_directory()
@@ -431,7 +433,7 @@ static void setup_environment(const struct erl_run_info *run_info)
 
     // ROOTDIR points to the release unless it wasn't found.
     char *envvar = NULL;
-    erlinit_asprintf(&envvar, "ROOTDIR=%s", run_info->release_root_dir);
+    erlinit_asprintf(&envvar, "ROOTDIR=%s", run_info->release_base_dir);
     putenv(envvar);
     envvar = NULL; // putenv owns memory
 
@@ -531,7 +533,7 @@ static void child()
     // the release.
     if (options.working_directory == NULL ||
         chdir(options.working_directory) < 0) {
-        OK_OR_FATAL(chdir(run_info.release_root_dir), "Cannot chdir to release directory (%s)", run_info.release_root_dir);
+        OK_OR_FATAL(chdir(run_info.release_base_dir), "Cannot chdir to release directory (%s)", run_info.release_base_dir);
     }
 
     // Optionally run a "pre-run" program
