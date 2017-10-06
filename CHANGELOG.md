@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.2.0
+
+  * New features
+    * Support Elixir's consolidated directory if found.
+
 ## v1.1.4
 
   * Bug fixes
