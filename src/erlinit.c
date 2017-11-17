@@ -543,7 +543,7 @@ static void drop_privileges()
 
 static void child()
 {
-    setup_filesystems();
+    mount_filesystems();
 
     // Locate everything needed to configure the environment
     // and pass to erlexec.

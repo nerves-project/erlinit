@@ -99,7 +99,7 @@ void setup_networking();
 
 // Filesystems
 void setup_pseudo_filesystems();
-void setup_filesystems();
+void mount_filesystems();
 void unmount_all();
 
 // Terminal

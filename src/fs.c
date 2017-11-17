@@ -85,7 +85,7 @@ void setup_pseudo_filesystems()
 #endif
 }
 
-void setup_filesystems()
+void mount_filesystems()
 {
 #ifndef UNITTEST
     // Mount /tmp and /run since they're almost always needed and it's
