@@ -1,5 +1,5 @@
 
-VERSION=1.2.0
+VERSION=1.3.0
 
 CFLAGS+=-Wall -Wextra -O2
 

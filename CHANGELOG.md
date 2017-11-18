@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.0
+
+  * New features
+    * Create /dev/rootdisk* symlinks to the block devices that are on the same
+      physical device.  This makes it a lot easier to deal with systems that
+      don't have predictable device names or don't have them early enough in
+      the boot process.
+
 ## v1.2.0
 
   * New features
