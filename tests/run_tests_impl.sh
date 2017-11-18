@@ -56,6 +56,7 @@ run() {
     $MKDIR -p $WORK/tmp
     $MKDIR -p $WORK/usr/bin
     $LN -s $ECHO $WORK/$ECHO
+    $LN -s $LS $WORK/$LS
     $LN -s $SH $WORK/$SH
     $LN -s $CAT $WORK/$CAT
     $LN -s $CUT $WORK/$CUT
