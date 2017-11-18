@@ -23,12 +23,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "erlinit.h"
 
+#include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #ifndef UNITTEST
 static unsigned long str_to_mountflags(char *s)
@@ -82,6 +85,74 @@ void setup_pseudo_filesystems()
     OK_OR_WARN(mkdir("/dev/pts", 0755), "Cannot create /dev/pts");
     OK_OR_WARN(mkdir("/dev/shm", 0755), "Cannot create /dev/shm");
     OK_OR_WARN(mount("", "/dev/pts", "devpts", 0, "gid=5,mode=620"), "Cannot mount /dev/pts");
+#endif
+}
+
+static dev_t root_disk_device()
+{
+    // NOTE: We'd like to know the root device for the root directory, but stat
+    //       only returns the partition device for the root directory. Since it
+    //       is often the case of 16 minor devices to support each real device,
+    //       assume that if we mask the root directory's device off that we'll
+    //       get its parent.
+    struct stat rootdev;
+    if (stat("/", &rootdev) >= 0) {
+        return (rootdev.st_dev & 0xfff0);
+    } else {
+        warn("Could not determine root device: %s", strerror(errno));
+        return 0;
+    }
+}
+
+void create_rootdisk_symlinks()
+{
+    // This code discovers which device has the root filesystem and creates
+    // symlinks to the device files for it. This is needed to avoid logic
+    // elsewhere in the erlinit.config, fwup scripts, u-boot environment
+    // configuration files, etc. to point to the right place on systems that
+    // don't have predictable disk names. E.g., on some boots, it's /dev/sda
+    // and on others, it's /dev/sdb depending on which enumerates first.
+
+    dev_t rdev = root_disk_device();
+    if (rdev == 0)
+        return;
+
+#ifndef UNITTEST
+    // NOTE: While /dev is populated asynchronously, the devices for the
+    //       root disk have to be there for erlinit to run.
+    struct dirent **namelist;
+    int n = scandir("/dev",
+                    &namelist,
+                    NULL,
+                    NULL);
+    int i;
+    for (i = 0; i < n; i++) {
+        char devpath[ERLINIT_PATH_MAX];
+        snprintf(devpath, sizeof(devpath), "/dev/%s", namelist[i]->d_name);
+
+        // Block device?
+        struct stat sb;
+        if (stat(devpath, &sb) != 0 ||
+            !S_ISBLK(sb.st_mode))
+            continue;
+
+        // Instance of the root device?
+        int instance = sb.st_rdev - rdev;
+        if (instance < 0 || instance >= 16)
+            continue;
+
+        char symlinkpath[ERLINIT_PATH_MAX];
+        snprintf(symlinkpath, sizeof(symlinkpath), "/dev/rootdisk%d", instance);
+
+        if (symlink(devpath, symlinkpath) < 0)
+            warn("Could not create symlink '%s'->'%s': %s", symlinkpath, devpath, strerror(errno));
+    }
+
+    if (n >= 0) {
+        for (i = 0; i < n; i++)
+            free(namelist[i]);
+        free(namelist);
+    }
 #endif
 }
 

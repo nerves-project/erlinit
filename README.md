@@ -237,6 +237,18 @@ hostname. The configuration would look like:
 In theory, the `getmyhostname` program could read an EEPROM or some file on a
 writable partition to return the hostname.
 
+## Root disk naming
+
+If you have multiple memory cards, SSDs, or other devices connected, it's
+possible that Linux will enumerate those devices in a nondeterministic order.
+This can be mitigated by using `udev` to populate the `/dev/disks/by-*`
+directories, but even this can be inconvenient when you just want to refer to
+the drive that provides the root filesystem. To address this, `erlinit` creates
+`/dev/rootdisk0`, `/dev/rootdisk1`, etc. and symlinks them to the expected
+devices. For example, if your root file system is on `/dev/mmcblk0p1`, you'll
+get a symlink from `/dev/rootdisk1` to `/dev/mmcblk0p1` and similar files for
+each partition. The whole disk will be `/dev/rootdisk0`.
+
 ## Chaining programs
 
 It's possible for `erlinit` to run a program that launches `erlexec` so that

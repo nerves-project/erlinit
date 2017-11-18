@@ -829,6 +829,10 @@ int main(int argc, char *argv[])
     // Mount /dev, /proc and /sys
     setup_pseudo_filesystems();
 
+    // Create symlinks for partitions on the drive containing the
+    // root filesystem.
+    create_rootdisk_symlinks();
+
     // Fix the terminal settings so output goes to the right
     // terminal and the CTRL keys work in the shell..
     set_ctty();
