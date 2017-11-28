@@ -244,10 +244,12 @@ possible that Linux will enumerate those devices in a nondeterministic order.
 This can be mitigated by using `udev` to populate the `/dev/disks/by-*`
 directories, but even this can be inconvenient when you just want to refer to
 the drive that provides the root filesystem. To address this, `erlinit` creates
-`/dev/rootdisk0`, `/dev/rootdisk1`, etc. and symlinks them to the expected
+`/dev/rootdisk0`, `/dev/rootdisk0p1`, etc. and symlinks them to the expected
 devices. For example, if your root file system is on `/dev/mmcblk0p1`, you'll
-get a symlink from `/dev/rootdisk1` to `/dev/mmcblk0p1` and similar files for
-each partition. The whole disk will be `/dev/rootdisk0`.
+get a symlink from `/dev/rootdisk0p1` to `/dev/mmcblk0p1` and the whole disk
+will be `/dev/rootdisk0`. Similarly, if the root filesystem is on `/dev/sdb1`,
+you'd still get `/dev/rootdisk0p1` and `/dev/rootdisk0` and they'd by symlinked
+to `/dev/sdb1` and `/dev/sdb` respectively.
 
 ## Chaining programs
 

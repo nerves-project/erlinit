@@ -142,7 +142,10 @@ void create_rootdisk_symlinks()
             continue;
 
         char symlinkpath[ERLINIT_PATH_MAX];
-        snprintf(symlinkpath, sizeof(symlinkpath), "/dev/rootdisk%d", instance);
+        if (instance == 0)
+            snprintf(symlinkpath, sizeof(symlinkpath), "/dev/rootdisk0");
+        else
+            snprintf(symlinkpath, sizeof(symlinkpath), "/dev/rootdisk0p%d", instance);
 
         if (symlink(devpath, symlinkpath) < 0)
             warn("Could not create symlink '%s'->'%s': %s", symlinkpath, devpath, strerror(errno));
