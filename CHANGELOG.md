@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.1
+
+  * Bug fixes
+    * Addressed feedback to make rootdisk* symlinks more consistent with Linux
+      naming. Not backwards compatible with the 1.3.0 naming.
+
 ## v1.3.0
 
   * New features
