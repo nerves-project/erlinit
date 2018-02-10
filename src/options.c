@@ -51,6 +51,7 @@ struct erlinit_options options = {
     .gid = 0,
     .uid = 0,
     .graceful_shutdown_timeout_ms = 10000,
+    .update_clock = 0
 };
 
 static struct option long_options[] = {
@@ -77,6 +78,7 @@ static struct option long_options[] = {
     {"gid", required_argument, 0, '&' },
     {"pre-run-exec", required_argument, 0, '*' },
     {"graceful-shutdown-timeout", required_argument, 0, '(' },
+    {"update-clock", no_argument, 0, ')'},
     {0,     0,      0, 0 }
 };
 
@@ -173,6 +175,9 @@ void parse_args(int argc, char *argv[])
             break;
         case '(': // --graceful-shutdown-timeout 10000
             options.graceful_shutdown_timeout_ms = strtol(optarg, NULL, 0);
+            break;
+        case ')': // --update-clock
+            options.update_clock = 1;
             break;
         default:
             // getopt prints a warning, so we don't have to

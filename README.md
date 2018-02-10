@@ -125,11 +125,14 @@ The following lists the options:
         Print out when erlinit starts and when it launches Erlang (for
         benchmarking)
 
-    -v, --verbose
-        Enable verbose prints
-
     --uid <id>
         Run the Erlang VM under the specified user ID
+
+    --update-clock
+        Force the system clock to at least the build date/time of erlinit.
+
+    -v, --verbose
+        Enable verbose prints
 
     --warn-unused-tty
         Print a message on ttys receiving kernel logs, but not an Erlang console
@@ -281,3 +284,23 @@ to reduce privilege by specifying the `--uid` and `--gid` options. Before doing
 this, make sure that your embedded Erlang/OTP application can support this. When
 dealing with hardware, it is quite easy to run into situations requiring elevated
 privileges.
+
+## Clocks
+
+If you're running on a system without a real-time clock, the clock will report that
+it's 1970. Even if you have a real-time clock, a failure of the battery could still
+cause it to show a date in the 1980s or 1990s. `erlinit` isn't smart enough to fix
+this, but it can set a lower bound for the clock based on its build timestamp.
+Specify the `--update-clock` option to enable this. Additionally, this lower bound
+is set very early on in the boot process so nothing besides `erlinit` should see
+a decade's old time.
+
+This option has the following caveats:
+
+1. Some projects have chosen to use the date to check whether NTP has synchronized
+   the clock yet. If you are a person who did this, please consider a more direct
+   route of checking NTP's synchronization status.
+2. Look into what `fake-hwclock` does if you need something better.
+3. If using this to guarantee a minimum timestamp so that SSL certificates work, be
+   sure that the SSL certificates don't expire before the next firmware update.
+   (Not that you don't have to do that anyway, but just a friendly reminder)

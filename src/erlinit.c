@@ -31,6 +31,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <linux/reboot.h>
@@ -490,6 +491,37 @@ static void setup_environment(const struct erl_run_info *run_info)
     }
 }
 
+static void update_time()
+{
+    if (!options.update_clock)
+        return;
+
+    debug("checking that the clock is after the build timestamp");
+
+    // Force the time to at least the build date.  For systems w/o real-time
+    // clocks, the time will be closer to the actual date until NTP kicks in.
+    // This makes it possible to use certificates assuming that the build date
+    // isn't too old.
+
+    struct timespec tp;
+    if (clock_gettime(CLOCK_REALTIME, &tp) < 0) {
+        warn("clock_gettime failed. Skipping time check");
+        return;
+    }
+
+    if (tp.tv_sec < BUILD_TIME) {
+        tp.tv_sec = BUILD_TIME;
+        tp.tv_nsec = 0;
+#ifdef UNITTEST
+        fatal("How can the current time be before the build time?");
+#endif
+        debug("updating the clock to %d", tp.tv_sec);
+        if (clock_settime(CLOCK_REALTIME, &tp) < 0) {
+            warn("clock_settime");
+        }
+    }
+}
+
 static int run_cmd(const char *cmd)
 {
     debug("run_cmd '%s'", cmd);
@@ -543,6 +575,8 @@ static void drop_privileges()
 
 static void child()
 {
+    update_time();
+
     mount_filesystems();
 
     // Locate everything needed to configure the environment

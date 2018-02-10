@@ -1,0 +1,40 @@
+#!/bin/sh
+
+#
+# Test that specifying --update-clock in the config file is
+# detected.
+#
+
+$CAT >$CONFIG <<EOF
+-v
+--update-clock
+EOF
+
+$CAT >$EXPECTED <<EOF
+erlinit: cmdline argc=1, merged argc=3
+erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=--update-clock
+erlinit: set_ctty
+erlinit: checking that the clock is after the build timestamp
+erlinit: find_erts_directory
+erlinit: find_release
+erlinit: No release found in /srv/erlang.
+erlinit: setup_environment
+erlinit: setup_networking
+erlinit: configure_hostname
+erlinit: /etc/hostname not found
+erlinit: Env: 'HOME=/root'
+erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
+erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
+erlinit: Env: 'EMU=beam'
+erlinit: Env: 'PROGNAME=erl'
+erlinit: Arg: 'erlexec'
+erlinit: Launching erl...
+Hello from erlexec
+erlinit: Erlang VM exited
+erlinit: kill_all
+erlinit: unmount_all
+EOF
