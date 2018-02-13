@@ -192,8 +192,12 @@ void mount_filesystems()
 
         if (source && target && filesystemtype && mountflags && data) {
 #ifndef UNITTEST
-            unsigned long imountflags =
-                    str_to_mountflags(mountflags);
+            // Try to mkdir the target just in case the final path entry does
+            // not exist. This is a convenience for mounting in filesystems
+            // created by the kernel like /dev and /sys/fs/*.
+            (void) mkdir(target, 0755);
+
+            unsigned long imountflags = str_to_mountflags(mountflags);
             if (mount(source, target, filesystemtype, imountflags, data) < 0)
                 warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
 #else
