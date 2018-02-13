@@ -57,6 +57,8 @@ static unsigned long str_to_mountflags(char *s)
             flags |= MS_NOSUID;
         else if (strcmp(flag, "ro") == 0)
             flags |= MS_RDONLY;
+        else if (strcmp(flag, "rw") == 0)
+            flags &= MS_RDONLY;
         else if (strcmp(flag, "relatime") == 0)
             flags |= MS_RELATIME;
         else if (strcmp(flag, "silent") == 0)
