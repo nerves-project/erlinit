@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.4.0
+
+  * New features
+    * Add option to force system clock forward to the build date/time. This is
+      off by default. This feature makes it possible to use code that depends on
+      the clock not being in the 70s before NTP syncs.
+    * Tighten file system mount options. While not bulletproof, this makes
+      /sys and /proc nosuid, noexec, and nodev.
+    * If mountpoints don't exist, try to create them. This is needed for
+      cgroup support since the convention mounts the cgroup directories on
+      a tmpfs.
+    * Add the "rw" mount option. Even though this is the default, people
+      sometimes specify it and this prevents the mount error from it not
+      being recognized by erlinit.
+
 ## v1.3.1
 
   * Bug fixes
