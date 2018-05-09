@@ -119,6 +119,19 @@ static void trim_whitespace(char *s)
     s[len] = 0;
 }
 
+static void kill_whitespace(char *s)
+{
+    // This function trims whitespace off the front and back, and if
+    // there's any whitespace in the middle, it truncates the string there.
+    trim_whitespace(s);
+    while (*s) {
+        if (isspace(*s))
+            *s = '\0';
+        else
+            s++;
+    }
+}
+
 static void configure_hostname()
 {
     debug("configure_hostname");
@@ -127,10 +140,12 @@ static void configure_hostname()
     if (options.hostname_pattern) {
         // Set the hostname based on a pattern
         char unique_id[64] = "xxxxxxxx";
-        if (options.uniqueid_exec)
+        if (options.uniqueid_exec) {
             system_cmd(options.uniqueid_exec, unique_id, sizeof(unique_id));
-
+            kill_whitespace(unique_id);
+        }
         sprintf(hostname, options.hostname_pattern, unique_id);
+        kill_whitespace(hostname);
     } else {
         // Set the hostname from /etc/hostname
         FILE *fp = fopen("/etc/hostname", "r");
