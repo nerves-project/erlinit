@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.1
+
+  * Bug fixes
+    * Bulletproof hostname generation to avoid accidents that add whitespace in
+      the hostname string.
+
 ## v1.4.0
 
   * New features
