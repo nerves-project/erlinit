@@ -80,13 +80,13 @@ void setup_pseudo_filesystems()
 {
     // This only works in the real environment.
 #ifndef UNITTEST
-    OK_OR_WARN(mount("", "/proc", "proc", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL), "Cannot mount /proc");
-    OK_OR_WARN(mount("", "/sys", "sysfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL), "Cannot mount /sys");
+    OK_OR_WARN(mount("proc", "/proc", "proc", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL), "Cannot mount /proc");
+    OK_OR_WARN(mount("sysfs", "/sys", "sysfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL), "Cannot mount /sys");
 
     // /dev should be automatically created/mounted by Linux
     OK_OR_WARN(mkdir("/dev/pts", 0755), "Cannot create /dev/pts");
     OK_OR_WARN(mkdir("/dev/shm", 0755), "Cannot create /dev/shm");
-    OK_OR_WARN(mount("", "/dev/pts", "devpts", MS_NOEXEC | MS_NOSUID, "gid=5,mode=620"), "Cannot mount /dev/pts");
+    OK_OR_WARN(mount("devpts", "/dev/pts", "devpts", MS_NOEXEC | MS_NOSUID, "gid=5,mode=620"), "Cannot mount /dev/pts");
 #endif
 }
 
@@ -166,11 +166,11 @@ void mount_filesystems()
 #ifndef UNITTEST
     // Mount /tmp and /run since they're almost always needed and it's
     // not easy to do it at the right time in Erlang.
-    if (mount("", "/tmp", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, "mode=1777,size=10%") < 0)
+    if (mount("tmpfs", "/tmp", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, "mode=1777,size=10%") < 0)
         warn("Could not mount tmpfs in /tmp: %s\r\n"
              "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
 
-    if (mount("", "/run", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
+    if (mount("tmpfs", "/run", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
         warn("Could not mount tmpfs in /run: %s", strerror(errno));
 #endif
 
