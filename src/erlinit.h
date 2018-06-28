@@ -108,5 +108,9 @@ void unmount_all();
 void set_ctty();
 void warn_unused_tty();
 
+#ifdef __APPLE__
+#include "compat.h"
+#endif
+
 #endif // ERLINIT_H
 

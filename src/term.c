@@ -32,11 +32,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <stdio.h>
 
-#ifndef UNITTEST
 #define SYSFS_ACTIVE_CONSOLE "/sys/class/tty/console/active"
-#else
-#define SYSFS_ACTIVE_CONSOLE "/fakesys/class/tty/console/active" // fakechroot doesn't replace /sys references
-#endif
 
 #define TTY_MAX_PATH_LENGTH 32
 #define TTY_PREFIX "/dev/"
@@ -70,6 +66,7 @@ void warn_unused_tty()
     char hostname[32];
     if (gethostname(hostname, sizeof(hostname)) < 0)
         strcpy(hostname, "unknown");
+    hostname[sizeof(hostname) - 1] = '\0';
 
     char all_ttys[TTY_MAX_PATH_LENGTH];
     if (readsysfs(SYSFS_ACTIVE_CONSOLE, all_ttys, sizeof(all_ttys)) == 0)
@@ -78,7 +75,6 @@ void warn_unused_tty()
     char *tty = strtok(all_ttys, " ");
     while (tty != NULL) {
         if (strcmp(used_tty, tty) != 0) {
-#ifndef UNITTEST
             char ttypath[TTY_MAX_PATH_LENGTH + 1] = TTY_PREFIX;
             strncat(&ttypath[TTY_PREFIX_LENGTH], tty, sizeof(ttypath) - TTY_PREFIX_LENGTH - 1);
 
@@ -96,9 +92,6 @@ void warn_unused_tty()
                 close(fd);
                 free(msg);
             }
-#else
-            debug("tty '%s' is not used", tty);
-#endif
         }
         tty = strtok(NULL, " ");
     }
@@ -108,12 +101,10 @@ void set_ctty()
 {
     debug("set_ctty");
 
-#ifndef UNITTEST
     // Set up a controlling terminal for Erlang so that
     // it's possible to get to shell management mode.
     // See http://www.busybox.net/FAQ.html#job_control
     setsid();
-#endif
 
     char ttypath[TTY_MAX_PATH_LENGTH + 1] = TTY_PREFIX;
 
@@ -138,7 +129,6 @@ void set_ctty()
         options.controlling_terminal = strdup(&ttypath[TTY_PREFIX_LENGTH]);
     }
 
-#ifndef UNITTEST
     int fd = open(ttypath, O_RDWR);
     if (fd >= 0) {
         dup2(fd, 0);
@@ -148,5 +138,4 @@ void set_ctty()
     } else {
         warn("error setting controlling terminal: %s", ttypath);
     }
-#endif
 }

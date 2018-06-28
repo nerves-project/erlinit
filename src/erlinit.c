@@ -513,9 +513,6 @@ static void update_time()
     if (tp.tv_sec < BUILD_TIME) {
         tp.tv_sec = BUILD_TIME;
         tp.tv_nsec = 0;
-#ifdef UNITTEST
-        fatal("How can the current time be before the build time?");
-#endif
         debug("updating the clock to %d", tp.tv_sec);
         if (clock_settime(CLOCK_REALTIME, &tp) < 0) {
             warn("clock_settime");
@@ -566,16 +563,12 @@ static void drop_privileges()
     if (options.gid > 0) {
         debug("setting gid to %d", options.gid);
 
-#ifndef UNITTEST
         OK_OR_FATAL(setgid(options.gid), "setgid failed");
-#endif
     }
     if (options.uid > 0) {
         debug("setting uid to %d", options.uid);
 
-#ifndef UNITTEST
         OK_OR_FATAL(setuid(options.uid), "setuid failed");
-#endif
     }
 }
 
@@ -688,7 +681,6 @@ static void kill_all()
 {
     debug("kill_all");
 
-#ifndef UNITTEST
     // Kill processes the nice way
     warn("Sending SIGTERM to all processes");
     kill(-1, SIGTERM);
@@ -700,7 +692,6 @@ static void kill_all()
     warn("Sending SIGKILL to all processes");
     kill(-1, SIGKILL);
     sync();
-#endif
 }
 
 static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
@@ -841,13 +832,8 @@ int main(int argc, char *argv[])
 {
     log_init();
 
-#ifndef UNITTEST
     if (getpid() != 1)
         fatal("Refusing to run since not pid 1");
-#else
-    if (getpid() == 1)
-        fatal("Trying to run unit test version of erlinit for real. This won't work.");
-#endif
 
     // Merge the config file and the command line arguments
     static int merged_argc;
@@ -906,7 +892,6 @@ int main(int argc, char *argv[])
         sleep(5);
     }
 
-#ifndef UNITTEST
     // Close stdio filehandles to avoid hanging the musb driver when running
     // g_serial. Not all platforms hang when these are left open, but it seems
     // like a reasonable thing to do especially since we can't use them
@@ -917,7 +902,6 @@ int main(int argc, char *argv[])
 
     // Reboot/poweroff/halt
     reboot(desired_reboot_cmd);
-#endif
 
     // If we get here, oops the kernel.
     return 0;

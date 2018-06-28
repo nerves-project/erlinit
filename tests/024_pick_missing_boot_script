@@ -5,26 +5,34 @@
 # works.
 #
 
-$CAT >$CMDLINE_FILE <<EOF
+cat >$CMDLINE_FILE <<EOF
 -v --boot missing_boot_script
 EOF
 
 RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
-$MKDIR -p $RELEASE_PATH
-$TOUCH $RELEASE_PATH/a.boot
-$TOUCH $RELEASE_PATH/b.boot
-$TOUCH $RELEASE_PATH/c.boot
-$TOUCH $RELEASE_PATH/d.boot
-$TOUCH $RELEASE_PATH/sys.config
-$TOUCH $RELEASE_PATH/vm.args
+mkdir -p $RELEASE_PATH
+touch $RELEASE_PATH/a.boot
+touch $RELEASE_PATH/b.boot
+touch $RELEASE_PATH/c.boot
+touch $RELEASE_PATH/d.boot
+touch $RELEASE_PATH/sys.config
+touch $RELEASE_PATH/vm.args
 
-$CAT >$EXPECTED <<EOF
+cat >$EXPECTED <<EOF
 erlinit: cmdline argc=4, merged argc=4
-erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
 erlinit: merged argv[2]=--boot
 erlinit: merged argv[3]=missing_boot_script
+fixture: mount("proc", "/proc", "proc", 14, data)
+fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mkdir("/dev/pts", 755)
+fixture: mkdir("/dev/shm", 755)
+fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
 erlinit: set_ctty
+fixture: setsid()
+fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
+fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
 erlinit: find_erts_directory
 erlinit: find_release
 erlinit: /srv/erlang/releases/start_erl.data not found.
@@ -36,6 +44,10 @@ erlinit: Specified boot file 'missing_boot_script' not found. Auto-detecting.
 erlinit: Found more than one boot file. Using a.boot.
 erlinit: setup_environment
 erlinit: setup_networking
+fixture: ioctl(SIOCGIFFLAGS)
+fixture: ioctl(SIOCSIFFLAGS)
+fixture: ioctl(SIOCSIFADDR)
+fixture: ioctl(SIOCSIFNETMASK)
 erlinit: configure_hostname
 erlinit: /etc/hostname not found
 erlinit: Env: 'HOME=/root'
@@ -56,5 +68,20 @@ erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited
 erlinit: kill_all
+erlinit: Sending SIGTERM to all processes
+fixture: kill(-1, 15)
+fixture: sleep(1)
+erlinit: Sending SIGKILL to all processes
+fixture: kill(-1, 9)
 erlinit: unmount_all
+erlinit: unmounting tmpfs at /sys/fs/cgroup...
+fixture: umount("/sys/fs/cgroup")
+erlinit: unmounting tmpfs at /dev/shm...
+fixture: umount("/dev/shm")
+erlinit: unmounting devpts at /dev/pts...
+fixture: umount("/dev/pts")
+erlinit: unmounting proc at /proc...
+fixture: umount("/proc")
+erlinit: unmounting sysfs at /sys...
+fixture: umount("/sys")
 EOF

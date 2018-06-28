@@ -4,9 +4,6 @@ language: c
 sudo: false
 
 addons:
-      apt:
-             packages:
-             - fakechroot
       coverity_scan:
              project:
                 name: "nerves-project/erlinit"
@@ -25,5 +22,5 @@ env:
              - secure: "JOp56bW6mmO37OVczdQWiCXQPwH3ZTu3ahwHRW2P1sZG8+Un2+vJgICj0sRBdBhF750SOFp+7piVFQIoAUE7bLffhRTS6eTKarOAx94FdHd3FgNZTQmXjN/RmglbBDj8B0Dm03fZQ4qSOFhPucISPBnHuAq3T08aNMFOd4vkyZM="
 
 script:
-    - make && make test
+    - make && make check
 

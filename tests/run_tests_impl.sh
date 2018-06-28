@@ -1,44 +1,41 @@
 #!/bin/bash
 
-# Set absolute paths to utilities since this should be started in an empty
-# environment so simulate how erlinit runs.
-CAT=/bin/cat
-CUT=/usr/bin/cut
-ECHO=/bin/echo
-GREP=/bin/grep
-LN=/bin/ln
-LS=/bin/ls
-MKDIR=/bin/mkdir
-RM=/bin/rm
-SH=/bin/sh
-SLEEP=/bin/sleep
-DIFF=/usr/bin/diff
-FAKECHROOT=/usr/bin/fakechroot
-SORT=/usr/bin/sort
-TOUCH=/usr/bin/touch
-CHROOT=/usr/sbin/chroot
+# "readlink -f" implementation for BSD
+# This code was extracted from the Elixir shell scripts
+readlink_f () {
+    cd "$(dirname "$1")" > /dev/null
+    filename="$(basename "$1")"
+    if [ -h "$filename" ]; then
+        readlink_f "$(readlink "$filename")"
+    else
+        echo "`pwd -P`/$filename"
+    fi
+}
 
-TESTS_DIR=$(dirname $(readlink -f $0))
+TESTS_DIR=$(dirname $(readlink_f $0))
 
 WORK=$TESTS_DIR/work
-ERLINIT=$TESTS_DIR/../erlinit-test
-FAKE_ERLEXEC=$TESTS_DIR/fake_erlexec
 RESULTS=$WORK/results
 
+ERLINIT=$TESTS_DIR/../erlinit
+FIXTURE=$TESTS_DIR/fixture/erlinit_fixture.so
+
+FAKE_ERLEXEC=$TESTS_DIR/fake_erlexec
 FAKE_ERTS_DIR=$WORK/usr/lib/erlang/erts-6.0
 
 # Collect the tests from the commandline
 TESTS=$*
 if [ -z $TESTS ]; then
-    TESTS=$($LS $TESTS_DIR/[0-9][0-9][0-9]_* | $SORT)
+    TESTS=$(ls $TESTS_DIR/[0-9][0-9][0-9]_*)
 fi
 
 # Just in case there are some leftover from a previous test, clear it out
-$RM -fr $WORK
+rm -fr $WORK
 
-[ -e $ERLINIT ] || ( $ECHO "Build $ERLINIT first"; exit 1 )
-[ -e $FAKECHROOT ] || ( $ECHO "Can't find $FAKECHROOT"; exit 1 )
-[ -e $CHROOT ] || ( $ECHO "Can't find $CHROOT"; exit 1 )
+[ -e $ERLINIT ] || ( echo "Build $ERLINIT first"; exit 1 )
+[ -e $FIXTURE ] || ( echo "Build $FIXTURE first"; exit 1 )
+SED=sed
+which $SED || SED=gsed
 
 run() {
     TEST=$1
@@ -46,62 +43,78 @@ run() {
     CMDLINE_FILE=$WORK/$TEST.cmdline
     EXPECTED=$WORK/$TEST.expected
 
-    $ECHO Running $TEST...
+    echo Running $TEST...
 
-    # Setup a fake chroot to simulate erlinit boot
-    $RM -fr $WORK
-    $MKDIR -p $WORK/sbin
-    $MKDIR -p $WORK/bin
-    $MKDIR -p $WORK/etc
-    $MKDIR -p $WORK/tmp
-    $MKDIR -p $WORK/usr/bin
-    $LN -s $ECHO $WORK/$ECHO
-    $LN -s $LS $WORK/$LS
-    $LN -s $SH $WORK/$SH
-    $LN -s $CAT $WORK/$CAT
-    $LN -s $CUT $WORK/$CUT
-    $LN -s $GREP $WORK/$GREP
-    $LN -s $SLEEP $WORK/$SLEEP
-    $LN -s $ERLINIT $WORK/sbin/erlinit
-    $MKDIR -p $FAKE_ERTS_DIR/bin
-    $LN -s $FAKE_ERLEXEC $FAKE_ERTS_DIR/bin/erlexec
+    # Setup a fake root directory to simulate erlinit boot
+    rm -fr $WORK
+    mkdir -p $WORK/proc
+    mkdir -p $WORK/dev
+    mkdir -p $WORK/sbin
+    mkdir -p $WORK/bin
+    mkdir -p $WORK/etc
+    mkdir -p $WORK/tmp
+    mkdir -p $WORK/usr/bin
+    ln -s $ERLINIT $WORK/sbin/init
+    mkdir -p $FAKE_ERTS_DIR/bin
+    ln -s $FAKE_ERLEXEC $FAKE_ERTS_DIR/bin/erlexec
 
-    # Fake the active console (need to use fakesys rather than sys due to fakechroot limitation)
-    mkdir -p $WORK/fakesys/class/tty/console
-    $CAT >$WORK/fakesys/class/tty/console/active << EOF
-tty1
+    # Create some device files (the fixture sets their types)
+    touch $WORK/dev/mmcblk0p0 $WORK/dev/mmcblk0p1 $WORK/dev/mmcblk0p2 $WORK/dev/mmcblk0p3
+    ln -s /dev/null $WORK/dev/null
+
+    # Fake active console
+    mkdir -p $WORK/sys/class/tty/console
+    echo "ttyF1" >$WORK/sys/class/tty/console/active
+    ln -s $(tty) $WORK/dev/ttyF1
+    ln -s $(tty) $WORK/dev/ttyAMA0
+    ln -s $(tty) $WORK/dev/tty1
+
+    # Fake mounts
+    cat >$WORK/proc/mounts << EOF
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
+/dev/mmcblk0p2 / squashfs ro,relatime 0 0
+tmpfs /dev/shm tmpfs rw,nosuid,nodev 0 0
+tmpfs /sys/fs/cgroup tmpfs ro,nosuid,nodev,noexec,mode=755 0 0
 EOF
 
     # Run the test script to setup files for the test
     source $TESTS_DIR/$TEST
 
     if [ -e $CONFIG ]; then
-       $LN -s $CONFIG $WORK/etc/erlinit.config
+       ln -s $CONFIG $WORK/etc/erlinit.config
     fi
 
     if [ -e $CMDLINE_FILE ]; then
-        CMDLINE=$($CAT $CMDLINE_FILE)
+        CMDLINE=$(cat $CMDLINE_FILE)
     else
         CMDLINE=
     fi
 
-    # run
-    $FAKECHROOT $CHROOT $WORK /sbin/erlinit $CMDLINE 2> $RESULTS.raw
+    # Run erlinit
+    # NOTE: Call 'exec' so that it's possible to set argv0, but that means we
+    #       need a subshell - hence the parentheses.
+    (LD_PRELOAD=$FIXTURE DYLD_INSERT_LIBRARIES=$FIXTURE WORK=$WORK exec -a /sbin/init $ERLINIT $CMDLINE 2> $RESULTS.raw)
 
     # Trim the results of known lines that vary between runs
-    $CAT $RESULTS.raw | \
-        $GREP -v "Starting erlinit" | \
-        $GREP -vi "erlinit: Env:.*FAKECHROOT" | \
-        $GREP -v "erlinit: Env: 'LD_" | \
-        $GREP -v "erlinit: Env: 'SHLVL=" | \
-        $GREP -v "erlinit: Env: '_=" | \
-        $GREP -v "erlinit: Env: 'PWD=" \
+    # The calls to sed fixup differences between getopt implementations.
+    cat $RESULTS.raw | \
+        grep -v "Starting erlinit" | \
+        grep -v "erlinit: Env: 'LD_" | \
+        grep -v "erlinit: Env: 'SHLVL=" | \
+        grep -v "erlinit: Env: '_=" | \
+        grep -v "erlinit: Env: 'PWD=" | \
+        grep -v "erlinit: Env: 'WORK=" | \
+        $SED -e "s/\`/'/g" | \
+        $SED -e "s@^/sbin/init@init@" | \
+        $SED -e "s/invalid option -- 'Z'/invalid option -- Z/" \
         > $RESULTS
 
     # check results
-    $DIFF -w $RESULTS $EXPECTED
+    diff -w $RESULTS $EXPECTED
     if [ $? != 0 ]; then
-        $ECHO Test $TEST failed!
+        echo Test $TEST failed!
         exit 1
     fi
 }
@@ -112,6 +125,6 @@ for TEST_CONFIG in $TESTS; do
     run $TEST
 done
 
-$RM -fr $WORK
-$ECHO Pass!
+rm -fr $WORK
+echo Pass!
 exit 0

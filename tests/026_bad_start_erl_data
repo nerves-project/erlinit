@@ -5,7 +5,7 @@
 # overflow the start_erl.data parser.
 #
 
-$CAT >$CMDLINE_FILE <<EOF
+cat >$CMDLINE_FILE <<EOF
 -v
 EOF
 
@@ -14,24 +14,32 @@ RELEASE_PATH2=$WORK/srv/erlang/releases/0.0.2
 RELEASE_PATH3=$WORK/srv/erlang/releases/0.0.3
 
 for RPATH in $RELEASE_PATH1 $RELEASE_PATH2 $RELEASE_PATH3; do
-    $MKDIR -p $RPATH
-    $TOUCH $RPATH/a.boot
-    $TOUCH $RPATH/b.boot
-    $TOUCH $RPATH/c.boot
-    $TOUCH $RPATH/d.boot
-    $TOUCH $RPATH/sys.config
-    $TOUCH $RPATH/vm.args
+    mkdir -p $RPATH
+    touch $RPATH/a.boot
+    touch $RPATH/b.boot
+    touch $RPATH/c.boot
+    touch $RPATH/d.boot
+    touch $RPATH/sys.config
+    touch $RPATH/vm.args
 done
 
-$CAT >$WORK/srv/erlang/releases/start_erl.data <<EOF
+cat >$WORK/srv/erlang/releases/start_erl.data <<EOF
 8.31234500320020 0.0.21290384701298340129837019287
 EOF
 
-$CAT >$EXPECTED <<EOF
+cat >$EXPECTED <<EOF
 erlinit: cmdline argc=2, merged argc=2
-erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
+fixture: mount("proc", "/proc", "proc", 14, data)
+fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mkdir("/dev/pts", 755)
+fixture: mkdir("/dev/shm", 755)
+fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
 erlinit: set_ctty
+fixture: setsid()
+fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
+fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
 erlinit: find_erts_directory
 erlinit: find_release
 erlinit: start_erl.data specifies 0.0.212903847012, but /srv/erlang/releases/0.0.212903847012 isn't a directory
@@ -42,6 +50,10 @@ erlinit: find_boot_path
 erlinit: Found more than one boot file. Using a.boot.
 erlinit: setup_environment
 erlinit: setup_networking
+fixture: ioctl(SIOCGIFFLAGS)
+fixture: ioctl(SIOCSIFFLAGS)
+fixture: ioctl(SIOCSIFADDR)
+fixture: ioctl(SIOCSIFNETMASK)
 erlinit: configure_hostname
 erlinit: /etc/hostname not found
 erlinit: Env: 'HOME=/root'
@@ -62,5 +74,20 @@ erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited
 erlinit: kill_all
+erlinit: Sending SIGTERM to all processes
+fixture: kill(-1, 15)
+fixture: sleep(1)
+erlinit: Sending SIGKILL to all processes
+fixture: kill(-1, 9)
 erlinit: unmount_all
+erlinit: unmounting tmpfs at /sys/fs/cgroup...
+fixture: umount("/sys/fs/cgroup")
+erlinit: unmounting tmpfs at /dev/shm...
+fixture: umount("/dev/shm")
+erlinit: unmounting devpts at /dev/pts...
+fixture: umount("/dev/pts")
+erlinit: unmounting proc at /proc...
+fixture: umount("/proc")
+erlinit: unmounting sysfs at /sys...
+fixture: umount("/sys")
 EOF

@@ -5,28 +5,42 @@
 # that the mount works, so just make sure that it gets close.
 #
 
-$CAT >$CMDLINE_FILE <<EOF
+cat >$CMDLINE_FILE <<EOF
 -v --uid 100 --gid 200
 EOF
 
-$CAT >$EXPECTED <<EOF
+cat >$EXPECTED <<EOF
 erlinit: cmdline argc=6, merged argc=6
-erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
 erlinit: merged argv[2]=--uid
 erlinit: merged argv[3]=100
 erlinit: merged argv[4]=--gid
 erlinit: merged argv[5]=200
+fixture: mount("proc", "/proc", "proc", 14, data)
+fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mkdir("/dev/pts", 755)
+fixture: mkdir("/dev/shm", 755)
+fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
 erlinit: set_ctty
+fixture: setsid()
+fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
+fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
 erlinit: find_erts_directory
 erlinit: find_release
 erlinit: No release found in /srv/erlang.
 erlinit: setup_environment
 erlinit: setup_networking
+fixture: ioctl(SIOCGIFFLAGS)
+fixture: ioctl(SIOCSIFFLAGS)
+fixture: ioctl(SIOCSIFADDR)
+fixture: ioctl(SIOCSIFNETMASK)
 erlinit: configure_hostname
 erlinit: /etc/hostname not found
 erlinit: setting gid to 200
+fixture: setgid(200)
 erlinit: setting uid to 100
+fixture: setuid(100)
 erlinit: Env: 'HOME=/root'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
@@ -39,5 +53,20 @@ erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited
 erlinit: kill_all
+erlinit: Sending SIGTERM to all processes
+fixture: kill(-1, 15)
+fixture: sleep(1)
+erlinit: Sending SIGKILL to all processes
+fixture: kill(-1, 9)
 erlinit: unmount_all
+erlinit: unmounting tmpfs at /sys/fs/cgroup...
+fixture: umount("/sys/fs/cgroup")
+erlinit: unmounting tmpfs at /dev/shm...
+fixture: umount("/dev/shm")
+erlinit: unmounting devpts at /dev/pts...
+fixture: umount("/dev/pts")
+erlinit: unmounting proc at /proc...
+fixture: umount("/proc")
+erlinit: unmounting sysfs at /sys...
+fixture: umount("/sys")
 EOF

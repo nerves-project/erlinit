@@ -166,14 +166,11 @@ static void configure_hostname()
     }
 
     debug("Hostname: %s", hostname);
-#ifndef UNITTEST
     OK_OR_WARN(sethostname(hostname, strlen(hostname)), "Error setting hostname: %s", strerror(errno));
-#endif
 }
 
 static void enable_loopback()
 {
-#ifndef UNITTEST
     // Set the loopback interface to up
     int fd = socket(PF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
@@ -216,7 +213,6 @@ static void enable_loopback()
 
 cleanup:
     close(fd);
-#endif
 }
 
 void setup_networking()
