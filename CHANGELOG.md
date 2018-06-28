@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.4.2
+
+  * Bug fixes
+    * Add dummy name to filesystem mounts. This fixes parse errors from
+      programs that read /proc/self/mountinfo (in particular Docker). Thanks to
+      Troels Brødsgaard for reporting this issue.
+
 ## v1.4.1
 
   * Bug fixes
