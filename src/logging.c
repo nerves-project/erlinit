@@ -38,10 +38,7 @@ static int log_fd = -1;
 
 void log_init()
 {
-#ifndef UNITTEST
     log_fd = open("/dev/kmsg", O_WRONLY | O_CLOEXEC);
-#endif
-
     if (log_fd < 0)
         log_fd = STDERR_FILENO;
 }
@@ -105,14 +102,13 @@ void fatal(const char *fmt, ...)
 
     log_write("\r\n\r\nCANNOT CONTINUE.\r\n", 22);
 
-#ifndef UNITTEST
     // Sleep so that the message can be printed
     sleep(1);
 
     // Halt/reboot/poweroff
     reboot(options.fatal_reboot_cmd);
-#endif
 
+    // Kernel panic if reboot() returns.
     exit(1);
 }
 

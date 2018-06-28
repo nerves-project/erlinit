@@ -5,18 +5,23 @@ CFLAGS+=-Wall -Wextra -O2
 # _GNU_SOURCE is for asprintf
 EXTRA_CFLAGS= -D_GNU_SOURCE -DPROGRAM_VERSION=$(VERSION) -DBUILD_TIME=$(shell date +%s)
 
-erlinit: $(wildcard src/*.c)
+ifeq ($(shell uname),Darwin)
+EXTRA_CFLAGS+=-Isrc/compat
+EXTRA_SRC=src/compat/compat.c
+endif
+
+erlinit: $(wildcard src/*.c) $(EXTRA_SRC)
 	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -o $@ $^
 
-# This is a special version of erlinit that can be unit tested
-erlinit-test: $(wildcard src/*.c)
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -DUNITTEST -o $@ $^
+fixture:
+	$(MAKE) -C tests/fixture
 
 test: check
-check: erlinit erlinit-test
+check: erlinit fixture
 	tests/run_tests.sh
 
 clean:
-	-rm -fr erlinit erlinit-test tests/work
+	-rm -fr erlinit tests/work
+	$(MAKE) -C tests/fixture clean
 
-.PHONY: test clean check
+.PHONY: test clean check fixture

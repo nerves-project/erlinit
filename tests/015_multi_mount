@@ -5,26 +5,40 @@
 # that the mount works, so just make sure that it gets close.
 #
 
-$CAT >$CMDLINE_FILE <<EOF
+cat >$CMDLINE_FILE <<EOF
 -v --mount /dev/mmcblk0p3:/root:vfat:: --mount /dev/mmcblk0p4:/mnt:ext4::
 EOF
 
-$CAT >$EXPECTED <<EOF
+cat >$EXPECTED <<EOF
 erlinit: cmdline argc=6, merged argc=6
-erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
 erlinit: merged argv[2]=--mount
 erlinit: merged argv[3]=/dev/mmcblk0p3:/root:vfat::
 erlinit: merged argv[4]=--mount
 erlinit: merged argv[5]=/dev/mmcblk0p4:/mnt:ext4::
+fixture: mount("proc", "/proc", "proc", 14, data)
+fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mkdir("/dev/pts", 755)
+fixture: mkdir("/dev/shm", 755)
+fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
 erlinit: set_ctty
-erlinit: Cannot mount /dev/mmcblk0p3 at /root: regression test
-erlinit: Cannot mount /dev/mmcblk0p4 at /mnt: regression test
+fixture: setsid()
+fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
+fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
+fixture: mkdir("/root", 755)
+fixture: mount("/dev/mmcblk0p3", "/root", "vfat", 0, data)
+fixture: mkdir("/mnt", 755)
+fixture: mount("/dev/mmcblk0p4", "/mnt", "ext4", 0, data)
 erlinit: find_erts_directory
 erlinit: find_release
 erlinit: No release found in /srv/erlang.
 erlinit: setup_environment
 erlinit: setup_networking
+fixture: ioctl(SIOCGIFFLAGS)
+fixture: ioctl(SIOCSIFFLAGS)
+fixture: ioctl(SIOCSIFADDR)
+fixture: ioctl(SIOCSIFNETMASK)
 erlinit: configure_hostname
 erlinit: /etc/hostname not found
 erlinit: Env: 'HOME=/root'
@@ -39,5 +53,20 @@ erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited
 erlinit: kill_all
+erlinit: Sending SIGTERM to all processes
+fixture: kill(-1, 15)
+fixture: sleep(1)
+erlinit: Sending SIGKILL to all processes
+fixture: kill(-1, 9)
 erlinit: unmount_all
+erlinit: unmounting tmpfs at /sys/fs/cgroup...
+fixture: umount("/sys/fs/cgroup")
+erlinit: unmounting tmpfs at /dev/shm...
+fixture: umount("/dev/shm")
+erlinit: unmounting devpts at /dev/pts...
+fixture: umount("/dev/pts")
+erlinit: unmounting proc at /proc...
+fixture: umount("/proc")
+erlinit: unmounting sysfs at /sys...
+fixture: umount("/sys")
 EOF

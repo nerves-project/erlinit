@@ -4,24 +4,32 @@
 # Test that changing the working directory works
 #
 
-$CAT >$CMDLINE_FILE <<EOF
+cat >$CMDLINE_FILE <<EOF
 -v --working-directory /tmp
 EOF
 
 RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
-$MKDIR -p $RELEASE_PATH
-$TOUCH $RELEASE_PATH/test.boot
-$TOUCH $RELEASE_PATH/sys.config
-$TOUCH $RELEASE_PATH/vm.args
-$LN -sf $FAKE_ERLEXEC.pwd $FAKE_ERTS_DIR/bin/erlexec
+mkdir -p $RELEASE_PATH
+touch $RELEASE_PATH/test.boot
+touch $RELEASE_PATH/sys.config
+touch $RELEASE_PATH/vm.args
+ln -sf $FAKE_ERLEXEC.pwd $FAKE_ERTS_DIR/bin/erlexec
 
-$CAT >$EXPECTED <<EOF
+cat >$EXPECTED <<EOF
 erlinit: cmdline argc=4, merged argc=4
-erlinit: merged argv[0]=/sbin/erlinit
+erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
 erlinit: merged argv[2]=--working-directory
 erlinit: merged argv[3]=/tmp
+fixture: mount("proc", "/proc", "proc", 14, data)
+fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mkdir("/dev/pts", 755)
+fixture: mkdir("/dev/shm", 755)
+fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
 erlinit: set_ctty
+fixture: setsid()
+fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
+fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
 erlinit: find_erts_directory
 erlinit: find_release
 erlinit: /srv/erlang/releases/start_erl.data not found.
@@ -31,6 +39,10 @@ erlinit: find_vm_args
 erlinit: find_boot_path
 erlinit: setup_environment
 erlinit: setup_networking
+fixture: ioctl(SIOCGIFFLAGS)
+fixture: ioctl(SIOCSIFFLAGS)
+fixture: ioctl(SIOCSIFADDR)
+fixture: ioctl(SIOCSIFNETMASK)
 erlinit: configure_hostname
 erlinit: /etc/hostname not found
 erlinit: Env: 'HOME=/root'
@@ -48,8 +60,23 @@ erlinit: Arg: '/srv/erlang/releases/0.0.1/test'
 erlinit: Arg: '-args_file'
 erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
 erlinit: Launching erl...
-Hello from erlexec in /tmp
+Hello from erlexec in $WORK/tmp
 erlinit: Erlang VM exited
 erlinit: kill_all
+erlinit: Sending SIGTERM to all processes
+fixture: kill(-1, 15)
+fixture: sleep(1)
+erlinit: Sending SIGKILL to all processes
+fixture: kill(-1, 9)
 erlinit: unmount_all
+erlinit: unmounting tmpfs at /sys/fs/cgroup...
+fixture: umount("/sys/fs/cgroup")
+erlinit: unmounting tmpfs at /dev/shm...
+fixture: umount("/dev/shm")
+erlinit: unmounting devpts at /dev/pts...
+fixture: umount("/dev/pts")
+erlinit: unmounting proc at /proc...
+fixture: umount("/proc")
+erlinit: unmounting sysfs at /sys...
+fixture: umount("/sys")
 EOF

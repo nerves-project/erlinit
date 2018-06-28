@@ -33,7 +33,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifndef UNITTEST
 static unsigned long str_to_mountflags(char *s)
 {
     unsigned long flags = 0;
@@ -74,12 +73,10 @@ static unsigned long str_to_mountflags(char *s)
     }
     return flags;
 }
-#endif
 
 void setup_pseudo_filesystems()
 {
     // This only works in the real environment.
-#ifndef UNITTEST
     OK_OR_WARN(mount("proc", "/proc", "proc", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL), "Cannot mount /proc");
     OK_OR_WARN(mount("sysfs", "/sys", "sysfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL), "Cannot mount /sys");
 
@@ -87,7 +84,6 @@ void setup_pseudo_filesystems()
     OK_OR_WARN(mkdir("/dev/pts", 0755), "Cannot create /dev/pts");
     OK_OR_WARN(mkdir("/dev/shm", 0755), "Cannot create /dev/shm");
     OK_OR_WARN(mount("devpts", "/dev/pts", "devpts", MS_NOEXEC | MS_NOSUID, "gid=5,mode=620"), "Cannot mount /dev/pts");
-#endif
 }
 
 static dev_t root_disk_device()
@@ -119,7 +115,6 @@ void create_rootdisk_symlinks()
     if (rdev == 0)
         return;
 
-#ifndef UNITTEST
     // NOTE: While /dev is populated asynchronously, the devices for the
     //       root disk have to be there for erlinit to run.
     struct dirent **namelist;
@@ -158,12 +153,10 @@ void create_rootdisk_symlinks()
             free(namelist[i]);
         free(namelist);
     }
-#endif
 }
 
 void mount_filesystems()
 {
-#ifndef UNITTEST
     // Mount /tmp and /run since they're almost always needed and it's
     // not easy to do it at the right time in Erlang.
     if (mount("tmpfs", "/tmp", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, "mode=1777,size=10%") < 0)
@@ -172,7 +165,6 @@ void mount_filesystems()
 
     if (mount("tmpfs", "/run", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
         warn("Could not mount tmpfs in /run: %s", strerror(errno));
-#endif
 
     // Mount any filesystems specified by the user. This is best effort.
     // The user is required to figure out if anything went wrong in their
@@ -191,18 +183,14 @@ void mount_filesystems()
         const char *data = strsep(&temp, ";"); // multi-mount separator
 
         if (source && target && filesystemtype && mountflags && data) {
-#ifndef UNITTEST
             // Try to mkdir the target just in case the final path entry does
             // not exist. This is a convenience for mounting in filesystems
             // created by the kernel like /dev and /sys/fs/*.
             (void) mkdir(target, 0755);
 
             unsigned long imountflags = str_to_mountflags(mountflags);
-            if (mount(source, target, filesystemtype, imountflags, data) < 0)
+            if (mount(source, target, filesystemtype, imountflags, (void*) data) < 0)
                 warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
-#else
-            warn("Cannot mount %s at %s: %s", source, target, "regression test");
-#endif
         } else {
             warn("Invalid parameter to -m. Expecting 5 colon-separated fields");
         }

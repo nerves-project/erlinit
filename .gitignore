@@ -1,2 +1,4 @@
-erlinit
-erlinit-test
+/erlinit
+/tests/fixture/erlinit_fixture.o
+/tests/fixture/erlinit_fixture.so
+/tests/work
