@@ -684,15 +684,15 @@ static void kill_all()
 
 #ifndef UNITTEST
     // Kill processes the nice way
-    kill(-1, SIGTERM);
     warn("Sending SIGTERM to all processes");
+    kill(-1, SIGTERM);
     sync();
 
     sleep(1);
 
     // Brutal kill the stragglers
-    kill(-1, SIGKILL);
     warn("Sending SIGKILL to all processes");
+    kill(-1, SIGKILL);
     sync();
 #endif
 }
