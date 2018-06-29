@@ -213,7 +213,6 @@ void unmount_all()
 {
     debug("unmount_all");
 
-#ifndef UNITTEST
     FILE *fp = fopen("/proc/mounts", "r");
     if (!fp) {
         warn("/proc/mounts not found");
@@ -242,13 +241,11 @@ void unmount_all()
         // Whitelist directories that don't unmount or
         // remount immediately (rootfs)
         if (strcmp(mounts[i].source, "devtmpfs") == 0 ||
-                strcmp(mounts[i].source, "/dev/root") == 0 ||
-                strcmp(mounts[i].source, "rootfs") == 0)
+                strcmp(mounts[i].target, "/") == 0)
             continue;
 
-        debug("unmounting %s(%s)...", mounts[i].source, mounts[i].target);
+        debug("unmounting %s at %s...", mounts[i].source, mounts[i].target);
         if (umount(mounts[i].target) < 0 && umount(mounts[i].source) < 0)
-            warn("umount %s(%s) failed: %s", mounts[i].source, mounts[i].target, strerror(errno));
+            warn("umount %s failed: %s", mounts[i].target, strerror(errno));
     }
-#endif
 }
