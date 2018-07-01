@@ -547,9 +547,14 @@ static int run_cmd(const char *cmd)
         exit(EXIT_FAILURE);
     } else {
         // parent
-        int status;
-        if (waitpid(pid, &status, 0) != pid) {
-            warn("waitpid");
+        int status = -1;
+        int rc;
+        do {
+            rc = waitpid(pid, &status, 0);
+        } while (rc < 0 && errno == EINTR);
+
+        if ((rc < 0 && errno != ECHILD) || rc != pid) {
+            warn("unexpected return from waitpid: rc=%d, errno=%d", rc, errno);
             return -1;
         }
         return status;
