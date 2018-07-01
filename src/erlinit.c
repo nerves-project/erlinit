@@ -256,7 +256,8 @@ static int find_consolidated_dirs(const char *release_base_dir,
 
     glob_t globbuf;
     globbuf.gl_offs = 0;
-    OK_OR_FATAL(glob(search_path, 0, NULL, &globbuf), "glob failed when searching for '%s'", search_path);
+    if (glob(search_path, 0, NULL, &globbuf) != 0)
+        return -1;
 
     if (globbuf.gl_pathc > 1)
         warn("More than one consolidated directory found. Using '%s'", globbuf.gl_pathv[0]);
