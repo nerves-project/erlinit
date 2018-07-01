@@ -2,10 +2,10 @@
 
 echo "erlexec is sending signal to halt" 1>&2
 
-ppid=$(cat /proc/$$/status | grep PPid | cut -f2)
+# erlinit is the grandparent of this process
+ppid=$(ps -o pid,ppid | grep "^\\s*$$" | xargs | cut -f2 -d " ")
 kill -USR1 $ppid
 
 # This is longer than the graceful power down timer, so
 # it should incur an ungraceful termination
 sleep 60
-
