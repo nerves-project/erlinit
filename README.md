@@ -1,6 +1,7 @@
 # erlinit
 
-[![Build Status](https://travis-ci.org/nerves-project/erlinit.svg?branch=master)](https://travis-ci.org/nerves-project/erlinit) [![Coverity Scan Build Status](https://scan.coverity.com/projects/4086/badge.svg)](https://scan.coverity.com/projects/4086)
+[![CircleCI](https://circleci.com/gh/nerves-project/erlinit.svg?style=svg)](https://circleci.com/gh/nerves-project/erlinit)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/4086/badge.svg)](https://scan.coverity.com/projects/4086)
 
 This is a replacement for `/sbin/init` that launches an Erlang/OTP release. It
 is intentionally minimalist as it expects Erlang/OTP to be in charge of
