@@ -2,7 +2,8 @@
 
 echo "erlexec is sending signal to reboot" 1>&2
 
-ppid=$(cat /proc/$$/status | grep PPid | cut -f2)
+# erlinit is the grandparent of this process
+ppid=$(ps -o pid,ppid | grep "^\\s*$$" | xargs | cut -f2 -d " ")
 kill -TERM $ppid
 
 sleep 1
