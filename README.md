@@ -304,3 +304,15 @@ This option has the following caveats:
 3. If using this to guarantee a minimum timestamp so that SSL certificates work, be
    sure that the SSL certificates don't expire before the next firmware update.
    (Not that you don't have to do that anyway, but just a friendly reminder)
+
+## Hacking
+
+It seems like there are an endless number of small tweaks to `erlinit` that
+yield meaningful improvements. Please post Github issues before starting on
+anything substantial since there's often another way.
+
+To verify that your changes work, run `make check` to run `erlinit` through its
+regression tests. These tests should run fine on both OSX and Linux even though
+`erlinit` is intended to be run on a minimal embedded Linux system. See
+`test/fixture` for the shared library that's used to simulate `erlinit` being
+run as Linux's init process (pid 1).
