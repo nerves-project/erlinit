@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.4.3
+
+  * Regression test improvements
+    * Regression tests work on both Linux and OSX now
+    * Improved coverage of tests to verify calls to things like mount, ioctl,
+      and reboot
+    * fakechroot no longer needed
+    * Removed "unit test" special build of erlinit. A test fixture shared
+      library now similates the PID 1 environment that erlinit expects.
+
 ## v1.4.2
 
   * Bug fixes
