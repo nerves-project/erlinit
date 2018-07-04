@@ -97,6 +97,7 @@ void parse_args(int argc, char *argv[]);
 
 // Networking
 void setup_networking();
+void configure_hostname();
 
 // Filesystems
 void setup_pseudo_filesystems();
@@ -107,6 +108,9 @@ void unmount_all();
 // Terminal
 void set_ctty();
 void warn_unused_tty();
+
+// External commands
+int system_cmd(const char *cmd, char *output_buffer, int length);
 
 #ifdef __APPLE__
 #include "compat.h"
