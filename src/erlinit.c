@@ -761,12 +761,16 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
     // Block signals from the child process so that they're
     // handled by sigtimedwait.
     if (sigprocmask(SIG_BLOCK, &mask, &orig_mask) < 0)
-        fatal("sigprocmask failed");
+        fatal("sigprocmask(SIG_BLOCK) failed");
 
     // Do most of the work in a child process so that if it
     // crashes, we can handle the crash.
     pid_t pid = fork();
     if (pid == 0) {
+        // Unblock signals in the child
+        if (sigprocmask(SIG_SETMASK, &orig_mask, NULL) < 0)
+            fatal("sigprocmask(SIG_SETMASK) failed");
+
         child();
         exit(1);
     }
