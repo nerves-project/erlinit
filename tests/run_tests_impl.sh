@@ -35,7 +35,7 @@ rm -fr $WORK
 [ -e $ERLINIT ] || ( echo "Build $ERLINIT first"; exit 1 )
 [ -e $FIXTURE ] || ( echo "Build $FIXTURE first"; exit 1 )
 SED=sed
-which $SED || SED=gsed
+which $SED > /dev/null || SED=gsed
 
 run() {
     TEST=$1

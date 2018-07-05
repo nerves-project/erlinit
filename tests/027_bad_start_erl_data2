@@ -52,8 +52,7 @@ erlinit: setup_environment
 erlinit: setup_networking
 fixture: ioctl(SIOCGIFFLAGS)
 fixture: ioctl(SIOCSIFFLAGS)
-fixture: ioctl(SIOCSIFADDR)
-fixture: ioctl(SIOCSIFNETMASK)
+fixture: ioctl(SIOCGIFINDEX)
 erlinit: configure_hostname
 erlinit: /etc/hostname not found
 erlinit: Env: 'HOME=/root'
