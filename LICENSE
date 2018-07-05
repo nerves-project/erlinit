@@ -1,6 +1,8 @@
+Except for the regression test code, all code has the following license:
+
 The MIT License (MIT)
 
-Copyright (c) 2013-16 Frank Hunleth
+Copyright (c) 2013-18 Frank Hunleth
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -18,3 +20,9 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+----
+To support regression testing on OSX, Linux kernel header files were copied and
+modified to reduce dependencies. These files are in src/compat. None of these
+files are needed to use `erlinit` with Nerves or any other embedded Linux-based
+distribution.
