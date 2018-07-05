@@ -51,4 +51,15 @@ int sigprocmask_noop(int how, const sigset_t *restrict set, sigset_t *restrict o
 #define mount(a,b,c,d,e) mount(a,b,d, (void*) c)
 #define umount(a) unmount(a, 0)
 
+// Missing SOCK_CLOEXEC
+#define SOCK_CLOEXEC  02000000
+
+// Netlink
+#define PF_NETLINK     16
+#define AF_NETLINK     PF_NETLINK
+
+// Fake out the SIOCGIFINDEX ioctl
+#define SIOCGIFINDEX SIOCGIFMTU
+#define ifr_ifindex         ifr_ifru.ifru_mtu
+
 #endif

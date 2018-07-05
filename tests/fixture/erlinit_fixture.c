@@ -380,6 +380,24 @@ REPLACE(int, ioctl, (int fd, unsigned long request, ...))
     case SIOCSIFNETMASK:
         req = "SIOCSIFNETMASK";
         break;
+
+#ifdef __APPLE__
+// Fake out the SIOCGIFINDEX ioctl (see compat.h)
+#define SIOCGIFINDEX SIOCGIFMTU
+#define ifr_ifindex         ifr_ifru.ifru_mtu
+#endif
+    case SIOCGIFINDEX:
+    {
+        req = "SIOCGIFINDEX";
+        va_list ap;
+        va_start(ap, request);
+        struct ifreq *ifr = va_arg(ap, struct ifreq *);
+
+        ifr->ifr_ifindex = 1;
+
+        va_end(ap);
+        break;
+    }
     default:
         req = "unknown";
         break;
