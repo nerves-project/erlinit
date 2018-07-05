@@ -2,6 +2,11 @@
 
 ## v1.4.3
 
+  * Bug fixes
+    * Set the IPv6 loopback address (::1/128) on the loopback interface.
+      Previously only the IPv4 loopback address was set. Both are set best
+      effort.
+
   * Regression test improvements
     * Regression tests work on both Linux and OSX now
     * Improved coverage of tests to verify calls to things like mount, ioctl,
