@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.4.4
+
+  * Bug fixes
+    * Restore a default signal mask on launched processes. Prior to this change,
+      the application launched by erlinit would get erlinit's signal mask. This
+      resulted in some unexpected behavior due to assumptions about signals
+      being unmasked.
+
 ## v1.4.3
 
   * Bug fixes
