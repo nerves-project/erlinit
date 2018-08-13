@@ -40,7 +40,6 @@ erlinit: set_ctty
 fixture: setsid()
 fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
 fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
-erlinit: find_erts_directory
 erlinit: find_release
 erlinit: start_erl.data specifies 0.0.212903847012, but /srv/erlang/releases/0.0.212903847012 isn't a directory
 erlinit: Using release in /srv/erlang/releases/0.0.3.
@@ -48,6 +47,8 @@ erlinit: find_sys_config
 erlinit: find_vm_args
 erlinit: find_boot_path
 erlinit: Found more than one boot file. Using a.boot.
+erlinit: find_erts_directory
+erlinit: start_erl.data specifies erts-8.31234500320020, but it wasn't found! Looking for any erts version
 erlinit: setup_environment
 erlinit: setup_networking
 fixture: ioctl(SIOCGIFFLAGS)

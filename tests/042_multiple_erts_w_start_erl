@@ -1,34 +1,37 @@
 #!/bin/sh
 
 #
-# Test that calling out to a unique id generator does the right thing
+# Test that the start_erl.data file is read when picking a release to run.
 #
 
-cat >$CONFIG <<EOF
+cat >$CMDLINE_FILE <<EOF
 -v
-
-# Specify a hostname pattern that has a unique id part
---hostname-pattern nerves-%.4s
-
-# Call out to a dummy unique id generator
---uniqueid-exec "/usr/bin/make-unique-id"
 EOF
 
-cat >$WORK/usr/bin/make-unique-id <<EOF
-#!/bin/sh
+# Make a release
+RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
+mkdir -p $RELEASE_PATH
+touch $RELEASE_PATH/test.boot
+touch $RELEASE_PATH/sys.config
+touch $RELEASE_PATH/vm.args
 
-echo "0042"
+# Make a few ERTS directories
+mkdir -p $WORK/usr/lib/erlang/erts-6.1/bin
+mkdir -p $WORK/usr/lib/erlang/erts-7.0/bin
+mkdir -p $WORK/usr/lib/erlang/erts-8.3/bin
+ln -s $FAKE_ERLEXEC $WORK/usr/lib/erlang/erts-6.1/bin/erlexec
+ln -s $FAKE_ERLEXEC $WORK/usr/lib/erlang/erts-7.0/bin/erlexec
+ln -s $FAKE_ERLEXEC $WORK/usr/lib/erlang/erts-8.3/bin/erlexec
+
+# Create a start_erl.data that says which ERTS to use
+cat >$WORK/srv/erlang/releases/start_erl.data <<EOF
+8.3 0.0.1
 EOF
-chmod +x $WORK/usr/bin/make-unique-id
 
 cat >$EXPECTED <<EOF
-erlinit: cmdline argc=1, merged argc=6
+erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
-erlinit: merged argv[2]=--hostname-pattern
-erlinit: merged argv[3]=nerves-%.4s
-erlinit: merged argv[4]=--uniqueid-exec
-erlinit: merged argv[5]=/usr/bin/make-unique-id
 fixture: mount("proc", "/proc", "proc", 14, data)
 fixture: mount("sysfs", "/sys", "sysfs", 14, data)
 fixture: mkdir("/dev/pts", 755)
@@ -39,7 +42,10 @@ fixture: setsid()
 fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
 fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
 erlinit: find_release
-erlinit: No release found in /srv/erlang.
+erlinit: Using release in /srv/erlang/releases/0.0.1.
+erlinit: find_sys_config
+erlinit: find_vm_args
+erlinit: find_boot_path
 erlinit: find_erts_directory
 erlinit: setup_environment
 erlinit: setup_networking
@@ -47,17 +53,21 @@ fixture: ioctl(SIOCGIFFLAGS)
 fixture: ioctl(SIOCSIFFLAGS)
 fixture: ioctl(SIOCGIFINDEX)
 erlinit: configure_hostname
-erlinit: system_cmd '/usr/bin/make-unique-id'
-erlinit: Hostname: nerves-0042
-fixture: sethostname("nerves-0042", 11)
+erlinit: /etc/hostname not found
 erlinit: Env: 'HOME=/root'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
-erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
-erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
+erlinit: Env: 'ROOTDIR=/srv/erlang'
+erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-8.3/bin'
 erlinit: Env: 'EMU=beam'
 erlinit: Env: 'PROGNAME=erl'
 erlinit: Arg: 'erlexec'
+erlinit: Arg: '-config'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/sys.config'
+erlinit: Arg: '-boot'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/test'
+erlinit: Arg: '-args_file'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
 erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited

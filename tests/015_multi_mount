@@ -30,9 +30,9 @@ fixture: mkdir("/root", 755)
 fixture: mount("/dev/mmcblk0p3", "/root", "vfat", 0, data)
 fixture: mkdir("/mnt", 755)
 fixture: mount("/dev/mmcblk0p4", "/mnt", "ext4", 0, data)
-erlinit: find_erts_directory
 erlinit: find_release
 erlinit: No release found in /srv/erlang.
+erlinit: find_erts_directory
 erlinit: setup_environment
 erlinit: setup_networking
 fixture: ioctl(SIOCGIFFLAGS)

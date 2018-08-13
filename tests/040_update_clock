@@ -25,9 +25,9 @@ fixture: setsid()
 erlinit: checking that the clock is after the build timestamp
 fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
 fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
-erlinit: find_erts_directory
 erlinit: find_release
 erlinit: No release found in /srv/erlang.
+erlinit: find_erts_directory
 erlinit: setup_environment
 erlinit: setup_networking
 fixture: ioctl(SIOCGIFFLAGS)

@@ -59,6 +59,9 @@ struct erl_run_info {
     // no name and this is typical for Nerves.
     char *release_name;
 
+    // ERTS version if specified by start_erl.data
+    char *erts_version;
+
     // The directory containing ERTS
     char *erts_dir;
 
@@ -87,6 +90,13 @@ static void erlinit_asprintf(char **strp, const char *fmt, ...)
     va_end(ap);
 }
 
+static int is_directory(const char *path)
+{
+    struct stat sb;
+    return stat(path, &sb) == 0 &&
+            S_ISDIR(sb.st_mode);
+}
+
 static int starts_with(const char *str, const char *what)
 {
     return strstr(str, what) == str;
@@ -97,9 +107,20 @@ static int erts_filter(const struct dirent *d)
     return starts_with(d->d_name, "erts-");
 }
 
-static void find_erts_directory(char **erts_dir)
+static void find_erts_directory(const char *erts_version, char **erts_dir)
 {
     debug("find_erts_directory");
+
+    if (erts_version) {
+        // If the release specifies an ERTS version to use, then try to use it
+        // first.
+        erlinit_asprintf(erts_dir, "%s/erts-%s", ERLANG_ROOT_DIR, erts_version);
+        if (is_directory(*erts_dir))
+            return;
+
+        warn("start_erl.data specifies erts-%s, but it wasn't found! Looking for any erts version", erts_version);
+    }
+
     struct dirent **namelist;
     int n = scandir(ERLANG_ROOT_DIR,
                     &namelist,
@@ -110,7 +131,7 @@ static void find_erts_directory(char **erts_dir)
     else if (n == 0)
         fatal("erts not found. Check that erlang was installed to %s", ERLANG_ROOT_DIR);
     else if (n > 1)
-        fatal("Found multiple erts directories. Clean up the installation.");
+        fatal("Found multiple erts directories. Clean up the installation or check that a start_erl.data was generated.");
 
     erlinit_asprintf(erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
 
@@ -270,14 +291,7 @@ static int find_consolidated_dirs(const char *release_base_dir,
     return 0;
 }
 
-static int is_directory(const char *path)
-{
-    struct stat sb;
-    return stat(path, &sb) == 0 &&
-            S_ISDIR(sb.st_mode);
-}
-
-static int read_start_erl(const char *releases_dir, char **release_version)
+static int read_start_erl(const char *releases_dir, char **erts_version, char **release_version)
 {
     char *start_erl_path = NULL;
     erlinit_asprintf(&start_erl_path, "%s/start_erl.data", releases_dir);
@@ -288,15 +302,16 @@ static int read_start_erl(const char *releases_dir, char **release_version)
         return 0;
     }
 
-    char erts_version[17];
-    char rel_version[17];
-    if (fscanf(fp, "%16s %16s", erts_version, rel_version) != 2) {
+    char erts_string[17];
+    char rel_string[17];
+    if (fscanf(fp, "%16s %16s", erts_string, rel_string) != 2) {
         warn("%s doesn't contain expected contents. Skipping.", start_erl_path);
         free(start_erl_path);
         fclose(fp);
         return 0;
     }
-    erlinit_asprintf(release_version, "%s", rel_version);
+    erlinit_asprintf(erts_version, "%s", erts_string);
+    erlinit_asprintf(release_version, "%s", rel_string);
 
     free(start_erl_path);
     fclose(fp);
@@ -310,20 +325,21 @@ static int reverse_alphasort(const struct dirent **e1,
 }
 
 static int find_release_version_dir(const char *releases_dir,
-                                    char **version_dir)
+                                    char **version_dir,
+                                    char **erts_version)
 {
     // Check for a start_erl.data file. If one exists, then it will say
     // which release version to use.
-    char *version = NULL;
-    if (read_start_erl(releases_dir, &version)) {
+    char *release_version = NULL;
+    if (read_start_erl(releases_dir, erts_version, &release_version)) {
         // Check if the release_version corresponds to a good path.
-        erlinit_asprintf(version_dir, "%s/%s", releases_dir, version);
+        erlinit_asprintf(version_dir, "%s/%s", releases_dir, release_version);
 
         if (is_directory(*version_dir))
             return 1;
 
-        warn("start_erl.data specifies %s, but %s isn't a directory", version, *version_dir);
-        free(version);
+        warn("start_erl.data specifies %s, but %s isn't a directory", release_version, *version_dir);
+        free(release_version);
     }
 
     // No start_erl.data, so pick the first subdirectory.
@@ -384,7 +400,7 @@ static int find_release_dirs(const char *base,
             continue;
 
         if (strcmp(namelist[i]->d_name, "releases") == 0 &&
-                find_release_version_dir(dirpath, &run_info->releases_version_dir)) {
+                find_release_version_dir(dirpath, &run_info->releases_version_dir, &run_info->erts_version)) {
             erlinit_asprintf(&run_info->release_base_dir, "%s", base);
             success = 1;
             break;
@@ -583,8 +599,9 @@ static void child()
     struct erl_run_info run_info;
     memset(&run_info, 0, sizeof(run_info));
 
-    find_erts_directory(&run_info.erts_dir);
     find_release(&run_info);
+
+    find_erts_directory(run_info.erts_version, &run_info.erts_dir);
 
     // Set up the environment for running erlang.
     setup_environment(&run_info);

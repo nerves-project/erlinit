@@ -30,7 +30,6 @@ erlinit: set_ctty
 fixture: setsid()
 fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
 fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
-erlinit: find_erts_directory
 erlinit: find_release
 erlinit: /srv/erlang/releases/start_erl.data not found.
 erlinit: Using release in /srv/erlang/releases/0.0.1.
@@ -38,6 +37,7 @@ erlinit: find_sys_config
 erlinit: find_vm_args
 erlinit: find_boot_path
 erlinit: Found more than one boot file. Using a.boot.
+erlinit: find_erts_directory
 erlinit: setup_environment
 erlinit: setup_networking
 fixture: ioctl(SIOCGIFFLAGS)
