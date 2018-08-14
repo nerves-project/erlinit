@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.4.5
+
+  * Bug fixes
+    * Refer to start_erl.data for determining which ERTS version to use. While
+      this shouldn't be necessary, it is possible to get into situations with
+      two versions of ERTS installed and this change prevents erlinit from
+      getting confused and failing to boot.
+
 ## v1.4.4
 
   * Bug fixes
