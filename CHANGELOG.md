@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.6
+
+* Bug fixes
+  * Fixed permissions on /dev/shm so that non-root users could create shared
+    memory. This is required for Chromium unless you want to run it as root.
+
 ## v1.4.5
 
 * Bug fixes
