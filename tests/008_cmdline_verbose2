@@ -15,7 +15,7 @@ erlinit: merged argv[1]=--verbose
 fixture: mount("proc", "/proc", "proc", 14, data)
 fixture: mount("sysfs", "/sys", "sysfs", 14, data)
 fixture: mkdir("/dev/pts", 755)
-fixture: mkdir("/dev/shm", 755)
+fixture: mkdir("/dev/shm", 1777)
 fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
 erlinit: set_ctty
 fixture: setsid()

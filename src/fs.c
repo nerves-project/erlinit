@@ -81,8 +81,14 @@ void setup_pseudo_filesystems()
     OK_OR_WARN(mount("sysfs", "/sys", "sysfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL), "Cannot mount /sys");
 
     // /dev should be automatically created/mounted by Linux
+
+    // Create entries in /dev. Turn off the umask since we want the exact
+    // permissions that we're specifying.
+    mode_t old_umask = umask(0);
     OK_OR_WARN(mkdir("/dev/pts", 0755), "Cannot create /dev/pts");
-    OK_OR_WARN(mkdir("/dev/shm", 0755), "Cannot create /dev/shm");
+    OK_OR_WARN(mkdir("/dev/shm", 01777), "Cannot create /dev/shm");
+    umask(old_umask);
+
     OK_OR_WARN(mount("devpts", "/dev/pts", "devpts", MS_NOEXEC | MS_NOSUID, "gid=5,mode=620"), "Cannot mount /dev/pts");
 }
 
