@@ -101,7 +101,7 @@ static dev_t root_disk_device()
     //       get its parent.
     struct stat rootdev;
     if (stat("/", &rootdev) >= 0) {
-        return (rootdev.st_dev & 0xfff0);
+        return (rootdev.st_dev & ~0xf);
     } else {
         warn("Could not determine root device: %s", strerror(errno));
         return 0;
