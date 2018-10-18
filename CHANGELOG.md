@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.7
+
+* Bug fixes
+  * Fixed root disk detection when the root filesystem is on an NVME-connected
+    SSD.
+
 ## v1.4.6
 
 * Bug fixes
