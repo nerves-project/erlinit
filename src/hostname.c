@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -64,10 +65,16 @@ void configure_hostname()
 
     if (options.hostname_pattern) {
         // Set the hostname based on a pattern
-        char unique_id[64] = "xxxxxxxx";
+        const char *default_unique_id = "00000000";
+        const char *unique_id = default_unique_id;
+        char buffer[64];
         if (options.uniqueid_exec) {
-            system_cmd(options.uniqueid_exec, unique_id, sizeof(unique_id));
-            kill_whitespace(unique_id);
+            if (system_cmd(options.uniqueid_exec, buffer, sizeof(buffer)) == EXIT_SUCCESS) {
+                kill_whitespace(buffer);
+                unique_id = buffer;
+            } else {
+                warn("`%s` failed. Using default ID: '%s'", options.uniqueid_exec, unique_id);
+            }
         }
         sprintf(hostname, options.hostname_pattern, unique_id);
         kill_whitespace(hostname);
