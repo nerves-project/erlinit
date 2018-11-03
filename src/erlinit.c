@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <dirent.h>
 #include <errno.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -637,6 +638,29 @@ static int run_cmd(const char *cmd)
     }
 }
 
+static void set_beam_priority()
+{
+    if (options.scheduler_policy != SCHED_OTHER) {
+        struct sched_param param;
+
+        if (sched_getparam(0, &param) < 0) {
+            warn("sched_getparam return error");
+            return;
+        }
+
+        param.sched_priority = options.scheduler_priority;
+        if ((options.scheduler_policy == SCHED_FIFO ||
+             options.scheduler_policy == SCHED_RR) && param.sched_priority <= 0) {
+            // If using a real-time schedule and the priority isn't set, set
+            // it to a medium real-time priority.
+            param.sched_priority = (sched_get_priority_max(options.scheduler_policy) + sched_get_priority_min(options.scheduler_policy)) / 2;
+        }
+
+        if (sched_setscheduler(0, options.scheduler_policy, &param) < 0)
+            warn("sched_setscheduler failed: errno=%d", errno);
+    }
+}
+
 static void drop_privileges()
 {
     if (options.gid > 0) {
@@ -702,6 +726,9 @@ static void child()
     // Optionally run a "pre-run" program
     if (options.pre_run_exec)
         run_cmd(options.pre_run_exec);
+
+    // Optionally set Linux scheduler parameters
+    set_beam_priority();
 
     // Optionally drop privileges
     drop_privileges();

@@ -16,6 +16,7 @@
 #include <sys/mount.h>
 #include <signal.h>
 #include <sys/ioctl.h>
+#include <sched.h>
 #include <net/if.h>
 #include <termios.h>
 #include <pwd.h>
@@ -326,6 +327,49 @@ OVERRIDE(int, link, (const char *target, const char *linkpath))
 
     return ORIGINAL(link)(new_target, new_linkpath);
 }
+
+#ifndef __APPLE__
+static const char *sched_policy_name(int policy)
+{
+
+    switch (policy) {
+    case SCHED_OTHER: return "OTHER";
+    case SCHED_FIFO: return "FIFO";
+    case SCHED_RR: return "RR";
+    case SCHED_BATCH: return "BATCH";
+    case SCHED_ISO: return "ISO";
+    case SCHED_IDLE: return "IDLE";
+    case SCHED_DEADLINE: return "DEADLINE";
+    default: return "UNKNOWN";
+    }
+}
+
+REPLACE(int, sched_get_priority_max, (int policy))
+{
+    log("sched_get_priority_max(%s)", sched_policy_name(policy));
+    return 99;
+}
+
+REPLACE(int, sched_get_priority_min, (int policy))
+{
+    log("sched_get_priority_min(%s)", sched_policy_name(policy));
+    return 1;
+}
+
+REPLACE(int, sched_getparam, (pid_t pid, struct sched_param *param))
+{
+    log("sched_getparam(%d)", pid);
+    param->sched_priority = 0;
+    return 0;
+}
+
+REPLACE(int, sched_setscheduler, (pid_t pid, int policy,
+                              const struct sched_param *param))
+{
+    log("sched_setscheduler(%d, %s, %d)", pid, sched_policy_name(policy), param->sched_priority);
+    return 0;
+}
+#endif
 
 #ifdef __APPLE__
 #define OVERRIDE_STAT 1

@@ -65,3 +65,18 @@ int pivot_root(const char *new_root, const char *put_old)
     (void) put_old;
     return 0;
 }
+
+int sched_getparam(pid_t pid, struct sched_param *param)
+{
+    (void) pid;
+    (void) param;
+    return 0;
+}
+
+int sched_setscheduler(pid_t pid, int policy, const struct sched_param *param)
+{
+    (void) pid;
+    (void) policy;
+    (void) param;
+    return 0;
+}
