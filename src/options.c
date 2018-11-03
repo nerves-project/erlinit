@@ -54,31 +54,63 @@ struct erlinit_options options = {
     .update_clock = 0
 };
 
+enum erlinit_option_value {
+    // Options with short versions (match their value to the short option's character)
+    // NOTE: Except for -e, -m, and -v, most of the short options aren't used and it's much more
+    //       readable to use the long option form.
+    OPT_BOOT = 'b',
+    OPT_CTTY = 'c',
+    OPT_UNIQUEID_EXEC= 'd',
+    OPT_ENV = 'e',
+    OPT_HANG_ON_EXIT = 'h',
+    OPT_MOUNT = 'm',
+    OPT_HOSTNAME_PATTERN = 'n',
+    OPT_RELEASE_PATH = 'r',
+    OPT_ALTERNATE_EXEC = 's',
+    OPT_PRINT_TIMING = 't',
+    OPT_VERBOSE = 'v',
+
+    // Long option only
+    OPT_REBOOT_ON_EXIT = 256,
+    OPT_POWEROFF_ON_EXIT,
+    OPT_HANG_ON_FATAL,
+    OPT_REBOOT_ON_FATAL,
+    OPT_POWEROFF_ON_FATAL,
+    OPT_RUN_ON_EXIT,
+    OPT_WARN_UNUSED_TTY,
+    OPT_WORKING_DIRECTORY,
+    OPT_UID,
+    OPT_GID,
+    OPT_PRE_RUN_EXEC,
+    OPT_GRACEFUL_SHUTDOWN_TIMEOUT,
+    OPT_UPDATE_CLOCK
+};
+
 static struct option long_options[] = {
-    {"boot", required_argument, 0, 'b' },
-    {"ctty",  required_argument, 0, 'c' },
-    {"uniqueid-exec",  required_argument, 0, 'd' },
-    {"hang-on-exit", no_argument, 0, 'h' },
-    {"reboot-on-exit", no_argument, 0, 'H' },
-    {"poweroff-on-exit", no_argument, 0, '+' },
-    {"hang-on-fatal", no_argument, 0, 'z' },
-    {"reboot-on-fatal", no_argument, 0, 'Z' },
-    {"poweroff-on-fatal", no_argument, 0, '$' },
-    {"env", required_argument, 0, 'e' },
-    {"mount", required_argument, 0, 'm' },
-    {"hostname-pattern", required_argument, 0, 'n' },
-    {"release-path", required_argument, 0, 'r' },
-    {"run-on-exit", required_argument, 0, '%' },
-    {"alternate-exec", required_argument, 0, 's' },
-    {"print-timing", no_argument, 0, 't' },
-    {"verbose", no_argument, 0, 'v' },
-    {"warn-unused-tty", no_argument, 0, '!' },
-    {"working-directory", required_argument, 0, '@'},
-    {"uid", required_argument, 0, '^' },
-    {"gid", required_argument, 0, '&' },
-    {"pre-run-exec", required_argument, 0, '*' },
-    {"graceful-shutdown-timeout", required_argument, 0, '(' },
-    {"update-clock", no_argument, 0, ')'},
+    {"boot", required_argument, 0, OPT_BOOT },
+    {"ctty",  required_argument, 0, OPT_CTTY },
+    {"uniqueid-exec",  required_argument, 0, OPT_UNIQUEID_EXEC },
+    {"hang-on-exit", no_argument, 0, OPT_HANG_ON_EXIT },
+    {"reboot-on-exit", no_argument, 0, OPT_REBOOT_ON_EXIT },
+    {"poweroff-on-exit", no_argument, 0, OPT_POWEROFF_ON_EXIT },
+    {"hang-on-fatal", no_argument, 0, OPT_HANG_ON_FATAL },
+    {"reboot-on-fatal", no_argument, 0, OPT_REBOOT_ON_FATAL },
+    {"poweroff-on-fatal", no_argument, 0, OPT_POWEROFF_ON_FATAL },
+    {"env", required_argument, 0, OPT_ENV },
+    {"mount", required_argument, 0, OPT_MOUNT },
+    {"hostname-pattern", required_argument, 0, OPT_HOSTNAME_PATTERN },
+    {"release-path", required_argument, 0, OPT_RELEASE_PATH },
+    {"run-on-exit", required_argument, 0, OPT_RUN_ON_EXIT },
+    {"alternate-exec", required_argument, 0, OPT_ALTERNATE_EXEC },
+    {"print-timing", no_argument, 0, OPT_PRINT_TIMING },
+    {"verbose", no_argument, 0, OPT_VERBOSE },
+    {"warn-unused-tty", no_argument, 0, OPT_WARN_UNUSED_TTY },
+    {"working-directory", required_argument, 0, OPT_WORKING_DIRECTORY},
+    {"uid", required_argument, 0, OPT_UID },
+    {"gid", required_argument, 0, OPT_GID },
+    {"pre-run-exec", required_argument, 0, OPT_PRE_RUN_EXEC },
+    {"graceful-shutdown-timeout", required_argument, 0, OPT_GRACEFUL_SHUTDOWN_TIMEOUT },
+    {"update-clock", no_argument, 0, OPT_UPDATE_CLOCK },
     {0,     0,      0, 0 }
 };
 
@@ -107,76 +139,76 @@ void parse_args(int argc, char *argv[])
             break;
 
         switch (opt) {
-        case 'b': // --boot path
+        case OPT_BOOT: // --boot path
             SET_STRING_OPTION(options.boot_path);
             break;
-        case 'c': // --ctty ttyS0
+        case OPT_CTTY: // --ctty ttyS0
             SET_STRING_OPTION(options.controlling_terminal);
             break;
-        case 'd': // --uniqueid-exec program
+        case OPT_UNIQUEID_EXEC: // --uniqueid-exec program
             SET_STRING_OPTION(options.uniqueid_exec);
             break;
-        case 'e': // --env FOO=bar;FOO2=bar2
+        case OPT_ENV: // --env FOO=bar;FOO2=bar2
             APPEND_STRING_OPTION(options.additional_env, ';');
             break;
-        case 'h': // --hang-on-exit
+        case OPT_HANG_ON_EXIT: // --hang-on-exit
             options.unintentional_exit_cmd = LINUX_REBOOT_CMD_HALT;
             break;
-        case 'H': // --reboot-on-exit
+        case OPT_REBOOT_ON_EXIT: // --reboot-on-exit
             options.unintentional_exit_cmd = LINUX_REBOOT_CMD_RESTART;
             break;
-        case '+': // --poweroff-on-exit
+        case OPT_POWEROFF_ON_EXIT: // --poweroff-on-exit
             options.unintentional_exit_cmd = LINUX_REBOOT_CMD_POWER_OFF;
             break;
-        case 'z': // --hang-on-fatal
+        case OPT_HANG_ON_FATAL: // --hang-on-fatal
             options.fatal_reboot_cmd = LINUX_REBOOT_CMD_HALT;
             break;
-        case 'Z': // --reboot-on-fatal
+        case OPT_REBOOT_ON_FATAL: // --reboot-on-fatal
             options.fatal_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
             break;
-        case '$': // --poweroff-on-fatal
+        case OPT_POWEROFF_ON_FATAL: // --poweroff-on-fatal
             options.fatal_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
             break;
-        case 'm': // --mount /dev/mmcblk0p3:/root:vfat::
+        case OPT_MOUNT: // --mount /dev/mmcblk0p3:/root:vfat::
             APPEND_STRING_OPTION(options.extra_mounts, ';');
             break;
-        case 'n': // --hostname-pattern nerves-%.4s
+        case OPT_HOSTNAME_PATTERN: // --hostname-pattern nerves-%.4s
             SET_STRING_OPTION(options.hostname_pattern);
             break;
-        case 'r': // --release-path /srv/erlang
+        case OPT_RELEASE_PATH: // --release-path /srv/erlang
             SET_STRING_OPTION(options.release_search_path);
             break;
-        case '%': // --run-on-exit /bin/sh
+        case OPT_RUN_ON_EXIT: // --run-on-exit /bin/sh
             SET_STRING_OPTION(options.run_on_exit);
             break;
-        case 's': // --alternate-exec "/usr/bin/dtach -N /tmp/iex_prompt"
+        case OPT_ALTERNATE_EXEC: // --alternate-exec "/usr/bin/dtach -N /tmp/iex_prompt"
             SET_STRING_OPTION(options.alternate_exec);
             break;
-        case 't': // --print-timing
+        case OPT_PRINT_TIMING: // --print-timing
             options.print_timing = 1;
             break;
-        case 'v': // --verbose
+        case OPT_VERBOSE: // --verbose
             options.verbose = 1;
             break;
-        case '!': // --warn-unused-tty
+        case OPT_WARN_UNUSED_TTY: // --warn-unused-tty
             options.warn_unused_tty = 1;
             break;
-        case '^': // --uid 100
+        case OPT_UID: // --uid 100
             options.uid = strtol(optarg, NULL, 0);
             break;
-        case '&': // --gid 200
+        case OPT_GID: // --gid 200
             options.gid = strtol(optarg, NULL, 0);
             break;
-        case '*': // --pre-run-exec /bin/special-init
+        case OPT_PRE_RUN_EXEC: // --pre-run-exec /bin/special-init
             SET_STRING_OPTION(options.pre_run_exec);
             break;
-        case '@': // --working_directory /root
+        case OPT_WORKING_DIRECTORY: // --working_directory /root
             SET_STRING_OPTION(options.working_directory);
             break;
-        case '(': // --graceful-shutdown-timeout 10000
+        case OPT_GRACEFUL_SHUTDOWN_TIMEOUT: // --graceful-shutdown-timeout 10000
             options.graceful_shutdown_timeout_ms = strtol(optarg, NULL, 0);
             break;
-        case ')': // --update-clock
+        case OPT_UPDATE_CLOCK: // --update-clock
             options.update_clock = 1;
             break;
         default:
