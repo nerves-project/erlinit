@@ -58,7 +58,7 @@ static int format_message(char **strp, const char *fmt, va_list ap)
 
 static void log_write(const char *str, size_t len)
 {
-    int ignore = write(log_fd, str, len);
+    ssize_t ignore = write(log_fd, str, len);
     (void) ignore;
 }
 
