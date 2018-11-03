@@ -81,7 +81,7 @@ struct erlinit_options {
 extern struct erlinit_options options;
 
 // Logging functions
-void log_init();
+void log_init(void);
 void debug(const char *fmt, ...);
 void warn(const char *fmt, ...);
 void fatal(const char *fmt, ...);
@@ -96,18 +96,18 @@ void merge_config(int argc, char *argv[], int *merged_argc, char **merged_argv);
 void parse_args(int argc, char *argv[]);
 
 // Networking
-void setup_networking();
-void configure_hostname();
+void setup_networking(void);
+void configure_hostname(void);
 
 // Filesystems
-void setup_pseudo_filesystems();
-void create_rootdisk_symlinks();
-void mount_filesystems();
-void unmount_all();
+void setup_pseudo_filesystems(void);
+void create_rootdisk_symlinks(void);
+void mount_filesystems(void);
+void unmount_all(void);
 
 // Terminal
-void set_ctty();
-void warn_unused_tty();
+void set_ctty(void);
+void warn_unused_tty(void);
 
 // External commands
 int system_cmd(const char *cmd, char *output_buffer, int length);
