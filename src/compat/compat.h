@@ -5,6 +5,7 @@
 #include <time.h>
 #include <sys/mount.h> // must be included before 5-4 arg macro below
 #include <unistd.h>
+#include <sched.h>
 
 // Patch around differences in signals
 #define SIGPWR          30
@@ -61,5 +62,17 @@ int sigprocmask_noop(int how, const sigset_t *restrict set, sigset_t *restrict o
 // Fake out the SIOCGIFINDEX ioctl
 #define SIOCGIFINDEX SIOCGIFMTU
 #define ifr_ifindex         ifr_ifru.ifru_mtu
+
+// Additional definitions needed from sched.h
+int sched_getparam(pid_t pid, struct sched_param *param);
+int sched_setscheduler(pid_t pid, int policy, const struct sched_param *param);
+
+//#define SCHED_OTHER             0
+//#define SCHED_FIFO              1
+#define SCHED_RR                2
+#define SCHED_BATCH            3
+#define SCHED_ISO              4
+#define SCHED_IDLE             5
+#define SCHED_DEADLINE         6
 
 #endif

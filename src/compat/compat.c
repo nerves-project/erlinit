@@ -59,3 +59,18 @@ int sigprocmask_noop(int how, const sigset_t *restrict set, sigset_t *restrict o
     return 0;
 }
 
+int sched_getparam(pid_t pid, struct sched_param *param)
+{
+    (void) pid;
+    (void) param;
+    return 0;
+}
+
+int sched_setscheduler(pid_t pid, int policy, const struct sched_param *param)
+{
+    (void) pid;
+    (void) policy;
+    (void) param;
+    return 0;
+}
+

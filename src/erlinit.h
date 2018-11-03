@@ -81,6 +81,8 @@ struct erlinit_options {
     int graceful_shutdown_timeout_ms;
     int update_clock;
     char *tty_options;
+    int scheduler_policy;
+    int scheduler_priority;
     char *shutdown_report;
 };
 
