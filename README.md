@@ -8,6 +8,31 @@ is intentionally minimalist as it expects Erlang/OTP to be in charge of
 application initialization and supervision. It can be thought of as a simple
 Erlang/OTP release start script with some basic system initialization.
 
+## Building
+
+`erlinit` comes pre-built for you as part of Nerves and a couple other
+Embedded Erlang setups. You shouldn't need to build it. If you do want to
+change something, you'll need to cross-compile `erlinit` for your target and
+then copy it to `/sbin/init` on your device. Here's how to do this on Nerves. It
+assumes that you've built a project that uses Nerves already so that you can
+re-use the crosscompiler that was already downloaded:
+
+```sh
+$ cd erlinit
+$ make clean
+
+# Substitute the toolchain path appropriately. Tab complete will
+# probably get you the right thing.
+$ export CC=~/.nerves/artifacts/nerves_toolchain_arm_unknown_linux_gnueabihf-linux_x86_64-1.1.0/bin/arm-unknown-linux-gnueabihf-gcc
+$ make
+
+# Copy `erlinit` to your Nerves project's rootfs_overlay
+$ cp erlinit ~/path/to/your/nerves/project/rootfs_overlay/sbin/init
+```
+
+We definitely accept PRs to this project, but before spending too much time,
+please review the [Hacking](#hacking) section.
+
 ## Release setup
 
 A system should contain only one Erlang/OTP release under the `/srv/erlang`
