@@ -1,0 +1,67 @@
+#!/bin/sh
+
+#
+# Test that specifying a hostname with bad characters gets fixed
+#
+
+cat >$CONFIG <<EOF
+-v
+
+--hostname-pattern N__ERVES
+EOF
+
+cat >$EXPECTED <<EOF
+erlinit: cmdline argc=1, merged argc=4
+erlinit: merged argv[0]=/sbin/init
+erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=--hostname-pattern
+erlinit: merged argv[3]=N__ERVES
+fixture: mount("proc", "/proc", "proc", 14, data)
+fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mkdir("/dev/pts", 755)
+fixture: mkdir("/dev/shm", 1777)
+fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
+erlinit: set_ctty
+fixture: setsid()
+fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
+fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
+erlinit: find_release
+erlinit: No release found in /srv/erlang.
+erlinit: find_erts_directory
+erlinit: setup_environment
+erlinit: setup_networking
+fixture: ioctl(SIOCGIFFLAGS)
+fixture: ioctl(SIOCSIFFLAGS)
+fixture: ioctl(SIOCGIFINDEX)
+erlinit: configure_hostname
+erlinit: Hostname: nerves
+fixture: sethostname("nerves", 6)
+erlinit: Env: 'HOME=/root'
+erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
+erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
+erlinit: Env: 'EMU=beam'
+erlinit: Env: 'PROGNAME=erl'
+erlinit: Arg: 'erlexec'
+erlinit: Launching erl...
+Hello from erlexec
+erlinit: Erlang VM exited
+erlinit: kill_all
+erlinit: Sending SIGTERM to all processes
+fixture: kill(-1, 15)
+fixture: sleep(1)
+erlinit: Sending SIGKILL to all processes
+fixture: kill(-1, 9)
+erlinit: unmount_all
+erlinit: unmounting tmpfs at /sys/fs/cgroup...
+fixture: umount("/sys/fs/cgroup")
+erlinit: unmounting tmpfs at /dev/shm...
+fixture: umount("/dev/shm")
+erlinit: unmounting devpts at /dev/pts...
+fixture: umount("/dev/pts")
+erlinit: unmounting proc at /proc...
+fixture: umount("/proc")
+erlinit: unmounting sysfs at /sys...
+fixture: umount("/sys")
+EOF
