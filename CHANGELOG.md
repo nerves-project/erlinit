@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.8
+
+* Bug fixes
+  * Handle or fix hostnames that were generated with non-RFC 1123 compatible
+    characters or failures with unique id generation.
+
 ## v1.4.7
 
 * Bug fixes
