@@ -58,6 +58,31 @@ static void kill_whitespace(char *s)
     }
 }
 
+static void make_rfc1123_compatible(char *s)
+{
+    // This function modifies the hostname to make sure that it's compatible
+    // with RFC 1123. I.e. a-z, 0-9, -, and '.'. Capitals are made lowercase
+    // for consistency with tools that automatically normalize capitalization.
+    // Invalid characters are removed.
+    char *d = s;
+    while (*s) {
+      char c = *s;
+      if ((c >= 'a' && c <= 'z') ||
+          (c >= '0' && c <= '9') ||
+          c == '-' || c == '.') {
+          // Good
+          *d = c;
+          d++;
+      } else if (c >= 'A' && c <= 'Z') {
+          // Make lowercase
+          *d = c - 'A' + 'a';
+          d++;
+      }
+      s++;
+    }
+    *d = '\0';
+}
+
 void configure_hostname()
 {
     debug("configure_hostname");
@@ -78,6 +103,7 @@ void configure_hostname()
         }
         sprintf(hostname, options.hostname_pattern, unique_id);
         kill_whitespace(hostname);
+        make_rfc1123_compatible(hostname);
     } else {
         // Set the hostname from /etc/hostname
         FILE *fp = fopen("/etc/hostname", "r");
