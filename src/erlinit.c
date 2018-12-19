@@ -77,17 +77,17 @@ struct erl_run_info {
 
 static void erlinit_asprintf(char **strp, const char *fmt, ...)
 {
-    // Free *strp if this is being called a second time.
+    // Free *strp afterwards if this is being called a second time.
     // (Be careful with string pointers)
-    if (*strp) {
-        free(*strp);
-        *strp = NULL;
-    }
+    char *old_str = *strp;
 
     va_list ap;
     va_start(ap, fmt);
     OK_OR_FATAL(vasprintf(strp, fmt, ap), "asprintf failed");
     va_end(ap);
+
+    if (old_str)
+        free(old_str);
 }
 
 static int is_directory(const char *path)
@@ -588,6 +588,17 @@ static void drop_privileges()
     }
 }
 
+static char **concat_options(char **argv, const char *option, int append)
+{
+    if (append) {
+        erlinit_asprintf(argv, "%s %s", *argv, option);
+    } else {
+        *argv = strdup(option);
+        argv++;
+    }
+    return argv;
+}
+
 static void child()
 {
     update_time();
@@ -633,44 +644,57 @@ static void child()
     sprintf(erlexec_path, "%s/bin/erlexec", run_info.erts_dir);
     char *exec_path = erlexec_path;
 
-    char *exec_argv[32];
-    int arg = 0;
+    char *exec_argv[64];
+    memset(exec_argv, 0, sizeof(exec_argv));
+
+    char **argv = exec_argv;
     // If there's an alternate exec and it's set properly, then use it.
     char *alternate_exec_path = strtok(options.alternate_exec, " ");
+    int append = 0;
     if (options.alternate_exec && alternate_exec_path && alternate_exec_path[0] != '\0') {
         exec_path = alternate_exec_path;
-        exec_argv[arg++] = exec_path;
+        argv = concat_options(argv, exec_path, 0); // argv0
 
-        while ((exec_argv[arg] = strtok(NULL, " ")) != NULL)
-            arg++;
+        char *arg;
+        while ((arg = strtok(NULL, " ")) != NULL) {
+            argv = concat_options(argv, arg, append);
 
-        exec_argv[arg++] = erlexec_path;
+            // Hack around run_erl calling "sh -c" and requiring "exec" and
+            // everything after it to be quoted. I'm guessing that any other
+            // use of "exec" will also be for an "sh -c", since "exec" is a
+            // shell command. I really hope that it's never a legit argument
+            // to start erlang.
+            if (strcmp(arg, "exec") == 0) {
+                append = 1;
+                argv--;
+            }
+        }
+
+        argv = concat_options(argv, erlexec_path, append);
     } else
-        exec_argv[arg++] = "erlexec";
+        argv = concat_options(argv, "erlexec", 0); // argv0
 
     if (run_info.consolidated_protocols_path) {
-        exec_argv[arg++] = "-pa";
-        exec_argv[arg++] = run_info.consolidated_protocols_path;
+        argv = concat_options(argv, "-pa", append);
+        argv = concat_options(argv, run_info.consolidated_protocols_path, append);
     }
     if (run_info.sys_config) {
-        exec_argv[arg++] = "-config";
-        exec_argv[arg++] = run_info.sys_config;
+        argv = concat_options(argv, "-config", append);
+        argv = concat_options(argv, run_info.sys_config, append);
     }
     if (run_info.boot_path) {
-        exec_argv[arg++] = "-boot";
-        exec_argv[arg++] = run_info.boot_path;
+        argv = concat_options(argv, "-boot", append);
+        argv = concat_options(argv, run_info.boot_path, append);
     }
     if (run_info.vmargs_path) {
-        exec_argv[arg++] = "-args_file";
-        exec_argv[arg++] = run_info.vmargs_path;
+        argv = concat_options(argv, "-args_file", append);
+        argv = concat_options(argv, run_info.vmargs_path, append);
     }
     if (has_erts_library_directory()) {
-        exec_argv[arg++] = "-boot_var";
-        exec_argv[arg++] = "ERTS_LIB_DIR";
-        exec_argv[arg++] = ERLANG_ERTS_LIB_DIR;
+        argv = concat_options(argv, "-boot_var", append);
+        argv = concat_options(argv, "ERTS_LIB_DIR", append);
+        argv = concat_options(argv, ERLANG_ERTS_LIB_DIR, append);
     }
-
-    exec_argv[arg] = NULL;
 
     if (options.verbose) {
         // Dump the environment and commandline
@@ -680,7 +704,7 @@ static void child()
             debug("Env: '%s'", *env++);
 
         int i;
-        for (i = 0; i < arg; i++)
+        for (i = 0; exec_argv[i] != NULL; i++)
             debug("Arg: '%s'", exec_argv[i]);
     }
 
