@@ -1,0 +1,100 @@
+#!/bin/sh
+
+#
+# Test that running a program to wrap the call to the Erlang VM works
+#
+
+cat >$CMDLINE_FILE <<EOF
+-v --alternate-exec /usr/bin/altexec
+EOF
+
+cat >$WORK/usr/bin/altexec <<EOF
+#!/bin/sh
+
+echo Hello from altexec 1>&2
+echo Args: 1>&2
+for i; do
+  echo "  \$i" 1>&2
+done
+EOF
+chmod +x $WORK/usr/bin/altexec
+
+RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
+mkdir -p $RELEASE_PATH
+touch $RELEASE_PATH/test.boot
+touch $RELEASE_PATH/sys.config
+touch $RELEASE_PATH/vm.args
+
+cat >$EXPECTED <<EOF
+erlinit: cmdline argc=4, merged argc=4
+erlinit: merged argv[0]=/sbin/init
+erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=--alternate-exec
+erlinit: merged argv[3]=/usr/bin/altexec
+fixture: mount("proc", "/proc", "proc", 14, data)
+fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mkdir("/dev/pts", 755)
+fixture: mkdir("/dev/shm", 1777)
+fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
+erlinit: set_ctty
+fixture: setsid()
+fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
+fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
+erlinit: find_release
+erlinit: /srv/erlang/releases/start_erl.data not found.
+erlinit: Using release in /srv/erlang/releases/0.0.1.
+erlinit: find_sys_config
+erlinit: find_vm_args
+erlinit: find_boot_path
+erlinit: find_erts_directory
+erlinit: setup_environment
+erlinit: setup_networking
+fixture: ioctl(SIOCGIFFLAGS)
+fixture: ioctl(SIOCSIFFLAGS)
+fixture: ioctl(SIOCGIFINDEX)
+erlinit: configure_hostname
+erlinit: /etc/hostname not found
+erlinit: Env: 'HOME=/root'
+erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'ROOTDIR=/srv/erlang'
+erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
+erlinit: Env: 'EMU=beam'
+erlinit: Env: 'PROGNAME=erl'
+erlinit: Arg: '/usr/bin/altexec'
+erlinit: Arg: '/usr/lib/erlang/erts-6.0/bin/erlexec'
+erlinit: Arg: '-config'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/sys.config'
+erlinit: Arg: '-boot'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/test'
+erlinit: Arg: '-args_file'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
+erlinit: Launching erl...
+Hello from altexec
+Args:
+  /usr/lib/erlang/erts-6.0/bin/erlexec
+  -config
+  /srv/erlang/releases/0.0.1/sys.config
+  -boot
+  /srv/erlang/releases/0.0.1/test
+  -args_file
+  /srv/erlang/releases/0.0.1/vm.args
+erlinit: Erlang VM exited
+erlinit: kill_all
+erlinit: Sending SIGTERM to all processes
+fixture: kill(-1, 15)
+fixture: sleep(1)
+erlinit: Sending SIGKILL to all processes
+fixture: kill(-1, 9)
+erlinit: unmount_all
+erlinit: unmounting tmpfs at /sys/fs/cgroup...
+fixture: umount("/sys/fs/cgroup")
+erlinit: unmounting tmpfs at /dev/shm...
+fixture: umount("/dev/shm")
+erlinit: unmounting devpts at /dev/pts...
+fixture: umount("/dev/pts")
+erlinit: unmounting proc at /proc...
+fixture: umount("/proc")
+erlinit: unmounting sysfs at /sys...
+fixture: umount("/sys")
+EOF
