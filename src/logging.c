@@ -34,15 +34,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <sys/reboot.h>
 
-static int log_fd = -1;
-
-void log_init()
-{
-    log_fd = open("/dev/kmsg", O_WRONLY | O_CLOEXEC);
-    if (log_fd < 0)
-        log_fd = STDERR_FILENO;
-}
-
 static int format_message(char **strp, const char *fmt, va_list ap)
 {
     char *msg;
@@ -58,7 +49,14 @@ static int format_message(char **strp, const char *fmt, va_list ap)
 
 static void log_write(const char *str, size_t len)
 {
-    ssize_t ignore = write(log_fd, str, len);
+    size_t ignore;
+    int log_fd = open("/dev/kmsg", O_WRONLY | O_CLOEXEC);
+    if (log_fd >= 0) {
+        ignore = write(log_fd, str, len);
+        close(log_fd);
+    } else {
+        ignore = write(STDERR_FILENO, str, len);
+    }
     (void) ignore;
 }
 

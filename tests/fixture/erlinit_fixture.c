@@ -182,7 +182,7 @@ OVERRIDE(int, open, (const char *pathname, int flags, ...))
 
     // Log to stderr
     if (strcmp(pathname, "/dev/kmsg") == 0)
-        return STDERR_FILENO;
+        return dup(STDERR_FILENO);
 
     char new_path[PATH_MAX];
     if (fixup_path(pathname, new_path) < 0)
