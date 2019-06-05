@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.5.0
+
+* New features
+  * Support Elixir 1.9+ releases by setting the `-boot_var RELEASE_LIB`.
+
 ## v1.4.9
 
 * Bug fixes
