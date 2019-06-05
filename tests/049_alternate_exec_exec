@@ -68,13 +68,13 @@ erlinit: Env: 'PROGNAME=erl'
 erlinit: Arg: '/usr/bin/altexec'
 erlinit: Arg: '1'
 erlinit: Arg: '2'
-erlinit: Arg: 'exec 3 /usr/lib/erlang/erts-6.0/bin/erlexec -config /srv/erlang/releases/0.0.1/sys.config -boot /srv/erlang/releases/0.0.1/test -args_file /srv/erlang/releases/0.0.1/vm.args'
+erlinit: Arg: 'exec 3 /usr/lib/erlang/erts-6.0/bin/erlexec -config /srv/erlang/releases/0.0.1/sys.config -boot /srv/erlang/releases/0.0.1/test -args_file /srv/erlang/releases/0.0.1/vm.args -boot_var RELEASE_LIB /srv/erlang/lib'
 erlinit: Launching erl...
 Hello from altexec
 Args:
   1
   2
-  exec 3 /usr/lib/erlang/erts-6.0/bin/erlexec -config /srv/erlang/releases/0.0.1/sys.config -boot /srv/erlang/releases/0.0.1/test -args_file /srv/erlang/releases/0.0.1/vm.args
+  exec 3 /usr/lib/erlang/erts-6.0/bin/erlexec -config /srv/erlang/releases/0.0.1/sys.config -boot /srv/erlang/releases/0.0.1/test -args_file /srv/erlang/releases/0.0.1/vm.args -boot_var RELEASE_LIB /srv/erlang/lib
 erlinit: Erlang VM exited
 erlinit: kill_all
 erlinit: Sending SIGTERM to all processes

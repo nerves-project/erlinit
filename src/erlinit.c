@@ -696,6 +696,11 @@ static void child()
         argv = concat_options(argv, ERLANG_ERTS_LIB_DIR, append);
     }
 
+    // Set the RELEASE_LIB boot_var for Elixir 1.9+ releases
+    argv = concat_options(argv, "-boot_var", append);
+    argv = concat_options(argv, "RELEASE_LIB", append);
+    argv = concat_options(argv, RELEASE_ROOT_LIB, append);
+
     if (options.verbose) {
         // Dump the environment and commandline
         extern char **environ;
