@@ -60,6 +60,9 @@ erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
 erlinit: Env: 'EMU=beam'
 erlinit: Env: 'PROGNAME=erl'
 erlinit: Arg: 'erlexec'
+erlinit: Arg: '-boot_var'
+erlinit: Arg: 'RELEASE_LIB'
+erlinit: Arg: '/srv/erlang/lib'
 erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited

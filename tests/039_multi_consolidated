@@ -65,6 +65,9 @@ erlinit: Arg: '-boot'
 erlinit: Arg: '/srv/erlang/releases/0.0.1/test'
 erlinit: Arg: '-args_file'
 erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
+erlinit: Arg: '-boot_var'
+erlinit: Arg: 'RELEASE_LIB'
+erlinit: Arg: '/srv/erlang/lib'
 erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited

@@ -44,6 +44,9 @@ erlinit: Arg: 'erlexec'
 erlinit: Arg: '-boot_var'
 erlinit: Arg: 'ERTS_LIB_DIR'
 erlinit: Arg: '/usr/lib/erlang/lib'
+erlinit: Arg: '-boot_var'
+erlinit: Arg: 'RELEASE_LIB'
+erlinit: Arg: '/srv/erlang/lib'
 erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited

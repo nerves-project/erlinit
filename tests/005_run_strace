@@ -53,6 +53,9 @@ erlinit: Env: 'PROGNAME=erl'
 erlinit: Arg: '/usr/bin/strace'
 erlinit: Arg: '-f'
 erlinit: Arg: '/usr/lib/erlang/erts-6.0/bin/erlexec'
+erlinit: Arg: '-boot_var'
+erlinit: Arg: 'RELEASE_LIB'
+erlinit: Arg: '/srv/erlang/lib'
 erlinit: Launching erl...
 Hello from strace
 erlinit: Erlang VM exited
