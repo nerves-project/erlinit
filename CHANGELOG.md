@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.5.1
+
+* Bug fixes
+  * Fixed an issue with reaping zombie processes if too many died at once. If
+    this happened and you ran `ps`, you'd start seeing processes in the `Z`
+    state piling up over time.
+
 ## v1.5.0
 
 * New features
