@@ -825,14 +825,16 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
     for (;;) {
         int rc = sigwaitinfo(&mask, NULL);
         if (rc == SIGCHLD) {
-            // Child process exited -> check that it's the right one
-            rc = waitpid(-1, &wait_status, WNOHANG);
-            if (rc == pid)
-                break;
-            else if (rc < 0)
-                fatal("Unexpected error from waitpid: %d", errno);
-
-            debug("reaping pid %d", rc);
+            // Child process exited
+            //   Reap all processes that exited
+            //   If our immediate child exited, exit too
+            do {
+                rc = waitpid(-1, &wait_status, WNOHANG);
+                if (rc == pid)
+                    goto prepare_to_exit;
+                else if (rc > 0)
+                    debug("reaped pid %d", rc);
+            } while (rc > 0);
         } else if (rc < 0) {
             // An error occurred.
             debug("sigwaitinfo->errno %d", errno);
@@ -860,6 +862,7 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
         }
     }
 
+prepare_to_exit:
     // Check if this was a clean exit.
     if (*desired_reboot_cmd != 0) {
         // Intentional exit since reboot/poweroff/halt was called.
