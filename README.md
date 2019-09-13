@@ -33,6 +33,11 @@ $ cp erlinit ~/path/to/your/nerves/project/rootfs_overlay/sbin/init
 We definitely accept PRs to this project, but before spending too much time,
 please review the [Hacking](#hacking) section.
 
+If you need a [reproducible build](https://reproducible-builds.org/), it is
+critical that your build system set the `SOURCE_DATE_EPOCH` environment
+variable. The real-time clock check in `erlinit` uses a stored timestamp that
+will change between successive builds if this is unset.
+
 ## Release setup
 
 A system should contain only one Erlang/OTP release under the `/srv/erlang`
@@ -345,6 +350,11 @@ This option has the following caveats:
    be sure that the SSL certificates don't expire before the next firmware
    update.  (Not that you don't have to do that anyway, but just a friendly
    reminder)
+
+NOTE: This feature is at odds with creating [reproducible
+builds](https://reproducible-builds.org). Set the
+[SOURCE_DATE_EPOCH](https://reproducible-builds.org/docs/source-date-epoch/)
+environment variable to force the build time to be a constant.
 
 ## Hacking
 

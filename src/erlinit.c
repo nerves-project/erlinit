@@ -513,7 +513,7 @@ static void update_time()
     if (!options.update_clock)
         return;
 
-    debug("checking that the clock is after the build timestamp");
+    debug("checking that the clock is after %d", BUILD_TIME);
 
     // Force the time to at least the build date.  For systems w/o real-time
     // clocks, the time will be closer to the actual date until NTP kicks in.

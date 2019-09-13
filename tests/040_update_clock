@@ -22,7 +22,7 @@ fixture: mkdir("/dev/shm", 1777)
 fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
 erlinit: set_ctty
 fixture: setsid()
-erlinit: checking that the clock is after the build timestamp
+erlinit: checking that the clock is after 1568377824
 fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
 fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
 erlinit: find_release
