@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.5.2
+
+* Bug fixes
+  * Due to an embedded timestamp for checking the system clock, erlinit was not
+    reproducible. This adds support for SOURCE_DATE_EPOCH. See
+    https://reproducible-builds.org/ for motivation and more details.
+  * Fix graceful shutdown time calculation bug. The seconds part of the
+    calculation was correct, but the nanoseconds part was not. Since the default
+    timeout was an even number of  seconds, it's likely that this fix is doesn't
+    affect many users.
+
 ## v1.5.1
 
 * Bug fixes
