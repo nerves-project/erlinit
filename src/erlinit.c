@@ -753,7 +753,7 @@ static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
     if (options.graceful_shutdown_timeout_ms <= 0)
         options.graceful_shutdown_timeout_ms = 1;
     timeout.tv_sec = options.graceful_shutdown_timeout_ms / 1000;
-    timeout.tv_nsec = (options.graceful_shutdown_timeout_ms % 1000) * 1000;
+    timeout.tv_nsec = (options.graceful_shutdown_timeout_ms % 1000) * 1000000;
 
     for (;;) {
         debug("waiting %d ms for graceful shutdown", options.graceful_shutdown_timeout_ms);
