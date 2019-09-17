@@ -398,7 +398,14 @@ REPLACE(int, ioctl, (int fd, unsigned long request, ...))
         va_end(ap);
         break;
     }
+#ifdef __APPLE__
+    case FIODTYPE:
+        // Ignore FIODTYPE ioctls on OSX.
+        return 0;
+#endif
+
     default:
+        log("unknown ioctl(0x%08lx)", request);
         req = "unknown";
         break;
     }
