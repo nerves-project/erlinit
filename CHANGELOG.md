@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.5.3
+
+* Bug fixes
+  * Change `PROGNAME` setting to `erlexec` so that OTP's
+    [`slave`](http://erlang.org/doc/man/slave.html) works. `slave` had been
+    calling `erl` which would try to figure out the `ROOTDIR` again. `erlinit`
+    already sets `ROOTDIR` properly, so this isn't necessary and `erl` would also
+    get it wrong.
+
 ## v1.5.2
 
 * Bug fixes
