@@ -496,7 +496,7 @@ static void setup_environment(const struct erl_run_info *run_info)
     envvar = NULL; // putenv owns memory
 
     putenv("EMU=beam");
-    putenv("PROGNAME=erl");
+    putenv("PROGNAME=erlexec");
 
     // Set any additional environment variables from the user
     if (options.additional_env) {
