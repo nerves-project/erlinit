@@ -151,6 +151,9 @@ The following lists the options:
     A colon-separated lists of paths to search for
     Erlang releases. The default is /srv/erlang.
 
+--release-include-erts
+    Use an ERTS provided by the release.
+
 --run-on-exit <program and arguments>
     Run the specified command on exit.
 

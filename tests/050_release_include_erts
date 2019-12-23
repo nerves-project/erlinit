@@ -1,0 +1,103 @@
+#!/bin/sh
+
+#
+# Test that starting up a Erlang/OTP release using an embedded ERTS
+#
+
+cat >$CMDLINE_FILE <<EOF
+-v
+
+-r /usr/lib/erelease
+
+--release-include-erts
+EOF
+
+RELEASE_PATH=$WORK/usr/lib/erelease/releases
+RELEASE_VERSION_PATH=$WORK/usr/lib/erelease/releases/0.0.1
+mkdir -p $RELEASE_VERSION_PATH
+
+touch $RELEASE_VERSION_PATH/erelease.rel
+touch $RELEASE_VERSION_PATH/start.boot
+touch $RELEASE_VERSION_PATH/sys.config
+touch $RELEASE_VERSION_PATH/vm.args
+
+touch $RELEASE_PATH/erelease.rel
+touch $RELEASE_PATH/RELEASES
+
+mkdir -p $WORK/usr/lib/erelease/erts-10.5.6/bin
+
+ln -s $FAKE_ERLEXEC $WORK/usr/lib/erelease/erts-10.5.6/bin/erlexec
+
+rm -rf $WORK/usr/lib/erlang
+
+cat >$RELEASE_PATH/start_erl.data <<EOF
+10.5.6 0.0.1
+EOF
+
+cat >$EXPECTED <<EOF
+erlinit: cmdline argc=5, merged argc=5
+erlinit: merged argv[0]=/sbin/init
+erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=-r
+erlinit: merged argv[3]=/usr/lib/erelease
+erlinit: merged argv[4]=--release-include-erts
+fixture: mount("proc", "/proc", "proc", 14, data)
+fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mkdir("/dev/pts", 755)
+fixture: mkdir("/dev/shm", 1777)
+fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
+erlinit: set_ctty
+fixture: setsid()
+fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
+fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
+erlinit: find_release
+erlinit: Using release in /usr/lib/erelease/releases/0.0.1.
+erlinit: find_sys_config
+erlinit: find_vm_args
+erlinit: find_boot_path
+erlinit: find_erts_directory
+erlinit: setup_environment
+erlinit: setup_networking
+fixture: ioctl(SIOCGIFFLAGS)
+fixture: ioctl(SIOCSIFFLAGS)
+fixture: ioctl(SIOCGIFINDEX)
+erlinit: configure_hostname
+erlinit: /etc/hostname not found
+erlinit: Env: 'HOME=/root'
+erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'ROOTDIR=/usr/lib/erelease'
+erlinit: Env: 'BINDIR=/usr/lib/erelease/erts-10.5.6/bin'
+erlinit: Env: 'EMU=beam'
+erlinit: Env: 'PROGNAME=erlexec'
+erlinit: Arg: 'erlexec'
+erlinit: Arg: '-config'
+erlinit: Arg: '/usr/lib/erelease/releases/0.0.1/sys.config'
+erlinit: Arg: '-boot'
+erlinit: Arg: '/usr/lib/erelease/releases/0.0.1/start'
+erlinit: Arg: '-args_file'
+erlinit: Arg: '/usr/lib/erelease/releases/0.0.1/vm.args'
+erlinit: Arg: '-boot_var'
+erlinit: Arg: 'RELEASE_LIB'
+erlinit: Arg: '/srv/erlang/lib'
+erlinit: Launching erl...
+Hello from erlexec
+erlinit: Erlang VM exited
+erlinit: kill_all
+erlinit: Sending SIGTERM to all processes
+fixture: kill(-1, 15)
+fixture: sleep(1)
+erlinit: Sending SIGKILL to all processes
+fixture: kill(-1, 9)
+erlinit: unmount_all
+erlinit: unmounting tmpfs at /sys/fs/cgroup...
+fixture: umount("/sys/fs/cgroup")
+erlinit: unmounting tmpfs at /dev/shm...
+fixture: umount("/dev/shm")
+erlinit: unmounting devpts at /dev/pts...
+fixture: umount("/dev/pts")
+erlinit: unmounting proc at /proc...
+fixture: umount("/proc")
+erlinit: unmounting sysfs at /sys...
+fixture: umount("/sys")
+EOF

@@ -43,6 +43,7 @@ struct erlinit_options options = {
     .hostname_pattern = NULL,
     .additional_env = NULL,
     .release_search_path = NULL,
+    .release_include_erts = 0,
     .extra_mounts = NULL,
     .run_on_exit = NULL,
     .pre_run_exec = NULL,
@@ -83,7 +84,8 @@ enum erlinit_option_value {
     OPT_GID,
     OPT_PRE_RUN_EXEC,
     OPT_GRACEFUL_SHUTDOWN_TIMEOUT,
-    OPT_UPDATE_CLOCK
+    OPT_UPDATE_CLOCK,
+    OPT_RELEASE_INCLUDE_ERTS
 };
 
 static struct option long_options[] = {
@@ -100,6 +102,7 @@ static struct option long_options[] = {
     {"mount", required_argument, 0, OPT_MOUNT },
     {"hostname-pattern", required_argument, 0, OPT_HOSTNAME_PATTERN },
     {"release-path", required_argument, 0, OPT_RELEASE_PATH },
+    {"release-include-erts", no_argument, 0, OPT_RELEASE_INCLUDE_ERTS },
     {"run-on-exit", required_argument, 0, OPT_RUN_ON_EXIT },
     {"alternate-exec", required_argument, 0, OPT_ALTERNATE_EXEC },
     {"print-timing", no_argument, 0, OPT_PRINT_TIMING },
@@ -177,6 +180,9 @@ void parse_args(int argc, char *argv[])
             break;
         case OPT_RELEASE_PATH: // --release-path /srv/erlang
             SET_STRING_OPTION(options.release_search_path);
+            break;
+        case OPT_RELEASE_INCLUDE_ERTS: // --release-include-erts
+            options.release_include_erts = 1;
             break;
         case OPT_RUN_ON_EXIT: // --run-on-exit /bin/sh
             SET_STRING_OPTION(options.run_on_exit);
