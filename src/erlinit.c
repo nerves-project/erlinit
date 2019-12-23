@@ -107,14 +107,21 @@ static int erts_filter(const struct dirent *d)
     return starts_with(d->d_name, "erts-");
 }
 
-static void find_erts_directory(const char *erts_version, char **erts_dir)
+static void find_erts_directory(const char *erts_version, const char *release_base_dir, char **erts_dir)
 {
     debug("find_erts_directory");
+
+    const char *tmp_release_base_dir;
+
+    if (options.release_include_erts)
+        tmp_release_base_dir = release_base_dir;
+    else
+        tmp_release_base_dir = ERLANG_ROOT_DIR;
 
     if (erts_version) {
         // If the release specifies an ERTS version to use, then try to use it
         // first.
-        erlinit_asprintf(erts_dir, "%s/erts-%s", ERLANG_ROOT_DIR, erts_version);
+        erlinit_asprintf(erts_dir, "%s/erts-%s", tmp_release_base_dir, erts_version);
         if (is_directory(*erts_dir))
             return;
 
@@ -122,18 +129,18 @@ static void find_erts_directory(const char *erts_version, char **erts_dir)
     }
 
     struct dirent **namelist;
-    int n = scandir(ERLANG_ROOT_DIR,
+    int n = scandir(tmp_release_base_dir,
                     &namelist,
                     erts_filter,
                     NULL);
     if (n < 0)
-        fatal("Erlang installation not found. Check that %s exists", ERLANG_ROOT_DIR);
+        fatal("Erlang installation not found. Check that %s exists", tmp_release_base_dir);
     else if (n == 0)
-        fatal("erts not found. Check that erlang was installed to %s", ERLANG_ROOT_DIR);
+        fatal("erts not found. Check that erlang was installed to %s", tmp_release_base_dir);
     else if (n > 1)
         fatal("Found multiple erts directories. Clean up the installation or check that a start_erl.data was generated.");
 
-    erlinit_asprintf(erts_dir, "%s/%s", ERLANG_ROOT_DIR, namelist[0]->d_name);
+    erlinit_asprintf(erts_dir, "%s/%s", tmp_release_base_dir, namelist[0]->d_name);
 
     free(namelist[0]);
     free(namelist);
@@ -612,7 +619,7 @@ static void child()
 
     find_release(&run_info);
 
-    find_erts_directory(run_info.erts_version, &run_info.erts_dir);
+    find_erts_directory(run_info.erts_version, run_info.release_base_dir, &run_info.erts_dir);
 
     // Set up the environment for running erlang.
     setup_environment(&run_info);

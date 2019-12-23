@@ -68,6 +68,7 @@ struct erlinit_options {
     char *hostname_pattern;
     char *additional_env;
     char *release_search_path;
+    int  release_include_erts;
     char *extra_mounts;
     char *run_on_exit;
     char *pre_run_exec;
