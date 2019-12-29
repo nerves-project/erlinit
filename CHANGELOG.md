@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.6.0
+
+* New features
+  * Added the `--release-include-erts` option so that `erlinit` can use the ERTS
+    provided by embedded release. Thanks to João Henrique Ferreira de Freitas
+    for this feature.
+
 ## v1.5.3
 
 * Bug fixes
