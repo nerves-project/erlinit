@@ -31,6 +31,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <termios.h>
+#include <unistd.h>
 
 #define SYSFS_ACTIVE_CONSOLE "/sys/class/tty/console/active"
 
@@ -97,6 +99,69 @@ void warn_unused_tty()
     }
 }
 
+static int lookup_tty_options(const char *options, speed_t *speed)
+{
+    // NOTE: Only setting the speed is supported now. No parity and 8 bits are assumed.
+    unsigned long baud = strtoul(options, NULL, 10);
+    switch (baud) {
+    case 9600: *speed = B9600; break;
+    case 19200: *speed = B19200; break;
+    case 38400: *speed = B38400; break;
+    case 57600: *speed = B57600; break;
+    case 115200: *speed = B115200; break;
+    default:
+        warn("Couldn't parse tty option '%s'. Defaulting to 115200n8", options);
+        *speed = B115200; break;
+    }
+    return 0;
+}
+
+static void init_terminal(int fd)
+{
+    if (options.tty_options == NULL)
+        return;
+
+    struct termios termios;
+    if (tcgetattr(fd, &termios) < 0) {
+        warn("Could not get console settings");
+        return;
+    }
+
+    speed_t speed;
+    lookup_tty_options(options.tty_options, &speed);
+
+    // Set baud
+    cfsetispeed(&termios, speed);
+    cfsetospeed(&termios, speed);
+
+    // 8 bits
+    termios.c_cflag &= ~CSIZE;
+    termios.c_cflag |= CS8;
+
+    // no parity
+    termios.c_cflag &= ~PARENB;
+
+    // 1 stop bit
+    termios.c_cflag &= ~CSTOPB;
+
+    // No control flow
+    termios.c_cflag &= ~CRTSCTS;
+    termios.c_iflag &= ~(IXON | IXOFF | IXANY);
+
+    // Forced options
+    termios.c_cflag |= CLOCAL; // Ignore modem control lines
+    termios.c_cflag |= CREAD;  // Enable receiver
+    termios.c_oflag = 0;
+    termios.c_lflag = 0;
+    termios.c_iflag &= ~(ICRNL|INLCR);  // No CR<->LF conversions
+
+    termios.c_cc[VMIN] = 1;
+    termios.c_cc[VTIME] = 0;
+
+    if (tcsetattr(fd, TCSANOW, &termios) < 0)
+        warn("Could not set console settings");
+}
+
 void set_ctty()
 {
     debug("set_ctty");
@@ -131,6 +196,8 @@ void set_ctty()
 
     int fd = open(ttypath, O_RDWR);
     if (fd >= 0) {
+        init_terminal(fd);
+
         dup2(fd, 0);
         dup2(fd, 1);
         dup2(fd, 2);

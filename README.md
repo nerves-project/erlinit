@@ -164,6 +164,11 @@ The following lists the options:
     Print out when erlinit starts and when it launches Erlang (for
     benchmarking)
 
+--tty-options <baud>[<parity><bits>]
+    Initialize the tty to the specified baud rate, parity and bits. This
+    option follows the [Linux kernel format](https://www.kernel.org/doc/html/latest/admin-guide/serial-console.html),
+    but currently only 9600-115200 baud rates are supported.
+
 --uid <id>
     Run the Erlang VM under the specified user ID
 
