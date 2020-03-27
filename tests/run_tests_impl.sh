@@ -59,8 +59,32 @@ run() {
     ln -s $FAKE_ERLEXEC $FAKE_ERTS_DIR/bin/erlexec
 
     # Create some device files (the fixture sets their types)
-    touch $WORK/dev/mmcblk0p0 $WORK/dev/mmcblk0p1 $WORK/dev/mmcblk0p2 $WORK/dev/mmcblk0p3
+    touch $WORK/dev/mmcblk0 $WORK/dev/mmcblk0p1 $WORK/dev/mmcblk0p2 $WORK/dev/mmcblk0p3 $WORK/dev/mmcblk0p4
     ln -s /dev/null $WORK/dev/null
+    mkdir -p $WORK/sys/block/mmcblk0/mmcblk0p1
+    mkdir -p $WORK/sys/block/mmcblk0/mmcblk0p2
+    mkdir -p $WORK/sys/block/mmcblk0/mmcblk0p3
+    mkdir -p $WORK/sys/block/mmcblk0/mmcblk0p4
+    mkdir -p $WORK/sys/block/mmcblk0/queue
+    mkdir -p $WORK/sys/block/mmcblk0/slaves
+    mkdir -p $WORK/sys/block/mmcblk0/mq
+    mkdir -p $WORK/sys/block/mmcblk0/holders
+    mkdir -p $WORK/sys/block/sda/sda1
+    mkdir -p $WORK/sys/block/sda/sda2
+    echo "179:0" > $WORK/sys/block/mmcblk0/dev
+    echo "179:1" > $WORK/sys/block/mmcblk0/mmcblk0p1/dev
+    echo "1" > $WORK/sys/block/mmcblk0/mmcblk0p1/partition
+    echo "179:2" > $WORK/sys/block/mmcblk0/mmcblk0p2/dev
+    echo "2" > $WORK/sys/block/mmcblk0/mmcblk0p2/partition
+    echo "179:3" > $WORK/sys/block/mmcblk0/mmcblk0p3/dev
+    echo "3" > $WORK/sys/block/mmcblk0/mmcblk0p3/partition
+    echo "179:4" > $WORK/sys/block/mmcblk0/mmcblk0p4/dev
+    echo "4" > $WORK/sys/block/mmcblk0/mmcblk0p4/partition
+    echo "8:0" > $WORK/sys/block/sda/dev
+    echo "8:1" > $WORK/sys/block/sda/sda1/dev
+    echo "1" > $WORK/sys/block/sda/sda1/partition
+    echo "8:2" > $WORK/sys/block/sda/sda2/dev
+    echo "2" > $WORK/sys/block/sda/sda2/partition
 
     # Fake active console
     mkdir -p $WORK/sys/class/tty/console
