@@ -17,6 +17,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <glob.h>
+#include <termios.h>
 
 #define log(MSG, ...) do { fprintf(stderr, "fixture: " MSG "\n", ## __VA_ARGS__); } while (0)
 
@@ -165,6 +166,27 @@ REPLACE(int, setgid, (gid_t gid))
 REPLACE(int, kill, (pid_t pid, int sig))
 {
     log("kill(%d, %d)", pid, sig);
+    return 0;
+}
+
+REPLACE(int, tcgetattr, (int fd, struct termios *termios_p))
+{
+    log("tcgetattr");
+
+    memset(termios_p, 0, sizeof(struct termios));
+
+    return 0;
+}
+
+REPLACE(int, tcsetattr, (int fd, int optional_actions, const struct termios *termios_p))
+{
+    log("tcsetattr(%d, iflag=%x, oflag=%x, cflag=%x, lflag=%x",
+        optional_actions,
+        termios_p->c_iflag,
+        termios_p->c_oflag,
+        termios_p->c_cflag,
+        termios_p->c_lflag);
+
     return 0;
 }
 

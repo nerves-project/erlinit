@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2013-16 Frank Hunleth
+Copyright (c) 2013-20 Frank Hunleth
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -85,7 +85,8 @@ enum erlinit_option_value {
     OPT_PRE_RUN_EXEC,
     OPT_GRACEFUL_SHUTDOWN_TIMEOUT,
     OPT_UPDATE_CLOCK,
-    OPT_RELEASE_INCLUDE_ERTS
+    OPT_RELEASE_INCLUDE_ERTS,
+    OPT_TTY_OPTIONS
 };
 
 static struct option long_options[] = {
@@ -114,6 +115,7 @@ static struct option long_options[] = {
     {"pre-run-exec", required_argument, 0, OPT_PRE_RUN_EXEC },
     {"graceful-shutdown-timeout", required_argument, 0, OPT_GRACEFUL_SHUTDOWN_TIMEOUT },
     {"update-clock", no_argument, 0, OPT_UPDATE_CLOCK },
+    {"tty-options", required_argument, 0, OPT_TTY_OPTIONS},
     {0,     0,      0, 0 }
 };
 
@@ -216,6 +218,9 @@ void parse_args(int argc, char *argv[])
             break;
         case OPT_UPDATE_CLOCK: // --update-clock
             options.update_clock = 1;
+            break;
+        case OPT_TTY_OPTIONS: // --tty-options 115200n8
+            SET_STRING_OPTION(options.tty_options);
             break;
         default:
             // getopt prints a warning, so we don't have to
