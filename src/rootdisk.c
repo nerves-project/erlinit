@@ -185,6 +185,12 @@ static dev_t root_filesystem_device()
     }
 }
 
+static int rootdisk_files_created()
+{
+    struct stat st;
+    return (lstat("/dev/rootdisk0", &st) >= 0);
+}
+
 static void create_dev_symlink(const char *partition_suffix, const char *devname)
 {
     char symlinkpath[ERLINIT_PATH_MAX];
@@ -198,6 +204,10 @@ static void create_dev_symlink(const char *partition_suffix, const char *devname
 
 void create_rootdisk_symlinks()
 {
+    // Don't create symlinks if they already exist.
+    if (rootdisk_files_created())
+        return;
+
     struct block_device_info *infos = scan_for_block_devices();
     dev_t rootdev = root_filesystem_device();
     if (rootdev == 0)
