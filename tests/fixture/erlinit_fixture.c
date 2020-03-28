@@ -339,6 +339,14 @@ OVERRIDE(int, stat, (const char *pathname, struct stat *st))
         return ORIGINAL(stat)(new_path, st);
    }
 }
+OVERRIDE(int, lstat, (const char *pathname, struct stat *st))
+{
+    memset(st, 0, sizeof(struct stat));
+    char new_path[PATH_MAX];
+    if (fixup_path(pathname, new_path) < 0)
+        return -1;
+    return ORIGINAL(lstat)(new_path, st);
+}
 #else
 OVERRIDE(int, __xstat, (int ver, const char *pathname, struct stat *st))
 {
@@ -386,6 +394,14 @@ OVERRIDE(int, __xstat, (int ver, const char *pathname, struct stat *st))
             return -1;
         return ORIGINAL(__xstat)(ver, new_path, st);
    }
+}
+OVERRIDE(int, __lxstat, (int ver, const char *pathname, struct stat *st))
+{
+    memset(st, 0, sizeof(struct stat));
+    char new_path[PATH_MAX];
+    if (fixup_path(pathname, new_path) < 0)
+        return -1;
+    return ORIGINAL(__lxstat)(ver, new_path, st);
 }
 #endif
 
