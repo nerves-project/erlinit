@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.6.1
+
+* Bug fixes
+  * Fix rootdisk symlink determination. Erlinit has been responsible for
+    creating `/dev/rootdisk*` symlinks so that applications can generically
+    figure out which block device is the boot disk. This is used for firmware
+    updates, mounting other filesystems, etc. Previously a heuristic was used
+    that worked a good amount of time. It broke or created extraneous symlinks
+    on some systems. The new mechanism queries Linux directly and does a better
+    job.
+
 ## v1.6.0
 
 * New features
