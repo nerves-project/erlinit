@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.7.0
+
+* New features
+  * Added `--tty-options` parameter for initializing UARTs.
+    E.g., `--tty-options 115200n8` or in Nerves, use:
+
+    ```elixir
+    config :nerves,
+      erlinit: [ctty: "ttyS0", tty_options: "115200n8", alternate_exec: "/usr/bin/nbtty"]
+    ```
+
+    Only common baudrates and 8-bit/no parity is supported.
+
 ## v1.6.1
 
 * Bug fixes
