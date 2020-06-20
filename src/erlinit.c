@@ -38,6 +38,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/reboot.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <pwd.h>
 
 struct erl_run_info {
     // This is the base directory for the release
@@ -478,11 +479,23 @@ static int has_erts_library_directory()
     return is_directory(ERLANG_ERTS_LIB_DIR);
 }
 
+static void setup_home_directory()
+{
+    struct passwd *pwd;
+    char *envvar = NULL;
+
+    if((pwd = getpwuid(options.uid)) != NULL) {
+      erlinit_asprintf(&envvar, "HOME=%s", pwd->pw_dir);
+    } else {
+      erlinit_asprintf(&envvar, "HOME=%s", "/root");
+    }
+
+    putenv(envvar);
+}
+
 static void setup_environment(const struct erl_run_info *run_info)
 {
     debug("setup_environment");
-    // Set up the environment for running erlang.
-    putenv("HOME=/root");
 
     // PATH appears to only be needed for user convenience when running os:cmd/1
     // It may be possible to remove in the future.
@@ -620,6 +633,9 @@ static void child()
     find_release(&run_info);
 
     find_erts_directory(run_info.erts_version, run_info.release_base_dir, &run_info.erts_dir);
+
+    // Set up $HOME
+    setup_home_directory();
 
     // Set up the environment for running erlang.
     setup_environment(&run_info);
