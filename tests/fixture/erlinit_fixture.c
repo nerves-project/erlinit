@@ -171,11 +171,17 @@ REPLACE(int, tcgetattr, (int fd, struct termios *termios_p))
 
 REPLACE(int, tcsetattr, (int fd, int optional_actions, const struct termios *termios_p))
 {
-    log("tcsetattr(%d, iflag=%x, oflag=%x, cflag=%x, lflag=%x",
+    int cs8 = termios_p->c_cflag & CS8;
+    int parenb = termios_p->c_cflag & PARENB;
+    int stopb = termios_p->c_cflag & CSTOPB;
+
+    log("tcsetattr(%d, iflag=%x, oflag=%x, cflag=%s%s%s, lflag=%x",
         optional_actions,
         (unsigned int) termios_p->c_iflag,
         (unsigned int) termios_p->c_oflag,
-        (unsigned int) termios_p->c_cflag,
+        cs8 ? "8" : "*",
+        parenb ? "*" : "N",
+        stopb ? "2" : "1",
         (unsigned int) termios_p->c_lflag);
 
     return 0;

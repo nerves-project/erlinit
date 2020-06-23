@@ -28,7 +28,7 @@ fixture: symlink("/dev/mmcblk0p1","/dev/rootdisk0p1")
 erlinit: set_ctty
 fixture: setsid()
 fixture: tcgetattr
-fixture: tcsetattr(0, iflag=0, oflag=0, cflag=18b2, lflag=0
+fixture: tcsetattr(0, iflag=0, oflag=0, cflag=8N1, lflag=0
 fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
 fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
 erlinit: find_release
