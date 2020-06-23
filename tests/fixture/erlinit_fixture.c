@@ -16,7 +16,6 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
-#include <glob.h>
 #include <termios.h>
 #include <pwd.h>
 
@@ -72,15 +71,6 @@ static int fixup_path(const char *input, char *output)
     // Prepend the working directory to the path
     sprintf(output, "%s%s", work, input);
     return 0;
-}
-
-static void unfixup_path(char *path)
-{
-    size_t work_len = strlen(work);
-    size_t path_len = strlen(path);
-
-    if (path_len >= work_len && memcmp(path, work, work_len) == 0)
-        memmove(path, path + work_len, path_len - work_len + 1);
 }
 
 #ifdef __APPLE__
@@ -491,22 +481,4 @@ REPLACE(int, ioctl, (int fd, unsigned long request, ...))
     }
     log("ioctl(%s)", req);
     return 0;
-}
-
-OVERRIDE(int, glob, (const char *pattern, int flags, int (*errfunc)(const char *epath, int errno), glob_t *pglob))
-{
-    if (pattern[0] == '/') {
-        char new_pattern[PATH_MAX];
-        if (fixup_path(pattern, new_pattern) < 0)
-            return -1;
-        int rc = ORIGINAL(glob)(new_pattern, flags, errfunc, pglob);
-        if (rc == 0) {
-            size_t i;
-            for (i = 0; i < pglob->gl_pathc; i++)
-                unfixup_path(pglob->gl_pathv[i]);
-        }
-        return rc;
-    } else {
-        return ORIGINAL(glob)(pattern, flags, errfunc, pglob);
-    }
 }

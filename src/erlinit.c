@@ -23,7 +23,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "erlinit.h"
 
-#include <glob.h>
 #include <dirent.h>
 #include <errno.h>
 #include <signal.h>
@@ -165,6 +164,11 @@ static int bootfile_filter(const struct dirent *d)
     return strstr(d->d_name, ".boot") != NULL;
 }
 
+static int normal_directory_filter(const struct dirent *d)
+{
+    return d->d_type == DT_DIR && dotfile_filter(d);
+}
+
 static void find_sys_config(const char *release_version_dir, char **sys_config)
 {
     debug("find_sys_config");
@@ -281,20 +285,37 @@ static int find_consolidated_dirs(const char *release_base_dir,
     // <release_base_dir>/lib/<application-version>/consolidated
     //
     char *search_path = NULL;
-    erlinit_asprintf(&search_path, "%s/lib/*/consolidated", release_base_dir);
+    erlinit_asprintf(&search_path, "%s/lib", release_base_dir);
 
-    glob_t globbuf;
-    globbuf.gl_offs = 0;
-    if (glob(search_path, 0, NULL, &globbuf) != 0)
+    struct dirent **namelist;
+    int n = scandir(search_path,
+                    &namelist,
+                    normal_directory_filter,
+                    alphasort);
+    if (n < 0)
         return -1;
 
-    if (globbuf.gl_pathc > 1)
-        warn("More than one consolidated directory found. Using '%s'", globbuf.gl_pathv[0]);
+    int i;
+    int num_found = 0;
+    for (i = 0; i < n; i++) {
+        char *consolidated_path = NULL;
+        erlinit_asprintf(&consolidated_path, "%s/%s/consolidated", search_path, namelist[i]->d_name);
+        if (is_directory(consolidated_path)) {
+            num_found++;
+            if (num_found == 1) {
+                run_info->consolidated_protocols_path = consolidated_path;
+                continue;
+            }
+        }
+        free(consolidated_path);
+    }
+    if (num_found > 1)
+      warn("More than one consolidated directory found. Using '%s'", run_info->consolidated_protocols_path);
 
-    if (globbuf.gl_pathc >= 1)
-        run_info->consolidated_protocols_path = strdup(globbuf.gl_pathv[0]);
-
-    globfree(&globbuf);
+    // Free everything
+    while (--n >= 0)
+        free(namelist[n]);
+    free(namelist);
 
     return 0;
 }
