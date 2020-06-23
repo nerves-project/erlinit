@@ -11,7 +11,7 @@
       erlinit: [ctty: "ttyS0", tty_options: "115200n8", alternate_exec: "/usr/bin/nbtty"]
     ```
 
-    Only common baudrates and 8-bit/no parity is supported.
+    Only common baud rates and 8-bit/no parity are supported.
 
 ## v1.6.1
 
