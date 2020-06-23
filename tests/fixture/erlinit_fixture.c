@@ -182,10 +182,10 @@ REPLACE(int, tcsetattr, (int fd, int optional_actions, const struct termios *ter
 {
     log("tcsetattr(%d, iflag=%x, oflag=%x, cflag=%x, lflag=%x",
         optional_actions,
-        termios_p->c_iflag,
-        termios_p->c_oflag,
-        termios_p->c_cflag,
-        termios_p->c_lflag);
+        (unsigned int) termios_p->c_iflag,
+        (unsigned int) termios_p->c_oflag,
+        (unsigned int) termios_p->c_cflag,
+        (unsigned int) termios_p->c_lflag);
 
     return 0;
 }
