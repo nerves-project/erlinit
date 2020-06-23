@@ -502,15 +502,11 @@ static int has_erts_library_directory()
 
 static void setup_home_directory()
 {
-    struct passwd *pwd;
+    struct passwd *pwd = getpwuid(options.uid);
+    const char *pw_dir = pwd ? pwd->pw_dir : "/root";
+
     char *envvar = NULL;
-
-    if((pwd = getpwuid(options.uid)) != NULL) {
-      erlinit_asprintf(&envvar, "HOME=%s", pwd->pw_dir);
-    } else {
-      erlinit_asprintf(&envvar, "HOME=%s", "/root");
-    }
-
+    erlinit_asprintf(&envvar, "HOME=%s", pw_dir);
     putenv(envvar);
 }
 
