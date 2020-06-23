@@ -57,7 +57,7 @@ erlinit: system_cmd '/usr/bin/make-unique-id'
 erlinit: '/usr/bin/make-unique-id' failed. Using default ID: '00000000'
 erlinit: Hostname: nerves-0000
 fixture: sethostname("nerves-0000", 11)
-erlinit: Env: 'HOME=/root'
+erlinit: Env: 'HOME=/home/user0'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
 erlinit: Env: 'ROOTDIR=/usr/lib/erlang'

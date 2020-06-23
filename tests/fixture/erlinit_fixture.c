@@ -18,6 +18,7 @@
 #include <net/if.h>
 #include <glob.h>
 #include <termios.h>
+#include <pwd.h>
 
 #define log(MSG, ...) do { fprintf(stderr, "fixture: " MSG "\n", ## __VA_ARGS__); } while (0)
 
@@ -188,6 +189,21 @@ REPLACE(int, tcsetattr, (int fd, int optional_actions, const struct termios *ter
         (unsigned int) termios_p->c_lflag);
 
     return 0;
+}
+
+REPLACE(struct passwd *, getpwuid, (uid_t uid))
+{
+    static struct passwd pwd;
+    static char pw_dir[32];
+
+    memset(&pwd, 0, sizeof(pwd));
+    pwd.pw_uid = uid;
+    pwd.pw_dir = pw_dir;
+    sprintf(pw_dir, "/home/user%d", (int) uid);
+
+    // UID == 1 is special and always returns an error
+    // so that the error handling code can be tested.
+    return uid != 1 ? &pwd : NULL;
 }
 
 OVERRIDE(int, open, (const char *pathname, int flags, ...))

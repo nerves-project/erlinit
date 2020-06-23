@@ -1,21 +1,20 @@
 #!/bin/sh
 
 #
-# Test that checks if $HOME is read from /etc/passwd
+# Test that if getpwuid fails to find the home directory that
+# the default is used.
 #
 
-cat >$CONFIG <<EOF
--v
-EOF
-
-cat > $WORK/etc/passwd <<EOF
-root:x:0:0:root:/tmp/example:/bin/bash
+cat >$CMDLINE_FILE <<EOF
+-v --uid 1
 EOF
 
 cat >$EXPECTED <<EOF
-erlinit: cmdline argc=1, merged argc=2
+erlinit: cmdline argc=4, merged argc=4
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=--uid
+erlinit: merged argv[3]=1
 fixture: mount("proc", "/proc", "proc", 14, data)
 fixture: mount("sysfs", "/sys", "sysfs", 14, data)
 fixture: mkdir("/dev/pts", 755)
@@ -40,7 +39,9 @@ fixture: ioctl(SIOCSIFFLAGS)
 fixture: ioctl(SIOCGIFINDEX)
 erlinit: configure_hostname
 erlinit: /etc/hostname not found
-erlinit: Env: 'HOME=/tmp/example'
+erlinit: setting uid to 1
+fixture: setuid(1)
+erlinit: Env: 'HOME=/root'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
 erlinit: Env: 'ROOTDIR=/usr/lib/erlang'

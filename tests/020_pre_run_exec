@@ -57,7 +57,7 @@ erlinit: configure_hostname
 erlinit: /etc/hostname not found
 erlinit: run_cmd '/usr/bin/prerun'
 Hello from prerun
-erlinit: Env: 'HOME=/root'
+erlinit: Env: 'HOME=/home/user0'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
 erlinit: Env: 'ROOTDIR=/srv/erlang'

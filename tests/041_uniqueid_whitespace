@@ -55,7 +55,7 @@ erlinit: configure_hostname
 erlinit: system_cmd '/usr/bin/make-unique-id'
 erlinit: Hostname: nerves-4
 fixture: sethostname("nerves-4", 8)
-erlinit: Env: 'HOME=/root'
+erlinit: Env: 'HOME=/home/user0'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
 erlinit: Env: 'ROOTDIR=/usr/lib/erlang'

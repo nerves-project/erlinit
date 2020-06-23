@@ -45,7 +45,7 @@ erlinit: setting gid to 200
 fixture: setgid(200)
 erlinit: setting uid to 100
 fixture: setuid(100)
-erlinit: Env: 'HOME=/root'
+erlinit: Env: 'HOME=/home/user100'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
 erlinit: Env: 'ROOTDIR=/usr/lib/erlang'

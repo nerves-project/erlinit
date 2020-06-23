@@ -41,7 +41,7 @@ fixture: ioctl(SIOCGIFINDEX)
 erlinit: configure_hostname
 erlinit: Hostname: myhostname
 fixture: sethostname("myhostname", 10)
-erlinit: Env: 'HOME=/root'
+erlinit: Env: 'HOME=/home/user0'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=vt100'
 erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
