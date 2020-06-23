@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.7.1
+
+* Bug fixes
+  * `$HOME` is now set based on `/etc/passwd` rather than hardcoded to `/root`.
+    This fixes an inconsistency in how `erlinit` worked and pretty much every
+    Linux distribution. If the lookup fails, `erlinit` defaults to `/root`.
+    Nerves creates a `/etc/passwd` that already has root's home directory set to
+    `/root`, so most users won't notice a change.
+
 ## v1.7.0
 
 * New features
