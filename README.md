@@ -266,31 +266,33 @@ for options.
 ## Hostnames
 
 `erlinit` can set the hostname of the system so that it is available when Erlang
-starts up. The hostname can be hardcoded in the `/etc/hostname` file or it can
-be set by parameters to `erlinit`. Additionally, it's possible to specify a part
-of the name to be based on a unique ID or other information present on the file
-system. The `-n` argument is used to specify the hostname string. It is a
-printf(3) formatted string that is passed a string argument. The string argument
-is found by running the command specified by `-d`. For example, if a command is
-available the prints a unique identifier to stdout, it can be used to define the
-hostname:
+starts up. Do this by passing the hostname as the `-n` argument to `erlinit`, or 
+hardcoding it in `/etc/hostname`.
+
+The `-n` argument takes a
+printf(3) formatted string that is passed a string argument, which
+is found by running the command specified by `-d`. This makes it possible to 
+specify a unique ID, or some other information present on the file
+system. For example, if a _getmyid_ command is
+available that prints a unique identifier to stdout, it can be used to define the
+hostname like:
 
 ```text
 -d "getmyid -args" -n erl-%.4s
 ```
 
-If the `getmyid` program returns `012345`, then the hostname would be
+In this example, if the _getmyid_ program returns `012345`, then the hostname would be
 `erl-0123`.
 
-Another use would be for the program specified by `-d` to just return the
+Alternatively, the program specified by `-d` could return a full
 hostname. The configuration would look like:
 
 ```text
 -d "getmyhostname -args" -n %s
 ```
 
-In theory, the `getmyhostname` program could read an EEPROM or some file on a
-writable partition to return the hostname.
+In theory, the _getmyhostname_ program could read an EEPROM or some file on a
+writable partition to return this hostname.
 
 ## Root disk naming
 
