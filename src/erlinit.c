@@ -759,7 +759,7 @@ static void child()
 
     execvp(exec_path, exec_argv);
 
-    // execvpe is not supposed to return
+    // execvp is not supposed to return
     fatal("execvp failed to run %s: %s", exec_path, strerror(errno));
 }
 
