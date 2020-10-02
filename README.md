@@ -160,6 +160,9 @@ The following lists the options:
 -s, --alternate-exec <program and arguments>
     Run another program that starts Erlang up. The arguments to `erlexec` are passed afterwards.
 
+--shutdown-report <path>
+    Before shutting down or rebooting, save a report to the specified path.
+
 -t, --print-timing
     Print out when erlinit starts and when it launches Erlang (for
     benchmarking)
@@ -228,6 +231,12 @@ For debug purposes and if `/dev/kmsg` cannot be opened, logging goes to
 `stderr` can block. In some scenarios, it can block indefinitely (e.g., logging
 to a gadget serial device).
 
+## Shutdown reports
+
+`erlinit` can help debug unexpected reboots and poweroffs. If you specify a path
+to `--shutdown-report`, `erlinit` will save what it knows about why and when
+Erlang exited.
+
 ## Debugging erlinit
 
 Since `erlinit` is the first user process run, it can be a little tricky to
@@ -266,12 +275,12 @@ for options.
 ## Hostnames
 
 `erlinit` can set the hostname of the system so that it is available when Erlang
-starts up. Do this by passing the hostname as the `-n` argument to `erlinit`, or 
+starts up. Do this by passing the hostname as the `-n` argument to `erlinit`, or
 hardcoding it in `/etc/hostname`.
 
 The `-n` argument takes a
 printf(3) formatted string that is passed a string argument, which
-is found by running the command specified by `-d`. This makes it possible to 
+is found by running the command specified by `-d`. This makes it possible to
 specify a unique ID, or some other information present on the file
 system. For example, if a _getmyid_ command is
 available that prints a unique identifier to stdout, it can be used to define the
