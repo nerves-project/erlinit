@@ -52,7 +52,8 @@ struct erlinit_options options = {
     .gid = 0,
     .uid = 0,
     .graceful_shutdown_timeout_ms = 10000,
-    .update_clock = 0
+    .update_clock = 0,
+    .shutdown_report = NULL
 };
 
 enum erlinit_option_value {
@@ -86,7 +87,8 @@ enum erlinit_option_value {
     OPT_GRACEFUL_SHUTDOWN_TIMEOUT,
     OPT_UPDATE_CLOCK,
     OPT_RELEASE_INCLUDE_ERTS,
-    OPT_TTY_OPTIONS
+    OPT_TTY_OPTIONS,
+    OPT_SHUTDOWN_REPORT
 };
 
 static struct option long_options[] = {
@@ -116,6 +118,7 @@ static struct option long_options[] = {
     {"graceful-shutdown-timeout", required_argument, 0, OPT_GRACEFUL_SHUTDOWN_TIMEOUT },
     {"update-clock", no_argument, 0, OPT_UPDATE_CLOCK },
     {"tty-options", required_argument, 0, OPT_TTY_OPTIONS},
+    {"shutdown-report", required_argument, 0, OPT_SHUTDOWN_REPORT},
     {0,     0,      0, 0 }
 };
 
@@ -221,6 +224,9 @@ void parse_args(int argc, char *argv[])
             break;
         case OPT_TTY_OPTIONS: // --tty-options 115200n8
             SET_STRING_OPTION(options.tty_options);
+            break;
+        case OPT_SHUTDOWN_REPORT: // --shutdown-report /root/shutdown.txt
+            SET_STRING_OPTION(options.shutdown_report);
             break;
         default:
             // getopt prints a warning, so we don't have to

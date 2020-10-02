@@ -780,11 +780,14 @@ static void kill_all()
     sync();
 }
 
-static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
+static void wait_for_graceful_shutdown(pid_t pid, struct erlinit_exit_info *exit_info)
 {
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGCHLD);
+
+    clock_gettime(CLOCK_MONOTONIC, &exit_info->shutdown_start);
+    exit_info->graceful_shutdown_ok = 0; // assume failure
 
     // Timeout note: The timer gets reset every time we get a signal
     // that's ignored. That doesn't appear to happen in practice, but
@@ -799,10 +802,11 @@ static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
         debug("waiting %d ms for graceful shutdown", options.graceful_shutdown_timeout_ms);
         int rc = sigtimedwait(&mask, NULL, &timeout);
         if (rc == SIGCHLD) {
-            rc = waitpid(-1, wait_status, WNOHANG);
+            rc = waitpid(-1, &exit_info->wait_status, WNOHANG);
             if (rc == pid) {
                 debug("graceful shutdown detected");
-                return;
+                exit_info->graceful_shutdown_ok = 1;
+                break;
             } else if (rc < 0) {
                 warn("Unexpected error from waitpid %d", errno);
                 break;
@@ -827,15 +831,15 @@ static void wait_for_graceful_shutdown(pid_t pid, int *wait_status)
             warn("Ignoring signal %d while waiting for graceful shutdown", rc);
         }
     }
+    clock_gettime(CLOCK_MONOTONIC, &exit_info->shutdown_complete);
 }
 
-static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
+static void fork_and_wait(struct erlinit_exit_info *exit_info)
 {
     sigset_t mask;
     sigset_t orig_mask;
 
-    *is_intentional_exit = 0;
-    *desired_reboot_cmd = 0;
+    memset(exit_info, 0, sizeof(struct erlinit_exit_info));
 
     sigemptyset(&mask);
     sigaddset(&mask, SIGCHLD);
@@ -861,7 +865,7 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
         exit(1);
     }
 
-    int wait_status = 0;
+    exit_info->wait_status = 0;
     for (;;) {
         int rc = sigwaitinfo(&mask, NULL);
         if (rc == SIGCHLD) {
@@ -869,7 +873,7 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
             //   Reap all processes that exited
             //   If our immediate child exited, exit too
             do {
-                rc = waitpid(-1, &wait_status, WNOHANG);
+                rc = waitpid(-1, &exit_info->wait_status, WNOHANG);
                 if (rc == pid)
                     goto prepare_to_exit;
                 else if (rc > 0)
@@ -883,19 +887,19 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
         } else if (rc == SIGPWR || rc == SIGUSR1) {
             // Halt request
             debug("sigpwr|sigusr1 -> halt");
-            *desired_reboot_cmd = LINUX_REBOOT_CMD_HALT;
-            wait_for_graceful_shutdown(pid, &wait_status);
+            exit_info->desired_reboot_cmd = LINUX_REBOOT_CMD_HALT;
+            wait_for_graceful_shutdown(pid, exit_info);
             break;
         } else if (rc == SIGTERM) {
             // Reboot request
             debug("sigterm -> reboot");
-            *desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
-            wait_for_graceful_shutdown(pid, &wait_status);
+            exit_info->desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
+            wait_for_graceful_shutdown(pid, exit_info);
             break;
         } else if (rc == SIGUSR2) {
             debug("sigusr2 -> power off");
-            *desired_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
-            wait_for_graceful_shutdown(pid, &wait_status);
+            exit_info->desired_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
+            wait_for_graceful_shutdown(pid, exit_info);
             break;
         } else {
             debug("sigwaitinfo unexpected rc=%d", rc);
@@ -904,18 +908,18 @@ static void fork_and_wait(int *is_intentional_exit, int *desired_reboot_cmd)
 
 prepare_to_exit:
     // Check if this was a clean exit.
-    if (*desired_reboot_cmd != 0) {
+    if (exit_info->desired_reboot_cmd != 0) {
         // Intentional exit since reboot/poweroff/halt was called.
-        *is_intentional_exit = 1;
+        exit_info->is_intentional_exit = 1;
 
-        if (WIFSIGNALED(wait_status))
+        if (WIFSIGNALED(exit_info->wait_status))
             warn("Ignoring unexpected error during shutdown.");
     } else {
         // Unintentional exit either due to a crash or an actual call to exit()
-        *is_intentional_exit = 0;
-        *desired_reboot_cmd = options.unintentional_exit_cmd;
-        if (WIFSIGNALED(wait_status))
-            warn("Erlang terminated due to signal %d", WTERMSIG(wait_status));
+        exit_info->is_intentional_exit = 0;
+        exit_info->desired_reboot_cmd = options.unintentional_exit_cmd;
+        if (WIFSIGNALED(exit_info->wait_status))
+            warn("Erlang terminated due to signal %d", WTERMSIG(exit_info->wait_status));
         else
             warn("Erlang VM exited");
     }
@@ -954,16 +958,19 @@ int main(int argc, char *argv[])
     // terminal and the CTRL keys work in the shell..
     set_ctty();
 
-    int is_intentional_exit;
-    int desired_reboot_cmd;
-    fork_and_wait(&is_intentional_exit, &desired_reboot_cmd);
+    struct erlinit_exit_info exit_info;
+    fork_and_wait(&exit_info);
 
     // If the user specified a command to run on an unexpected exit, run it.
-    if (options.run_on_exit && !is_intentional_exit)
+    if (options.run_on_exit && !exit_info.is_intentional_exit)
         run_cmd(options.run_on_exit);
 
     // Exit everything that's still running.
     kill_all();
+
+    // Dump state for post-mortem analysis of why the power off or reboot occurred.
+    if (options.shutdown_report)
+        shutdown_report_create(options.shutdown_report, &exit_info);
 
     // Unmount almost everything.
     unmount_all();
@@ -972,7 +979,7 @@ int main(int argc, char *argv[])
     sync();
 
     // See if the user wants us to halt or poweroff on an "unintentional" exit
-    if (!is_intentional_exit &&
+    if (!exit_info.is_intentional_exit &&
             options.unintentional_exit_cmd != LINUX_REBOOT_CMD_RESTART) {
         // Sometimes Erlang exits on initialization. Hanging on exit
         // makes it easier to debug these cases since messages don't
@@ -992,7 +999,7 @@ int main(int argc, char *argv[])
     close(STDERR_FILENO);
 
     // Reboot/poweroff/halt
-    reboot(desired_reboot_cmd);
+    reboot(exit_info.desired_reboot_cmd);
 
     // If we get here, oops the kernel.
     return 0;

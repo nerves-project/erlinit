@@ -24,6 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef ERLINIT_H
 #define ERLINIT_H
 
+#include <time.h>
+
 #define PROGRAM_NAME "erlinit"
 #ifndef PROGRAM_VERSION
 #error PROGRAM_VERSION is undefined
@@ -79,9 +81,19 @@ struct erlinit_options {
     int graceful_shutdown_timeout_ms;
     int update_clock;
     char *tty_options;
+    char *shutdown_report;
 };
 
 extern struct erlinit_options options;
+
+struct erlinit_exit_info {
+    int is_intentional_exit;
+    int desired_reboot_cmd;
+    int wait_status;
+    struct timespec shutdown_start;
+    struct timespec shutdown_complete;
+    int graceful_shutdown_ok;
+};
 
 // Logging functions
 void debug(const char *fmt, ...);
@@ -113,6 +125,9 @@ void warn_unused_tty(void);
 
 // External commands
 int system_cmd(const char *cmd, char *output_buffer, int length);
+
+// Shutdown report
+void shutdown_report_create(const char *path, const struct erlinit_exit_info *info);
 
 #ifdef __APPLE__
 #include "compat.h"
