@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.8.0
+
+* New features
+  * Added `--shutdown-report <path>`. Whenever the Erlang VM exits, if a path
+    has been specified, `erlinit` will write a short report that may be useful
+    in debugging whatever caused the exit. In Nerves:
+
+    ```elixir
+    config :nerves,
+      erlinit: [shutdown_report: "/data/shutdown.txt"]
+    ```
+
 ## v1.7.1
 
 * Bug fixes
