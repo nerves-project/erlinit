@@ -41,7 +41,7 @@ static int format_message(char **strp, const char *fmt, va_list ap)
         return -1;
     }
 
-    int rc = asprintf(strp, PROGRAM_NAME ": %s\r\n", msg);
+    int rc = asprintf(strp, PROGRAM_NAME ": %s\n", msg);
     free(msg);
 
     return rc;
@@ -91,14 +91,14 @@ void warn(const char *fmt, ...)
 
 void fatal(const char *fmt, ...)
 {
-    log_write("\r\n\r\nFATAL ERROR:\r\n", 18);
+    log_write("\n\nFATAL ERROR:\n", 18);
 
     va_list ap;
     va_start(ap, fmt);
     log_format(fmt, ap);
     va_end(ap);
 
-    log_write("\r\n\r\nCANNOT CONTINUE.\r\n", 22);
+    log_write("\n\nCANNOT CONTINUE.\n", 22);
 
     // Sleep so that the message can be printed
     sleep(1);
