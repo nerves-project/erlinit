@@ -8,7 +8,7 @@ readlink_f () {
     if [ -h "$filename" ]; then
         readlink_f "$(readlink "$filename")"
     else
-        echo "`pwd -P`/$filename"
+        echo "$(pwd -P)/$filename"
     fi
 }
 
