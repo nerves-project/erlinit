@@ -82,6 +82,7 @@ struct erlinit_options {
     int update_clock;
     char *tty_options;
     char *shutdown_report;
+    int x_pivot_root_on_overlayfs;
 };
 
 extern struct erlinit_options options;
@@ -114,6 +115,7 @@ void setup_networking(void);
 void configure_hostname(void);
 
 // Filesystems
+void pivot_root_on_overlayfs(void);
 void setup_pseudo_filesystems(void);
 void create_rootdisk_symlinks(void);
 void mount_filesystems(void);

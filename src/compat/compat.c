@@ -59,3 +59,9 @@ int sigprocmask_noop(int how, const sigset_t *restrict set, sigset_t *restrict o
     return 0;
 }
 
+int pivot_root(const char *new_root, const char *put_old)
+{
+    (void) new_root;
+    (void) put_old;
+    return 0;
+}

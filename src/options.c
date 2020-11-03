@@ -53,7 +53,8 @@ struct erlinit_options options = {
     .uid = 0,
     .graceful_shutdown_timeout_ms = 10000,
     .update_clock = 0,
-    .shutdown_report = NULL
+    .shutdown_report = NULL,
+    .x_pivot_root_on_overlayfs = 0
 };
 
 enum erlinit_option_value {
@@ -88,7 +89,10 @@ enum erlinit_option_value {
     OPT_UPDATE_CLOCK,
     OPT_RELEASE_INCLUDE_ERTS,
     OPT_TTY_OPTIONS,
-    OPT_SHUTDOWN_REPORT
+    OPT_SHUTDOWN_REPORT,
+
+    // Experimental
+    OPT_X_PIVOT_ROOT_ON_OVERLAYFS
 };
 
 static struct option long_options[] = {
@@ -119,6 +123,7 @@ static struct option long_options[] = {
     {"update-clock", no_argument, 0, OPT_UPDATE_CLOCK },
     {"tty-options", required_argument, 0, OPT_TTY_OPTIONS},
     {"shutdown-report", required_argument, 0, OPT_SHUTDOWN_REPORT},
+    {"x-pivot-root-on-overlayfs", no_argument, 0, OPT_X_PIVOT_ROOT_ON_OVERLAYFS},
     {0,     0,      0, 0 }
 };
 
@@ -227,6 +232,9 @@ void parse_args(int argc, char *argv[])
             break;
         case OPT_SHUTDOWN_REPORT: // --shutdown-report /root/shutdown.txt
             SET_STRING_OPTION(options.shutdown_report);
+            break;
+        case OPT_X_PIVOT_ROOT_ON_OVERLAYFS: // --x-pivot-root-on-overlayfs
+            options.x_pivot_root_on_overlayfs = 1;
             break;
         default:
             // getopt prints a warning, so we don't have to

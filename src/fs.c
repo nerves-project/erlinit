@@ -74,6 +74,54 @@ static unsigned long str_to_mountflags(char *s)
     return flags;
 }
 
+int pivot_root(const char *new_root, const char *put_old);
+void pivot_root_on_overlayfs()
+{
+    debug("pivot_root_on_overlayfs");
+
+    // Setup an overlay filesystem for the rootfs so that the official contents
+    // are protected in a read-only fs, but we can still update files when
+    // debugging.
+    if (mount("", "/mnt", "tmpfs", 0, "size=10%") < 0) {
+        warn("Could not mount tmpfs in /mnt: %s\n"
+             "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
+        return;
+    }
+
+    (void) mkdir("/mnt/.merged", 0755);
+    (void) mkdir("/mnt/.upper", 0755);
+    (void) mkdir("/mnt/.work", 0755);
+
+
+    if (mount("", "/mnt/.merged", "overlay", 0, "lowerdir=/,upperdir=/mnt/.upper,workdir=/mnt/.work") < 0) {
+        warn("Could not mount overlayfs: %s\n"
+             "Check that CONFIG_OVERLAY_FS=y is in the kernel config.", strerror(errno));
+        return;
+    }
+
+    OK_OR_WARN(mkdir("/mnt/.merged/dev", 0755), "Cannot create /mnt/.merged/dev");
+
+    if (mount("/dev", "/mnt/.merged/dev", "tmpfs", MS_MOVE, NULL) < 0) {
+        warn("Could not move /dev to upper overlay: %s", strerror(errno));
+        return;
+    }
+    if (chdir("/mnt/.merged") < 0) {
+        warn("Could not change directory to /mnt/.merged: %s", strerror(errno));
+        return;
+    }
+
+    if (mkdir(".oldrootfs", 0755) < 0) {
+        warn("Could not create directory .oldrootfs: %s", strerror(errno));
+        return;
+    }
+
+    if (pivot_root(".", ".oldrootfs") < 0) {
+        warn("pivot_root failed: %s", strerror(errno));
+        return;
+    }
+    debug("pivot_root_on_overlayfs done!");
+}
+
 void setup_pseudo_filesystems()
 {
     // This only works in the real environment.

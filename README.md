@@ -186,6 +186,10 @@ The following lists the options:
 
 --working_directory <path>
     Set the working directory
+
+--x-pivot-root-on-overlayfs
+    This enables support for making a read-only root filesystem writable using
+    an overlayfs. It is experimental and the option will change.
 ```
 
 ## Rebooting or hanging when the Erlang VM exits

@@ -947,6 +947,10 @@ int main(int argc, char *argv[])
     for (i = 0; i < merged_argc; i++)
         debug("merged argv[%d]=%s", i, merged_argv[i]);
 
+    // Set up experimental writable file system overlay
+    if (options.x_pivot_root_on_overlayfs)
+        pivot_root_on_overlayfs();
+
     // Mount /dev, /proc and /sys
     setup_pseudo_filesystems();
 
