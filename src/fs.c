@@ -166,7 +166,7 @@ void unmount_all()
         // Whitelist directories that don't unmount or
         // remount immediately (rootfs)
         if (strcmp(mounts[i].source, "devtmpfs") == 0 ||
-                strcmp(mounts[i].target, "/") == 0)
+                strcmp(mounts[i].source, "/dev/root") == 0)
             continue;
 
         debug("unmounting %s at %s...", mounts[i].source, mounts[i].target);

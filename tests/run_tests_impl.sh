@@ -95,10 +95,10 @@ run() {
 
     # Fake mounts
     cat >$WORK/proc/mounts << EOF
+/dev/root / squashfs ro,relatime 0 0
 sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
 proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
 devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
-/dev/mmcblk0p2 / squashfs ro,relatime 0 0
 tmpfs /dev/shm tmpfs rw,nosuid,nodev 0 0
 tmpfs /sys/fs/cgroup tmpfs ro,nosuid,nodev,noexec,mode=755 0 0
 EOF
