@@ -25,6 +25,7 @@ fixture: mount("/dev", "/mnt/.merged/dev", "tmpfs", 8192, data)
 erlinit: Could not change directory to /mnt/.merged: No such file or directory
 fixture: mount("proc", "/proc", "proc", 14, data)
 fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mount("devtmpfs", "/dev", "devtmpfs", 42, data)
 fixture: mkdir("/dev/pts", 755)
 fixture: mkdir("/dev/shm", 1777)
 fixture: mount("devpts", "/dev/pts", "devpts", 10, data)

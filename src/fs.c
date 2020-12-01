@@ -129,6 +129,7 @@ void setup_pseudo_filesystems()
     OK_OR_WARN(mount("sysfs", "/sys", "sysfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL), "Cannot mount /sys");
 
     // /dev should be automatically created/mounted by Linux
+    OK_OR_WARN(mount("devtmpfs", "/dev", "devtmpfs", MS_REMOUNT | MS_NOEXEC | MS_NOSUID, "size=1024k"), "Cannot remount /dev");
 
     // Create entries in /dev. Turn off the umask since we want the exact
     // permissions that we're specifying.

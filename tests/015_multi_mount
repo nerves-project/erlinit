@@ -19,6 +19,7 @@ erlinit: merged argv[4]=--mount
 erlinit: merged argv[5]=/dev/mmcblk0p4:/mnt:ext4::
 fixture: mount("proc", "/proc", "proc", 14, data)
 fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mount("devtmpfs", "/dev", "devtmpfs", 42, data)
 fixture: mkdir("/dev/pts", 755)
 fixture: mkdir("/dev/shm", 1777)
 fixture: mount("devpts", "/dev/pts", "devpts", 10, data)

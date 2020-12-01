@@ -18,6 +18,7 @@ erlinit: merged argv[2]=--hostname-pattern
 erlinit: merged argv[3]=N__ERVES
 fixture: mount("proc", "/proc", "proc", 14, data)
 fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mount("devtmpfs", "/dev", "devtmpfs", 42, data)
 fixture: mkdir("/dev/pts", 755)
 fixture: mkdir("/dev/shm", 1777)
 fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
