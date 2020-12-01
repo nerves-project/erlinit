@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.9.0
+
+* New features
+  * Support experimentation with using Linux's `overlayfs` to make normally
+    read-only root filesystems be writable. See the
+    `--x-pivot-root-on-overlayfs` option.
+  * Restrict operations on the `/dev` mount. This prevents things like
+    copying large files to `/dev` or using it as a place to run random binaries.
+
 ## v1.8.0
 
 * New features
