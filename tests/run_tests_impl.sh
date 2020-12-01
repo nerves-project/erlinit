@@ -106,12 +106,12 @@ EOF
     # Run the test script to setup files for the test
     source $TESTS_DIR/$TEST
 
-    if [ -e $CONFIG ]; then
-       ln -s $CONFIG $WORK/etc/erlinit.config
+    if [ -e "$CONFIG" ]; then
+       ln -s "$CONFIG" $WORK/etc/erlinit.config
     fi
 
-    if [ -e $CMDLINE_FILE ]; then
-        CMDLINE=$(cat $CMDLINE_FILE)
+    if [ -e "$CMDLINE_FILE" ]; then
+        CMDLINE=$(cat "$CMDLINE_FILE")
     else
         CMDLINE=
     fi
@@ -136,7 +136,7 @@ EOF
         > $RESULTS
 
     # check results
-    diff -w $RESULTS $EXPECTED
+    diff -w $RESULTS "$EXPECTED"
     if [ $? != 0 ]; then
         echo Test $TEST failed!
         exit 1

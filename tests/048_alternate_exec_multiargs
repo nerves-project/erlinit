@@ -4,7 +4,7 @@
 # Test that running a program to wrap the call to the Erlang VM works
 #
 
-cat >$CONFIG <<EOF
+cat >"$CONFIG" <<EOF
 -v --alternate-exec "/usr/bin/altexec 1 2 3"
 EOF
 
@@ -25,7 +25,7 @@ touch $RELEASE_PATH/test.boot
 touch $RELEASE_PATH/sys.config
 touch $RELEASE_PATH/vm.args
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=1, merged argc=4
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

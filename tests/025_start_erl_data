@@ -4,7 +4,7 @@
 # Test that the start_erl.data file is read when picking a release to run.
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v
 EOF
 
@@ -26,7 +26,7 @@ cat >$WORK/srv/erlang/releases/start_erl.data <<EOF
 6.0 0.0.2
 EOF
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

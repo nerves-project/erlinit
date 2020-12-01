@@ -4,11 +4,11 @@
 # Test that specifying -v in the config file works
 #
 
-cat >$CONFIG <<EOF
+cat >"$CONFIG" <<EOF
 -v
 EOF
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=1, merged argc=2
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

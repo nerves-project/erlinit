@@ -4,7 +4,7 @@
 # Test that starting up an Erlang/OTP release that's underneath a directory works
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v
 EOF
 
@@ -15,7 +15,7 @@ touch $RELEASE_PATH/sys.config
 touch $RELEASE_PATH/vm.args
 mkdir -p $WORK/srv/erlang/decoydir  # no release in here
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

@@ -5,12 +5,12 @@
 # detected.
 #
 
-cat >$CONFIG <<EOF
+cat >"$CONFIG" <<EOF
 -v
 --update-clock
 EOF
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=1, merged argc=3
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

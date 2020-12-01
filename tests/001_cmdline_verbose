@@ -4,11 +4,11 @@
 # Test that specifying -v on the command line works
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v
 EOF
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

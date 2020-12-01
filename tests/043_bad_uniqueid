@@ -4,7 +4,7 @@
 # Test that calling out to a unique id generator that fails still boots
 #
 
-cat >$CONFIG <<EOF
+cat >"$CONFIG" <<EOF
 -v
 
 # Specify a hostname pattern that has a unique id part
@@ -22,7 +22,7 @@ exit 1
 EOF
 chmod +x $WORK/usr/bin/make-unique-id
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=1, merged argc=6
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
