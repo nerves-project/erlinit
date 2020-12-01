@@ -4,7 +4,7 @@
 # Test that starting up a Erlang/OTP release using an embedded ERTS
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v
 
 -r /usr/lib/erelease
@@ -34,7 +34,7 @@ cat >$RELEASE_PATH/start_erl.data <<EOF
 10.5.6 0.0.1
 EOF
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=5, merged argc=5
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

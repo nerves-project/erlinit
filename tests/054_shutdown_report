@@ -6,7 +6,7 @@
 # Note: This only tests that the code runs and not that the report looks ok.
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v --shutdown-report /shutdown.txt
 EOF
 
@@ -43,7 +43,7 @@ touch $RELEASE_PATH/sys.config
 touch $RELEASE_PATH/vm.args
 ln -sf $FAKE_ERLEXEC.reboot $FAKE_ERTS_DIR/bin/erlexec
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=4, merged argc=4
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

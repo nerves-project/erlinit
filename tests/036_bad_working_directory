@@ -5,7 +5,7 @@
 # that doesn't exists fails back to the release directory.
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v --working-directory /doesntexist
 EOF
 
@@ -16,7 +16,7 @@ touch $RELEASE_PATH/sys.config
 touch $RELEASE_PATH/vm.args
 ln -sf $FAKE_ERLEXEC.pwd $FAKE_ERTS_DIR/bin/erlexec
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=4, merged argc=4
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

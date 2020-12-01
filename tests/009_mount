@@ -5,11 +5,11 @@
 # that the mount works, so just make sure that it gets close.
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v --mount /dev/mmcblk0p3:/root:vfat::
 EOF
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=4, merged argc=4
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

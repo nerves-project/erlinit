@@ -4,11 +4,11 @@
 # Test that specifying an unknown option results in a warning
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v --unknown-option
 EOF
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 init: unrecognized option '--unknown-option'
 erlinit: cmdline argc=3, merged argc=3
 erlinit: merged argv[0]=/sbin/init

@@ -4,7 +4,7 @@
 # Test that changing the working directory works
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v
 EOF
 
@@ -18,7 +18,7 @@ touch $RELEASE_PATH/vm.args
 mkdir -p $LIB_PATH/consolidated
 touch $LIB_PATH/consolidated/foo.beam
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

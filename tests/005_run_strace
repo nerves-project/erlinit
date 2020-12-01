@@ -4,7 +4,7 @@
 # Test that requesting that strace be run does the right thing
 #
 
-cat >$CONFIG <<EOF
+cat >"$CONFIG" <<EOF
 -v
 
 # Call strace and follow child processes
@@ -18,7 +18,7 @@ echo Hello from strace 1>&2
 EOF
 chmod +x $WORK/usr/bin/strace
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=1, merged argc=4
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

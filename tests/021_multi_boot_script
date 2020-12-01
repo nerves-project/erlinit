@@ -4,7 +4,7 @@
 # Test that automatically picking a boot script picks the first one
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v
 EOF
 
@@ -17,7 +17,7 @@ touch $RELEASE_PATH/d.boot
 touch $RELEASE_PATH/sys.config
 touch $RELEASE_PATH/vm.args
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

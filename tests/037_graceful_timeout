@@ -4,7 +4,7 @@
 # Test that gracefully halting the system works.
 #
 
-cat >$CMDLINE_FILE <<EOF
+cat >"$CMDLINE_FILE" <<EOF
 -v --graceful-shutdown-timeout 15000
 EOF
 
@@ -15,7 +15,7 @@ touch $RELEASE_PATH/sys.config
 touch $RELEASE_PATH/vm.args
 ln -sf $FAKE_ERLEXEC.halt $FAKE_ERTS_DIR/bin/erlexec
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=4, merged argc=4
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v

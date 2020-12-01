@@ -4,12 +4,12 @@
 # Test the --tty-option can set 115200n8
 #
 
-cat >$CONFIG <<EOF
+cat >"$CONFIG" <<EOF
 -v
 --tty-options 115200n8
 EOF
 
-cat >$EXPECTED <<EOF
+cat >"$EXPECTED" <<EOF
 erlinit: cmdline argc=1, merged argc=4
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
