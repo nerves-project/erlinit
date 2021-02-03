@@ -331,9 +331,11 @@ static int read_start_erl(const char *releases_dir, char **erts_version, char **
         return 0;
     }
 
-    char erts_string[17];
-    char rel_string[17];
-    if (fscanf(fp, "%16s %16s", erts_string, rel_string) != 2) {
+#define MAX_VERSION_AND_RELEASE_NAMES 32
+    char erts_string[MAX_VERSION_AND_RELEASE_NAMES + 1];
+    char rel_string[MAX_VERSION_AND_RELEASE_NAMES + 1];
+    if (fscanf(fp, "%" xstr(MAX_VERSION_AND_RELEASE_NAMES) "s %" xstr(MAX_VERSION_AND_RELEASE_NAMES) "s",
+               erts_string, rel_string) != 2) {
         warn("%s doesn't contain expected contents. Skipping.", start_erl_path);
         free(start_erl_path);
         fclose(fp);
