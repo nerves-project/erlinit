@@ -24,7 +24,7 @@ for RPATH in $RELEASE_PATH1 $RELEASE_PATH2 $RELEASE_PATH3; do
 done
 
 cat >$WORK/srv/erlang/releases/start_erl.data <<EOF
-8.31234500320020 0.0.21290384701298340129837019287
+8.31234500320020 0.0.56789012345678901234567890123456789012345678901234567890
 EOF
 
 cat >"$EXPECTED" <<EOF
@@ -47,7 +47,7 @@ fixture: setsid()
 fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
 fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
 erlinit: find_release
-erlinit: start_erl.data specifies 0.0.212903847012, but /srv/erlang/releases/0.0.212903847012 isn't a directory
+erlinit: start_erl.data specifies 0.0.5678901234567890123456789012, but /srv/erlang/releases/0.0.5678901234567890123456789012 isn't a directory
 erlinit: Using release in /srv/erlang/releases/0.0.3.
 erlinit: find_sys_config
 erlinit: find_vm_args
