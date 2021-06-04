@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 #include <string.h>
 #include <dirent.h>
@@ -18,6 +19,7 @@
 #include <net/if.h>
 #include <termios.h>
 #include <pwd.h>
+#include <sys/resource.h>
 
 #define log(MSG, ...) do { fprintf(stderr, "fixture: " MSG "\n", ## __VA_ARGS__); } while (0)
 
@@ -496,5 +498,59 @@ REPLACE(int, ioctl, (int fd, unsigned long request, ...))
         break;
     }
     log("ioctl(%s)", req);
+    return 0;
+}
+
+#ifndef RLIMIT_NICE
+// Check that these match compat.h
+#define RLIMIT_NICE       100
+#define RLIMIT_SIGPENDING 101
+#define RLIMIT_RTPRIO     102
+#define RLIMIT_LOCKS      103
+#define RLIMIT_RTTIME     104
+#define RLIMIT_MSGQUEUE   105
+#endif
+
+static const char *resource_to_string(int resource)
+{
+    switch (resource) {
+    case RLIMIT_CORE: return "core";
+    case RLIMIT_DATA: return "data";
+    case RLIMIT_NICE: return "nice";
+    case RLIMIT_FSIZE: return "fsize";
+    case RLIMIT_SIGPENDING: return "sigpending";
+    case RLIMIT_MEMLOCK: return "memlock";
+    case RLIMIT_RSS: return "rss";
+    case RLIMIT_NOFILE: return "nofile";
+    case RLIMIT_MSGQUEUE: return "msgqueue";
+    case RLIMIT_RTPRIO: return "rtprio";
+    case RLIMIT_STACK: return "stack";
+    case RLIMIT_CPU: return "cpu";
+    case RLIMIT_NPROC: return "nproc";
+    case RLIMIT_LOCKS: return "locks";
+    case RLIMIT_RTTIME: return "rttime";
+    default: return "invalid";
+    }
+}
+
+#ifdef __APPLE__
+REPLACE(int, setrlimit, (int resource, const struct rlimit *new_limit))
+#else
+REPLACE(int, setrlimit, (__rlimit_resource_t resource, const struct rlimit *new_limit))
+#endif
+{
+    char cur[255] = {0};
+    char max[255] = {0};
+    if(new_limit->rlim_cur == RLIM_INFINITY)
+        strcpy(cur, "unlimited");
+    else
+        snprintf(cur, 255, "%lu", (unsigned long) new_limit->rlim_cur);
+
+    if(new_limit->rlim_max == RLIM_INFINITY)
+        strcpy(max, "unlimited");
+    else
+        snprintf(max, 255, "%lu", (unsigned long) new_limit->rlim_max);
+
+    log("setrlimit(%s, %s, %s)", resource_to_string(resource), cur, max);
     return 0;
 }

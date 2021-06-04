@@ -62,4 +62,13 @@ int sigprocmask_noop(int how, const sigset_t *restrict set, sigset_t *restrict o
 #define SIOCGIFINDEX SIOCGIFMTU
 #define ifr_ifindex         ifr_ifru.ifru_mtu
 
+// Updates to "sys/resource.h"
+// Non-OSX RLIMIT defines here are well above anything valid
+#define RLIMIT_NICE       100
+#define RLIMIT_SIGPENDING 101
+#define RLIMIT_RTPRIO     102
+#define RLIMIT_LOCKS      103
+#define RLIMIT_RTTIME     104
+#define RLIMIT_MSGQUEUE   105
+
 #endif

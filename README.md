@@ -126,6 +126,10 @@ The following lists the options:
 --hang-on-fatal
     Hang if a fatal error is detected in erlinit.
 
+-l, --limits <resource:soft:hard>
+    Set resource limits. See prlimit(1) and prlimit(2) for available resources.
+    Specify multiple times to set more than one resource's limits.
+
 -m, --mount <dev:path:type:flags:options>
     Mount the specified path. See mount(8) and fstab(5) for fields
     Specify multiple times for more than one path to mount.

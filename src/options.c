@@ -54,6 +54,7 @@ struct erlinit_options options = {
     .graceful_shutdown_timeout_ms = 10000,
     .update_clock = 0,
     .shutdown_report = NULL,
+    .limits = NULL,
     .x_pivot_root_on_overlayfs = 0
 };
 
@@ -66,6 +67,7 @@ enum erlinit_option_value {
     OPT_UNIQUEID_EXEC= 'd',
     OPT_ENV = 'e',
     OPT_HANG_ON_EXIT = 'h',
+    OPT_LIMIT = 'l',
     OPT_MOUNT = 'm',
     OPT_HOSTNAME_PATTERN = 'n',
     OPT_RELEASE_PATH = 'r',
@@ -123,6 +125,7 @@ static struct option long_options[] = {
     {"update-clock", no_argument, 0, OPT_UPDATE_CLOCK },
     {"tty-options", required_argument, 0, OPT_TTY_OPTIONS},
     {"shutdown-report", required_argument, 0, OPT_SHUTDOWN_REPORT},
+    {"limits", required_argument, 0, OPT_LIMIT},
     {"x-pivot-root-on-overlayfs", no_argument, 0, OPT_X_PIVOT_ROOT_ON_OVERLAYFS},
     {0,     0,      0, 0 }
 };
@@ -145,7 +148,7 @@ void parse_args(int argc, char *argv[])
         int option_index;
         int opt = getopt_long(argc,
                               argv,
-                              "b:c:d:e:hm:n:r:s:tv",
+                              "b:c:d:e:hl:m:n:r:s:tv",
                               long_options,
                               &option_index);
         if (opt < 0)
@@ -181,6 +184,9 @@ void parse_args(int argc, char *argv[])
             break;
         case OPT_POWEROFF_ON_FATAL: // --poweroff-on-fatal
             options.fatal_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
+            break;
+        case OPT_LIMIT: // --limit core:unlimited:unlimited
+            APPEND_STRING_OPTION(options.limits, ';');
             break;
         case OPT_MOUNT: // --mount /dev/mmcblk0p3:/root:vfat::
             APPEND_STRING_OPTION(options.extra_mounts, ';');

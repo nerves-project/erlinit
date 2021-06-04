@@ -37,6 +37,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/reboot.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <sys/resource.h>
 #include <pwd.h>
 
 struct erl_run_info {
@@ -963,6 +964,9 @@ int main(int argc, char *argv[])
     // Fix the terminal settings so output goes to the right
     // terminal and the CTRL keys work in the shell..
     set_ctty();
+
+    // Set resource limits. This has to be done before fork.
+    create_limits();
 
     struct erlinit_exit_info exit_info;
     fork_and_wait(&exit_info);

@@ -82,6 +82,7 @@ struct erlinit_options {
     int update_clock;
     char *tty_options;
     char *shutdown_report;
+    char *limits;
     int x_pivot_root_on_overlayfs;
 };
 
@@ -120,6 +121,9 @@ void setup_pseudo_filesystems(void);
 void create_rootdisk_symlinks(void);
 void mount_filesystems(void);
 void unmount_all(void);
+
+// Limits
+void create_limits(void);
 
 // Terminal
 void set_ctty(void);
