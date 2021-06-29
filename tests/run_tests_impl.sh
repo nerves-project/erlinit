@@ -34,8 +34,6 @@ rm -fr $WORK
 
 [ -e $ERLINIT ] || ( echo "Build $ERLINIT first"; exit 1 )
 [ -e $FIXTURE ] || ( echo "Build $FIXTURE first"; exit 1 )
-SED=sed
-which $SED > /dev/null || SED=gsed
 
 run() {
     TEST=$1
@@ -130,6 +128,7 @@ EOF
         grep -v "erlinit: Env: '_=" | \
         grep -v "erlinit: Env: 'PWD=" | \
         grep -v "erlinit: Env: 'WORK=" | \
+        grep -v "erlinit: Env: 'SED=" | \
         $SED -e "s/\`/'/g" | \
         $SED -e "s@^/sbin/init@init@" | \
         $SED -e "s/invalid option -- 'Z'/invalid option -- Z/" \
