@@ -12,5 +12,8 @@ readlink_f () {
     fi
 }
 
+SED=sed
+which $SED > /dev/null || SED=gsed
+
 # Start the tests up in an empty environment
-env -i /bin/bash $(dirname $(readlink_f $0))/run_tests_impl.sh $*
+env -i SED=$SED /bin/bash $(dirname $(readlink_f $0))/run_tests_impl.sh $*
