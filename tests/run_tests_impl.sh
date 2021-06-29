@@ -12,7 +12,7 @@ readlink_f () {
     fi
 }
 
-TESTS_DIR=$(dirname $(readlink_f $0))
+TESTS_DIR=$(dirname "$(readlink_f "$0")")
 
 WORK=$TESTS_DIR/work
 RESULTS=$WORK/results
@@ -30,10 +30,10 @@ if [ -z $TESTS ]; then
 fi
 
 # Just in case there are some leftover from a previous test, clear it out
-rm -fr $WORK
+rm -fr "$WORK"
 
-[ -e $ERLINIT ] || ( echo "Build $ERLINIT first"; exit 1 )
-[ -e $FIXTURE ] || ( echo "Build $FIXTURE first"; exit 1 )
+[ -e "$ERLINIT" ] || ( echo "Build $ERLINIT first"; exit 1 )
+[ -e "$FIXTURE" ] || ( echo "Build $FIXTURE first"; exit 1 )
 
 run() {
     TEST=$1
@@ -41,58 +41,58 @@ run() {
     CMDLINE_FILE=$WORK/$TEST.cmdline
     EXPECTED=$WORK/$TEST.expected
 
-    echo Running $TEST...
+    echo "Running $TEST..."
 
     # Setup a fake root directory to simulate erlinit boot
-    rm -fr $WORK
-    mkdir -p $WORK/proc
-    mkdir -p $WORK/dev
-    mkdir -p $WORK/sbin
-    mkdir -p $WORK/bin
-    mkdir -p $WORK/etc
-    mkdir -p $WORK/tmp
-    mkdir -p $WORK/usr/bin
-    ln -s $ERLINIT $WORK/sbin/init
-    mkdir -p $FAKE_ERTS_DIR/bin
-    ln -s $FAKE_ERLEXEC $FAKE_ERTS_DIR/bin/erlexec
+    rm -fr "$WORK"
+    mkdir -p "$WORK/proc"
+    mkdir -p "$WORK/dev"
+    mkdir -p "$WORK/sbin"
+    mkdir -p "$WORK/bin"
+    mkdir -p "$WORK/etc"
+    mkdir -p "$WORK/tmp"
+    mkdir -p "$WORK/usr/bin"
+    ln -s "$ERLINIT" "$WORK/sbin/init"
+    mkdir -p "$FAKE_ERTS_DIR/bin"
+    ln -s "$FAKE_ERLEXEC" "$FAKE_ERTS_DIR/bin/erlexec"
 
     # Create some device files (the fixture sets their types)
-    touch $WORK/dev/mmcblk0 $WORK/dev/mmcblk0p1 $WORK/dev/mmcblk0p2 $WORK/dev/mmcblk0p3 $WORK/dev/mmcblk0p4
-    ln -s /dev/null $WORK/dev/null
-    mkdir -p $WORK/sys/block/mmcblk0/mmcblk0p1
-    mkdir -p $WORK/sys/block/mmcblk0/mmcblk0p2
-    mkdir -p $WORK/sys/block/mmcblk0/mmcblk0p3
-    mkdir -p $WORK/sys/block/mmcblk0/mmcblk0p4
-    mkdir -p $WORK/sys/block/mmcblk0/queue
-    mkdir -p $WORK/sys/block/mmcblk0/slaves
-    mkdir -p $WORK/sys/block/mmcblk0/mq
-    mkdir -p $WORK/sys/block/mmcblk0/holders
-    mkdir -p $WORK/sys/block/sda/sda1
-    mkdir -p $WORK/sys/block/sda/sda2
-    echo "179:0" > $WORK/sys/block/mmcblk0/dev
-    echo "179:1" > $WORK/sys/block/mmcblk0/mmcblk0p1/dev
-    echo "1" > $WORK/sys/block/mmcblk0/mmcblk0p1/partition
-    echo "179:2" > $WORK/sys/block/mmcblk0/mmcblk0p2/dev
-    echo "2" > $WORK/sys/block/mmcblk0/mmcblk0p2/partition
-    echo "179:3" > $WORK/sys/block/mmcblk0/mmcblk0p3/dev
-    echo "3" > $WORK/sys/block/mmcblk0/mmcblk0p3/partition
-    echo "179:4" > $WORK/sys/block/mmcblk0/mmcblk0p4/dev
-    echo "4" > $WORK/sys/block/mmcblk0/mmcblk0p4/partition
-    echo "8:0" > $WORK/sys/block/sda/dev
-    echo "8:1" > $WORK/sys/block/sda/sda1/dev
-    echo "1" > $WORK/sys/block/sda/sda1/partition
-    echo "8:2" > $WORK/sys/block/sda/sda2/dev
-    echo "2" > $WORK/sys/block/sda/sda2/partition
+    touch "$WORK/dev/mmcblk0" "$WORK/dev/mmcblk0p1" "$WORK/dev/mmcblk0p2" "$WORK/dev/mmcblk0p3" "$WORK/dev/mmcblk0p4"
+    ln -s /dev/null "$WORK/dev/null"
+    mkdir -p "$WORK/sys/block/mmcblk0/mmcblk0p1"
+    mkdir -p "$WORK/sys/block/mmcblk0/mmcblk0p2"
+    mkdir -p "$WORK/sys/block/mmcblk0/mmcblk0p3"
+    mkdir -p "$WORK/sys/block/mmcblk0/mmcblk0p4"
+    mkdir -p "$WORK/sys/block/mmcblk0/queue"
+    mkdir -p "$WORK/sys/block/mmcblk0/slaves"
+    mkdir -p "$WORK/sys/block/mmcblk0/mq"
+    mkdir -p "$WORK/sys/block/mmcblk0/holders"
+    mkdir -p "$WORK/sys/block/sda/sda1"
+    mkdir -p "$WORK/sys/block/sda/sda2"
+    echo "179:0" > "$WORK/sys/block/mmcblk0/dev"
+    echo "179:1" > "$WORK/sys/block/mmcblk0/mmcblk0p1/dev"
+    echo "1" > "$WORK/sys/block/mmcblk0/mmcblk0p1/partition"
+    echo "179:2" > "$WORK/sys/block/mmcblk0/mmcblk0p2/dev"
+    echo "2" > "$WORK/sys/block/mmcblk0/mmcblk0p2/partition"
+    echo "179:3" > "$WORK/sys/block/mmcblk0/mmcblk0p3/dev"
+    echo "3" > "$WORK/sys/block/mmcblk0/mmcblk0p3/partition"
+    echo "179:4" > "$WORK/sys/block/mmcblk0/mmcblk0p4/dev"
+    echo "4" > "$WORK/sys/block/mmcblk0/mmcblk0p4/partition"
+    echo "8:0" > "$WORK/sys/block/sda/dev"
+    echo "8:1" > "$WORK/sys/block/sda/sda1/dev"
+    echo "1" > "$WORK/sys/block/sda/sda1/partition"
+    echo "8:2" > "$WORK/sys/block/sda/sda2/dev"
+    echo "2" > "$WORK/sys/block/sda/sda2/partition"
 
     # Fake active console
-    mkdir -p $WORK/sys/class/tty/console
-    echo "ttyF1" >$WORK/sys/class/tty/console/active
-    ln -s $(tty) $WORK/dev/ttyF1
-    ln -s $(tty) $WORK/dev/ttyAMA0
-    ln -s $(tty) $WORK/dev/tty1
+    mkdir -p "$WORK/sys/class/tty/console"
+    echo "ttyF1" >"$WORK/sys/class/tty/console/active"
+    ln -s "$(tty)" "$WORK/dev/ttyF1"
+    ln -s "$(tty)" "$WORK/dev/ttyAMA0"
+    ln -s "$(tty)" "$WORK/dev/tty1"
 
     # Fake mounts
-    cat >$WORK/proc/mounts << EOF
+    cat >"$WORK/proc/mounts" << EOF
 /dev/root / squashfs ro,relatime 0 0
 sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
 proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
@@ -102,10 +102,10 @@ tmpfs /sys/fs/cgroup tmpfs ro,nosuid,nodev,noexec,mode=755 0 0
 EOF
 
     # Run the test script to setup files for the test
-    source $TESTS_DIR/$TEST
+    source "$TESTS_DIR/$TEST"
 
     if [ -e "$CONFIG" ]; then
-       ln -s "$CONFIG" $WORK/etc/erlinit.config
+       ln -s "$CONFIG" "$WORK/etc/erlinit.config"
     fi
 
     if [ -e "$CMDLINE_FILE" ]; then
@@ -117,7 +117,7 @@ EOF
     # Run erlinit
     # NOTE: Call 'exec' so that it's possible to set argv0, but that means we
     #       need a subshell - hence the parentheses.
-    (LD_PRELOAD=$FIXTURE DYLD_INSERT_LIBRARIES=$FIXTURE WORK=$WORK exec -a /sbin/init $ERLINIT $CMDLINE 2> $RESULTS.raw)
+    (LD_PRELOAD=$FIXTURE DYLD_INSERT_LIBRARIES=$FIXTURE WORK=$WORK exec -a /sbin/init $ERLINIT $CMDLINE 2> "$RESULTS.raw")
 
     # Trim the results of known lines that vary between runs
     # The calls to sed fixup differences between getopt implementations.
@@ -135,19 +135,19 @@ EOF
         > $RESULTS
 
     # check results
-    diff -w $RESULTS "$EXPECTED"
+    diff -w "$RESULTS" "$EXPECTED"
     if [ $? != 0 ]; then
-        echo Test $TEST failed!
+        echo "Test $TEST failed!"
         exit 1
     fi
 }
 
 # Test command line arguments
 for TEST_CONFIG in $TESTS; do
-    TEST=$(/usr/bin/basename $TEST_CONFIG .expected)
+    TEST=$(/usr/bin/basename "$TEST_CONFIG" .expected)
     run $TEST
 done
 
-rm -fr $WORK
+rm -fr "$WORK"
 echo Pass!
 exit 0
