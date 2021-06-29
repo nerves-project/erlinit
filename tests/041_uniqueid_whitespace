@@ -17,7 +17,7 @@ EOF
 cat >$WORK/usr/bin/make-unique-id <<EOF
 #!/bin/sh
 
-echo "  4\n888888888\n\n"
+printf "  4\n888888888\n\n"
 EOF
 chmod +x $WORK/usr/bin/make-unique-id
 
