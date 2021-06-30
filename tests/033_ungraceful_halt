@@ -69,7 +69,7 @@ erlinit: Launching erl...
 erlexec is sending signal to halt
 erlinit: sigpwr|sigusr1 -> halt
 erlinit: waiting 10000 ms for graceful shutdown
-erlinit: Timed out while waiting for Erlang VM to exit.
+erlinit: Graceful shutdown timer expired (10000 ms). Killing Erlang VM process shortly. Adjust timeout with --graceful-shutdown-timeout option.
 erlinit: kill_all
 erlinit: Sending SIGTERM to all processes
 fixture: kill(-1, 15)

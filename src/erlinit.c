@@ -823,7 +823,7 @@ static void wait_for_graceful_shutdown(pid_t pid, struct erlinit_exit_info *exit
         } else if (rc < 0) {
             if (errno == EAGAIN) {
                 // Timeout. Brutal kill our child so that the shutdown process can continue.
-                warn("Timed out while waiting for Erlang VM to exit.");
+                warn("Graceful shutdown timer expired (%d ms). Killing Erlang VM process shortly. Adjust timeout with --graceful-shutdown-timeout option.", options.graceful_shutdown_timeout_ms);
                 break;
             } else if (errno != EINTR) {
                 warn("Unexpected errno %d from sigtimedwait", errno);
