@@ -326,6 +326,16 @@ OVERRIDE(int, link, (const char *target, const char *linkpath))
 }
 
 #ifdef __APPLE__
+#define OVERRIDE_STAT 1
+#else
+#if __GLIBC_PREREQ(2, 33)
+#define OVERRIDE_STAT 1
+#else
+#define OVERRIDE_XSTAT 1
+#endif
+#endif
+
+#ifdef OVERRIDE_STAT
 OVERRIDE(int, stat, (const char *pathname, struct stat *st))
 {
     memset(st, 0, sizeof(struct stat));
