@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.10.0
+
+* New features
+  * Added `--limit` option to enable  core dumps, increase the number of
+    processes, file descriptors and other settings that the `ulimit` command
+    is normally used for.
+
+    Use it like this:
+
+    ```
+    --limit core:456:unlimited
+    ```
+
+    The format is <resource:soft_limit:hard_limit>. The resources should be
+    specified as lower case and can be found on the `setrlimit(2)` man page.
+    The soft_limit and hard_limit can be either numbers or the word
+    `infinity`.
+
+* Bug fixes
+  * Double the max length of release version names to 32 characters. This should
+    hopefully be more than sufficient now.
+
 ## v1.9.0
 
 * New features
