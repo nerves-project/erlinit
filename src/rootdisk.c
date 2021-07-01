@@ -95,7 +95,7 @@ static int directory_filter(const struct dirent *d)
 }
 
 static void scan_for_partitions(struct block_device_info *parent,
-            struct block_device_info **infos)
+                                struct block_device_info **infos)
 {
     char base_dir[ERLINIT_PATH_MAX];
     snprintf(base_dir, sizeof(base_dir), "/sys/block/%s", parent->name);

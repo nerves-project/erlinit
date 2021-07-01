@@ -77,7 +77,8 @@ struct netlink_ifa_message {
     char attrbuf[512];
 };
 
-static void add_rta_attr(struct netlink_ifa_message *msg, unsigned short rta_type, char *value, unsigned short value_len)
+static void add_rta_attr(struct netlink_ifa_message *msg, unsigned short rta_type, char *value,
+                         unsigned short value_len)
 {
     struct rtattr *rta = (struct rtattr *)(((char *) msg) + NLMSG_ALIGN(msg->nh.nlmsg_len));
     rta->rta_type = rta_type;
@@ -98,7 +99,7 @@ static void configure_loopback(int ifindex)
     struct netlink_ifa_message req[2];
     memset(&req[0], 0, sizeof(struct netlink_ifa_message));
     req[0].nh.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
-    req[0].nh.nlmsg_flags = NLM_F_EXCL|NLM_F_CREATE|NLM_F_REQUEST; // NLM_F_ACK
+    req[0].nh.nlmsg_flags = NLM_F_EXCL | NLM_F_CREATE | NLM_F_REQUEST; // NLM_F_ACK
     req[0].nh.nlmsg_type = RTM_NEWADDR;
 
     req[0].ifa.ifa_family = AF_INET;
@@ -115,7 +116,7 @@ static void configure_loopback(int ifindex)
 
     memset(&req[1], 0, sizeof(struct netlink_ifa_message));
     req[1].nh.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
-    req[1].nh.nlmsg_flags = NLM_F_EXCL|NLM_F_CREATE|NLM_F_REQUEST; // NLM_F_ACK
+    req[1].nh.nlmsg_flags = NLM_F_EXCL | NLM_F_CREATE | NLM_F_REQUEST; // NLM_F_ACK
     req[1].nh.nlmsg_type = RTM_NEWADDR;
     req[1].ifa.ifa_family = AF_INET6;
     req[1].ifa.ifa_prefixlen = 128;

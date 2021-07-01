@@ -80,7 +80,7 @@ int system_cmd(const char *cmd, char *output_buffer, int length)
         int index = 0;
         int amt;
         while (index != length &&
-               (amt = read(pipefd[0], &output_buffer[index], length - index)) > 0)
+                (amt = read(pipefd[0], &output_buffer[index], length - index)) > 0)
             index += amt;
         output_buffer[index] = '\0';
         close(pipefd[0]);

@@ -95,7 +95,7 @@ static int is_directory(const char *path)
 {
     struct stat sb;
     return stat(path, &sb) == 0 &&
-            S_ISDIR(sb.st_mode);
+           S_ISDIR(sb.st_mode);
 }
 
 static int starts_with(const char *str, const char *what)
@@ -108,7 +108,8 @@ static int erts_filter(const struct dirent *d)
     return starts_with(d->d_name, "erts-");
 }
 
-static void find_erts_directory(const char *erts_version, const char *release_base_dir, char **erts_dir)
+static void find_erts_directory(const char *erts_version, const char *release_base_dir,
+                                char **erts_dir)
 {
     debug("find_erts_directory");
 
@@ -126,7 +127,8 @@ static void find_erts_directory(const char *erts_version, const char *release_ba
         if (is_directory(*erts_dir))
             return;
 
-        warn("start_erl.data specifies erts-%s, but it wasn't found! Looking for any erts version", erts_version);
+        warn("start_erl.data specifies erts-%s, but it wasn't found! Looking for any erts version",
+             erts_version);
     }
 
     struct dirent **namelist;
@@ -156,7 +158,7 @@ static int file_exists(const char *path)
 static int dotfile_filter(const struct dirent *d)
 {
     return strcmp(d->d_name, ".") != 0 &&
-            strcmp(d->d_name, "..") != 0;
+           strcmp(d->d_name, "..") != 0;
 }
 
 static int bootfile_filter(const struct dirent *d)
@@ -220,7 +222,8 @@ static int find_boot_path_user(const char *release_version_dir, char **boot_path
     return 0;
 }
 
-static int find_boot_path_by_release_name(const char *release_version_dir, const char *release_name, char **boot_path)
+static int find_boot_path_by_release_name(const char *release_version_dir, const char *release_name,
+                                          char **boot_path)
 {
     // If not a named release, skip this option.
     if (release_name == NULL || *release_name == '\0')
@@ -266,12 +269,13 @@ static void find_boot_path_auto(const char *release_version_dir, char **boot_pat
     free(namelist);
 }
 
-static void find_boot_path(const char *release_version_dir, const char *release_name, char **boot_path)
+static void find_boot_path(const char *release_version_dir, const char *release_name,
+                           char **boot_path)
 {
     debug("find_boot_path");
 
     if (!find_boot_path_user(release_version_dir, boot_path) &&
-        !find_boot_path_by_release_name(release_version_dir, release_name, boot_path))
+            !find_boot_path_by_release_name(release_version_dir, release_name, boot_path))
         find_boot_path_auto(release_version_dir, boot_path);
 }
 
@@ -311,7 +315,8 @@ static int find_consolidated_dirs(const char *release_base_dir,
         free(consolidated_path);
     }
     if (num_found > 1)
-      warn("More than one consolidated directory found. Using '%s'", run_info->consolidated_protocols_path);
+        warn("More than one consolidated directory found. Using '%s'",
+             run_info->consolidated_protocols_path);
 
     // Free everything
     while (--n >= 0)
@@ -335,7 +340,8 @@ static int read_start_erl(const char *releases_dir, char **erts_version, char **
 #define MAX_VERSION_AND_RELEASE_NAMES 32
     char erts_string[MAX_VERSION_AND_RELEASE_NAMES + 1];
     char rel_string[MAX_VERSION_AND_RELEASE_NAMES + 1];
-    if (fscanf(fp, "%" xstr(MAX_VERSION_AND_RELEASE_NAMES) "s %" xstr(MAX_VERSION_AND_RELEASE_NAMES) "s",
+    if (fscanf(fp, "%" xstr(MAX_VERSION_AND_RELEASE_NAMES) "s %" xstr(MAX_VERSION_AND_RELEASE_NAMES)
+               "s",
                erts_string, rel_string) != 2) {
         warn("%s doesn't contain expected contents. Skipping.", start_erl_path);
         free(start_erl_path);
@@ -671,8 +677,9 @@ static void child()
     // in the options, but if that doesn't work, go to the root of
     // the release.
     if (options.working_directory == NULL ||
-        chdir(options.working_directory) < 0) {
-        OK_OR_FATAL(chdir(run_info.release_base_dir), "Cannot chdir to release directory (%s)", run_info.release_base_dir);
+            chdir(options.working_directory) < 0) {
+        OK_OR_FATAL(chdir(run_info.release_base_dir), "Cannot chdir to release directory (%s)",
+                    run_info.release_base_dir);
     }
 
     // Optionally run a "pre-run" program
@@ -747,7 +754,7 @@ static void child()
     if (options.verbose) {
         // Dump the environment and commandline
         extern char **environ;
-        char** env = environ;
+        char **env = environ;
         while (*env != 0)
             debug("Env: '%s'", *env++);
 
@@ -824,7 +831,8 @@ static void wait_for_graceful_shutdown(pid_t pid, struct erlinit_exit_info *exit
         } else if (rc < 0) {
             if (errno == EAGAIN) {
                 // Timeout. Brutal kill our child so that the shutdown process can continue.
-                warn("Graceful shutdown timer expired (%d ms). Killing Erlang VM process shortly. Adjust timeout with --graceful-shutdown-timeout option.", options.graceful_shutdown_timeout_ms);
+                warn("Graceful shutdown timer expired (%d ms). Killing Erlang VM process shortly. Adjust timeout with --graceful-shutdown-timeout option.",
+                     options.graceful_shutdown_timeout_ms);
                 break;
             } else if (errno != EINTR) {
                 warn("Unexpected errno %d from sigtimedwait", errno);

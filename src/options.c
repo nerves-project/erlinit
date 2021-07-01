@@ -64,7 +64,7 @@ enum erlinit_option_value {
     //       readable to use the long option form.
     OPT_BOOT = 'b',
     OPT_CTTY = 'c',
-    OPT_UNIQUEID_EXEC= 'd',
+    OPT_UNIQUEID_EXEC = 'd',
     OPT_ENV = 'e',
     OPT_HANG_ON_EXIT = 'h',
     OPT_LIMIT = 'l',

@@ -104,14 +104,25 @@ static int lookup_tty_options(const char *options, speed_t *speed)
     // NOTE: Only setting the speed is supported now. No parity and 8 bits are assumed.
     unsigned long baud = strtoul(options, NULL, 10);
     switch (baud) {
-    case 9600: *speed = B9600; break;
-    case 19200: *speed = B19200; break;
-    case 38400: *speed = B38400; break;
-    case 57600: *speed = B57600; break;
-    case 115200: *speed = B115200; break;
+    case 9600:
+        *speed = B9600;
+        break;
+    case 19200:
+        *speed = B19200;
+        break;
+    case 38400:
+        *speed = B38400;
+        break;
+    case 57600:
+        *speed = B57600;
+        break;
+    case 115200:
+        *speed = B115200;
+        break;
     default:
         warn("Couldn't parse tty option '%s'. Defaulting to 115200n8", options);
-        *speed = B115200; break;
+        *speed = B115200;
+        break;
     }
     return 0;
 }
@@ -153,7 +164,7 @@ static void init_terminal(int fd)
     termios.c_cflag |= CREAD;  // Enable receiver
     termios.c_oflag = 0;
     termios.c_lflag = 0;
-    termios.c_iflag &= ~(ICRNL|INLCR);  // No CR<->LF conversions
+    termios.c_iflag &= ~(ICRNL | INLCR); // No CR<->LF conversions
 
     termios.c_cc[VMIN] = 1;
     termios.c_cc[VTIME] = 0;
@@ -179,7 +190,8 @@ void set_ctty()
         strcat(&ttypath[TTY_PREFIX_LENGTH], options.controlling_terminal);
     } else {
         // Pick the active console(s)
-        if (readsysfs(SYSFS_ACTIVE_CONSOLE, &ttypath[TTY_PREFIX_LENGTH], sizeof(ttypath) - TTY_PREFIX_LENGTH) == 0) {
+        if (readsysfs(SYSFS_ACTIVE_CONSOLE, &ttypath[TTY_PREFIX_LENGTH],
+                      sizeof(ttypath) - TTY_PREFIX_LENGTH) == 0) {
             // No active console?
             warn("no active consoles found!");
             return;

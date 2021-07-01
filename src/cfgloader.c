@@ -128,7 +128,7 @@ void merge_config(int argc, char *argv[], int *merged_argc, char **merged_argv)
         argc = MAX_ARGC - *merged_argc + 1;
     }
 
-    memcpy(&merged_argv[*merged_argc], &argv[1], (argc - 1) * sizeof(char**));
+    memcpy(&merged_argv[*merged_argc], &argv[1], (argc - 1) * sizeof(char **));
     *merged_argc += argc - 1;
 }
 

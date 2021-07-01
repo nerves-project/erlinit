@@ -36,10 +36,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 static const char *reboot_cmd(int cmd)
 {
     switch (cmd) {
-    case LINUX_REBOOT_CMD_RESTART: return "restart";
-    case LINUX_REBOOT_CMD_HALT: return "halt";
-    case LINUX_REBOOT_CMD_POWER_OFF: return "power off";
-    default: return "unknown";
+    case LINUX_REBOOT_CMD_RESTART:
+        return "restart";
+    case LINUX_REBOOT_CMD_HALT:
+        return "halt";
+    case LINUX_REBOOT_CMD_POWER_OFF:
+        return "power off";
+    default:
+        return "unknown";
     }
 }
 
@@ -95,9 +99,9 @@ static void report_exit_info(FILE *fp, const struct erlinit_exit_info *exit_info
         fprintf(fp, "N/A\n");
 
     if (WIFEXITED(exit_info->wait_status))
-       fprintf(fp, "Erlang exit status: %d\n", WEXITSTATUS(exit_info->wait_status));
+        fprintf(fp, "Erlang exit status: %d\n", WEXITSTATUS(exit_info->wait_status));
     if (WIFSIGNALED(exit_info->wait_status))
-       fprintf(fp, "Erlang exited due to signal: %d\n", WTERMSIG(exit_info->wait_status));
+        fprintf(fp, "Erlang exited due to signal: %d\n", WTERMSIG(exit_info->wait_status));
     fprintf(fp, "Shutdown action: %s\n", reboot_cmd(exit_info->desired_reboot_cmd));
 }
 
@@ -105,7 +109,7 @@ static void report_dmesg(FILE *fp)
 {
     fprintf(fp, "\n## dmesg\n\n");
 
-    int fd = open("/dev/kmsg", O_RDONLY|O_NONBLOCK);
+    int fd = open("/dev/kmsg", O_RDONLY | O_NONBLOCK);
     if (fd < 0) {
         fprintf(fp, "Error opening /dev/kmsg: %s\n", strerror(errno));
         return;

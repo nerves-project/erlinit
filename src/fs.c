@@ -93,7 +93,8 @@ void pivot_root_on_overlayfs()
     (void) mkdir("/mnt/.work", 0755);
 
 
-    if (mount("", "/mnt/.merged", "overlay", 0, "lowerdir=/,upperdir=/mnt/.upper,workdir=/mnt/.work") < 0) {
+    if (mount("", "/mnt/.merged", "overlay", 0,
+              "lowerdir=/,upperdir=/mnt/.upper,workdir=/mnt/.work") < 0) {
         warn("Could not mount overlayfs: %s\n"
              "Check that CONFIG_OVERLAY_FS=y is in the kernel config.", strerror(errno));
         return;
@@ -125,11 +126,14 @@ void pivot_root_on_overlayfs()
 void setup_pseudo_filesystems()
 {
     // This only works in the real environment.
-    OK_OR_WARN(mount("proc", "/proc", "proc", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL), "Cannot mount /proc");
-    OK_OR_WARN(mount("sysfs", "/sys", "sysfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL), "Cannot mount /sys");
+    OK_OR_WARN(mount("proc", "/proc", "proc", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL),
+               "Cannot mount /proc");
+    OK_OR_WARN(mount("sysfs", "/sys", "sysfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, NULL),
+               "Cannot mount /sys");
 
     // /dev should be automatically created/mounted by Linux
-    OK_OR_WARN(mount("devtmpfs", "/dev", "devtmpfs", MS_REMOUNT | MS_NOEXEC | MS_NOSUID, "size=1024k"), "Cannot remount /dev");
+    OK_OR_WARN(mount("devtmpfs", "/dev", "devtmpfs", MS_REMOUNT | MS_NOEXEC | MS_NOSUID, "size=1024k"),
+               "Cannot remount /dev");
 
     // Create entries in /dev. Turn off the umask since we want the exact
     // permissions that we're specifying.
@@ -138,7 +142,8 @@ void setup_pseudo_filesystems()
     OK_OR_WARN(mkdir("/dev/shm", 01777), "Cannot create /dev/shm");
     umask(old_umask);
 
-    OK_OR_WARN(mount("devpts", "/dev/pts", "devpts", MS_NOEXEC | MS_NOSUID, "gid=5,mode=620"), "Cannot mount /dev/pts");
+    OK_OR_WARN(mount("devpts", "/dev/pts", "devpts", MS_NOEXEC | MS_NOSUID, "gid=5,mode=620"),
+               "Cannot mount /dev/pts");
 }
 
 void mount_filesystems()
@@ -175,7 +180,7 @@ void mount_filesystems()
             (void) mkdir(target, 0755);
 
             unsigned long imountflags = str_to_mountflags(mountflags);
-            if (mount(source, target, filesystemtype, imountflags, (void*) data) < 0)
+            if (mount(source, target, filesystemtype, imountflags, (void *) data) < 0)
                 warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
         } else {
             warn("Invalid parameter to -m. Expecting 5 colon-separated fields");
@@ -204,7 +209,8 @@ void unmount_all()
     int passno;
     int i = 0;
     while (i < MAX_MOUNTS &&
-           fscanf(fp, "%255s %255s %31s %127s %d %d", mounts[i].source, mounts[i].target, mounts[i].fstype, options, &freq, &passno) >= 3) {
+            fscanf(fp, "%255s %255s %31s %127s %d %d", mounts[i].source, mounts[i].target, mounts[i].fstype,
+                   options, &freq, &passno) >= 3) {
         i++;
     }
     fclose(fp);

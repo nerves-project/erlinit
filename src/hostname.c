@@ -66,19 +66,19 @@ static void make_rfc1123_compatible(char *s)
     // Invalid characters are removed.
     char *d = s;
     while (*s) {
-      char c = *s;
-      if ((c >= 'a' && c <= 'z') ||
-          (c >= '0' && c <= '9') ||
-          c == '-' || c == '.') {
-          // Good
-          *d = c;
-          d++;
-      } else if (c >= 'A' && c <= 'Z') {
-          // Make lowercase
-          *d = c - 'A' + 'a';
-          d++;
-      }
-      s++;
+        char c = *s;
+        if ((c >= 'a' && c <= 'z') ||
+                (c >= '0' && c <= '9') ||
+                c == '-' || c == '.') {
+            // Good
+            *d = c;
+            d++;
+        } else if (c >= 'A' && c <= 'Z') {
+            // Make lowercase
+            *d = c - 'A' + 'a';
+            d++;
+        }
+        s++;
     }
     *d = '\0';
 }
