@@ -544,6 +544,23 @@ static void setup_environment(const struct erl_run_info *run_info)
     putenv("EMU=beam");
     putenv("PROGNAME=erlexec");
 
+    // RELEASE_SYS_CONFIG points to the release's sys.config (but without the .config)
+    // If using it, set other Elixir release environment variables
+    if (run_info->sys_config) {
+        int sys_config_len = strlen(run_info->sys_config);
+        erlinit_asprintf(&envvar, "RELEASE_SYS_CONFIG=%.*s", sys_config_len - 7, run_info->sys_config);
+        putenv(envvar);
+        envvar = NULL; // putenv owns memory
+
+        erlinit_asprintf(&envvar, "RELEASE_ROOT=%s", run_info->release_base_dir);
+        putenv(envvar);
+        envvar = NULL; // putenv owns memory
+
+        erlinit_asprintf(&envvar, "RELEASE_TMP=/tmp");
+        putenv(envvar);
+        envvar = NULL; // putenv owns memory
+    }
+
     // Set any additional environment variables from the user
     if (options.additional_env) {
         char *envstr = strtok(options.additional_env, ";");
