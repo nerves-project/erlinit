@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.11.0
+
+* New features
+  * Export `RELEASE_SYS_CONFIG`, `RELEASE_ROOT`, and `RELEASE_TMP` to support
+    Elixir mix releases that contain a `runtime.exs`. Support for `runtime.exs`
+    is currently experimental.
+
 ## v1.10.0
 
 * New features
