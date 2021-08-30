@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #
 # Test that calling out to a unique id generator that fails still boots
@@ -15,7 +15,7 @@ cat >"$CONFIG" <<EOF
 EOF
 
 cat >$WORK/usr/bin/make-unique-id <<EOF
-#!/bin/sh
+#!/usr/bin/env bash
 
 echo "ERROR ROAR bad bad"
 exit 1

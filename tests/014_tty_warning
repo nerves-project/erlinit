@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #
 # Test that when the kernel is printing output on multiple ttys that warnings

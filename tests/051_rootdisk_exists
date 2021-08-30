@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #
 # Test that if the rootdisk* files exist that erlinit doesn't

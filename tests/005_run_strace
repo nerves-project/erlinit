@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #
 # Test that requesting that strace be run does the right thing
@@ -12,7 +12,7 @@ cat >"$CONFIG" <<EOF
 EOF
 
 cat >$WORK/usr/bin/strace <<EOF
-#!/bin/sh
+#!/usr/bin/env bash
 
 echo Hello from strace 1>&2
 EOF

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #
 # Test that starting up a Erlang/OTP release using an embedded ERTS
