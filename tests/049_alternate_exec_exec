@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #
 # Test that calling exec with --alternate-exec merges args
@@ -13,7 +13,7 @@ cat >"$CONFIG" <<EOF
 EOF
 
 cat >$WORK/usr/bin/altexec <<EOF
-#!/bin/sh
+#!/usr/bin/env bash
 
 echo Hello from altexec 1>&2
 echo Args: 1>&2

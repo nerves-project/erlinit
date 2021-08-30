@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #
 # Test that running a program when the Erlang VM exits works
@@ -9,7 +9,7 @@ cat >"$CMDLINE_FILE" <<EOF
 EOF
 
 cat >$WORK/usr/bin/onexit <<EOF
-#!/bin/sh
+#!/usr/bin/env bash
 
 echo Hello from onexit 1>&2
 EOF

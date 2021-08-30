@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 echo "erlexec is sending signal to reboot" 1>&2
 

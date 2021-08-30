@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #
 # Test that running a program to wrap the call to the Erlang VM works
@@ -9,7 +9,7 @@ cat >"$CMDLINE_FILE" <<EOF
 EOF
 
 cat >$WORK/usr/bin/altexec <<EOF
-#!/bin/sh
+#!/usr/bin/env bash
 
 echo Hello from altexec 1>&2
 echo Args: 1>&2

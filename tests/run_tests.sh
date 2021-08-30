@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # "readlink -f" implementation for BSD
 # This code was extracted from the Elixir shell scripts

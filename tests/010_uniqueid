@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #
 # Test that calling out to a unique id generator does the right thing
@@ -15,7 +15,7 @@ cat >"$CONFIG" <<EOF
 EOF
 
 cat >"$WORK/usr/bin/make-unique-id" <<EOF
-#!/bin/sh
+#!/usr/bin/env bash
 
 echo "0042"
 EOF
