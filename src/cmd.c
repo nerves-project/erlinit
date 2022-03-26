@@ -29,6 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <errno.h>
 
 int system_cmd(const char *cmd, char *output_buffer, int length)
 {
@@ -86,10 +87,20 @@ int system_cmd(const char *cmd, char *output_buffer, int length)
         close(pipefd[0]);
 
         int status;
-        if (waitpid(pid, &status, 0) != pid) {
-            warn("waitpid");
+        for (;;) {
+            pid_t rc = waitpid(pid, &status, 0);
+            if (rc == pid)
+                break;
+            if (rc != -1 || errno != EINTR) {
+                warn("waitpid failed for '%s': %d", cmd, errno);
+                return -1;
+            }
+        }
+        if (WIFEXITED(status)) {
+            return WEXITSTATUS(status);
+        } else {
+            warn("'%s' didn't exit", cmd);
             return -1;
         }
-        return status;
     }
 }
