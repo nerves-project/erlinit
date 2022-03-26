@@ -66,6 +66,9 @@ struct erl_run_info {
     // The directory containing ERTS
     char *erts_dir;
 
+    // The directory right above the ERTS
+    char *root_dir;
+
     // This is the path to the .boot file
     char *boot_path;
 
@@ -109,7 +112,7 @@ static int erts_filter(const struct dirent *d)
 }
 
 static void find_erts_directory(const char *erts_version, const char *release_base_dir,
-                                char **erts_dir)
+                                char **erts_dir, char **root_dir)
 {
     debug("find_erts_directory");
 
@@ -119,6 +122,7 @@ static void find_erts_directory(const char *erts_version, const char *release_ba
         tmp_release_base_dir = release_base_dir;
     else
         tmp_release_base_dir = ERLANG_ROOT_DIR;
+    erlinit_asprintf(root_dir, "%s", tmp_release_base_dir);
 
     if (erts_version) {
         // If the release specifies an ERTS version to use, then try to use it
@@ -530,9 +534,11 @@ static void setup_environment(const struct erl_run_info *run_info)
 
     // Erlang environment
 
-    // ROOTDIR points to the release unless it wasn't found.
+    // ROOTDIR points to the directory about to erts bin directory which
+    // is the release's base directory if erts is inside the release or
+    // `/usr/lib/erlang` if not.
     char *envvar = NULL;
-    erlinit_asprintf(&envvar, "ROOTDIR=%s", run_info->release_base_dir);
+    erlinit_asprintf(&envvar, "ROOTDIR=%s", run_info->root_dir);
     putenv(envvar);
     envvar = NULL; // putenv owns memory
 
@@ -675,7 +681,7 @@ static void child()
 
     find_release(&run_info);
 
-    find_erts_directory(run_info.erts_version, run_info.release_base_dir, &run_info.erts_dir);
+    find_erts_directory(run_info.erts_version, run_info.release_base_dir, &run_info.erts_dir, &run_info.root_dir);
 
     // Set up $HOME
     setup_home_directory();
