@@ -108,28 +108,34 @@ static int erts_filter(const struct dirent *d)
     return starts_with(d->d_name, "erts-");
 }
 
-static void find_erts_directory(const char *erts_version, const char *release_base_dir,
+static void find_erts_directory(const char *erts_version,
+                                const char *release_base_dir,
                                 char **erts_dir)
 {
     debug("find_erts_directory");
 
-    const char *tmp_release_base_dir;
-
-    if (options.release_include_erts)
-        tmp_release_base_dir = release_base_dir;
-    else
-        tmp_release_base_dir = ERLANG_ROOT_DIR;
-
+    // Common case: Release specifies an ERTS version. See if it's included
+    // in the release first and then try the system version (if any).
     if (erts_version) {
-        // If the release specifies an ERTS version to use, then try to use it
-        // first.
-        erlinit_asprintf(erts_dir, "%s/erts-%s", tmp_release_base_dir, erts_version);
+        erlinit_asprintf(erts_dir, "%s/erts-%s", release_base_dir, erts_version);
+        if (is_directory(*erts_dir))
+            return;
+
+        erlinit_asprintf(erts_dir, ERLANG_ROOT_DIR "/erts-%s", erts_version);
         if (is_directory(*erts_dir))
             return;
 
         warn("start_erl.data specifies erts-%s, but it wasn't found! Looking for any erts version",
              erts_version);
     }
+
+    // Fall back: This path really shouldn't be exercised any more, but at one time
+    // it was helpful to try to find something rather than give up.
+    const char *tmp_release_base_dir;
+    if (options.release_include_erts)
+        tmp_release_base_dir = release_base_dir;
+    else
+        tmp_release_base_dir = ERLANG_ROOT_DIR;
 
     struct dirent **namelist;
     int n = scandir(tmp_release_base_dir,
