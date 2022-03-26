@@ -50,7 +50,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // when trying to unmount everything gracefully.
 #define MAX_MOUNTS 32
 
-#define MAX_ARGC 32
+#define MAX_ARGC 64
 
 // PATH_MAX wasn't in the musl include files, so rather
 // than pulling an arbitrary number in from linux/limits.h,
