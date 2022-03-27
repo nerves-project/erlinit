@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.12.0
+
+* Changes
+  * Check OTP release for ERTS before checking the system. The previous behavior
+    was to only check one or the other based on whether `--release-include-erts`
+    was specified.
+
+* Bug fixes
+  * Fixed missing handling of EINTR when running the program to get the device's
+    ID. The handling has been missing since it was added and is not known to
+    have caused issues. However, it could cause the device's ID to not be set.
+
 ## v1.11.0
 
 * New features
