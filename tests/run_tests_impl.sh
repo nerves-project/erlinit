@@ -131,6 +131,8 @@ EOF
         grep -v "erlinit: Env: 'SED=" | \
         $SED -e "s/\`/'/g" | \
         $SED -e "s@^/sbin/init@init@" | \
+        $SED -e "s/^erlinit: unrecognized option/init: unrecognized option/" | \
+        $SED -e "s/^erlinit: invalid option/init: invalid option/" | \
         $SED -e "s/invalid option -- 'Z'/invalid option -- Z/" \
         > $RESULTS
 
