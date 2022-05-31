@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.12.1
+
+* Bug fixes
+  * Remove absolute path requirement on `--alternate-exec` for binaries in the
+    Erlang runtime. This makes it much less brittle to use since the ERTS
+    directory has a version number in it that may change on every Erlang
+    update. If you're using `--alternate-exec` to run `run_erl`, remove the
+    absolute path to it. `erlinit` will run the one associated with the OTP
+    release.
+
 ## v1.12.0
 
 * Changes
