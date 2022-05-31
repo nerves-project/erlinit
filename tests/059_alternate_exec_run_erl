@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+
+#
+# Test that using alternate_exec with a relative path searches
+# the erts bin directory in the release
+#
+# This is needed if you want to run any Erlang-supplied binaries
+# as the alternate_exec. The `run_erl` binary is the one that
+# motivated this.
+#
+
+cat >"$CONFIG" <<EOF
+-v --alternate-exec "run_erl 1 2 exec 3"
+EOF
+
+RELEASE_PATH=$WORK/srv/erlang/releases
+RELEASE_VERSION_PATH=$WORK/srv/erlang/releases/0.0.1
+mkdir -p $RELEASE_VERSION_PATH
+
+touch $RELEASE_VERSION_PATH/erelease.rel
+touch $RELEASE_VERSION_PATH/sys.config
+touch $RELEASE_VERSION_PATH/vm.args
+
+touch $RELEASE_PATH/erelease.rel
+touch $RELEASE_PATH/RELEASES
+
+mkdir -p $WORK/srv/erlang/erts-6.0/bin
+ln -s $FAKE_ERLEXEC $WORK/srv/erlang/erts-6.0/bin/erlexec
+cat >$RELEASE_PATH/start_erl.data <<EOF
+6.0 0.0.1
+EOF
+
+cat >$WORK/srv/erlang/erts-6.0/bin/run_erl <<EOF
+#!/usr/bin/env bash
+
+echo Hello from run_erl 1>&2
+echo Args: 1>&2
+for i; do
+  echo "  \$i" 1>&2
+done
+EOF
+chmod +x $WORK/srv/erlang/erts-6.0/bin/run_erl
+
+RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
+mkdir -p $RELEASE_PATH
+touch $RELEASE_PATH/test.boot
+touch $RELEASE_PATH/sys.config
+touch $RELEASE_PATH/vm.args
+
+cat >"$EXPECTED" <<EOF
+erlinit: cmdline argc=1, merged argc=4
+erlinit: merged argv[0]=/sbin/init
+erlinit: merged argv[1]=-v
+erlinit: merged argv[2]=--alternate-exec
+erlinit: merged argv[3]=run_erl 1 2 exec 3
+fixture: mount("proc", "/proc", "proc", 14, data)
+fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mount("devtmpfs", "/dev", "devtmpfs", 42, data)
+fixture: mkdir("/dev/pts", 755)
+fixture: mkdir("/dev/shm", 1777)
+fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
+fixture: symlink("/dev/mmcblk0","/dev/rootdisk0")
+fixture: symlink("/dev/mmcblk0p4","/dev/rootdisk0p4")
+fixture: symlink("/dev/mmcblk0p3","/dev/rootdisk0p3")
+fixture: symlink("/dev/mmcblk0p2","/dev/rootdisk0p2")
+fixture: symlink("/dev/mmcblk0p1","/dev/rootdisk0p1")
+erlinit: set_ctty
+fixture: setsid()
+fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
+fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
+erlinit: find_release
+erlinit: Using release in /srv/erlang/releases/0.0.1.
+erlinit: find_sys_config
+erlinit: find_vm_args
+erlinit: find_boot_path
+erlinit: find_erts_directory
+erlinit: setup_environment
+erlinit: setup_networking
+fixture: ioctl(SIOCGIFFLAGS)
+fixture: ioctl(SIOCSIFFLAGS)
+fixture: ioctl(SIOCGIFINDEX)
+erlinit: configure_hostname
+erlinit: /etc/hostname not found
+erlinit: Env: 'HOME=/home/user0'
+erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'ROOTDIR=/srv/erlang'
+erlinit: Env: 'BINDIR=/srv/erlang/erts-6.0/bin'
+erlinit: Env: 'EMU=beam'
+erlinit: Env: 'PROGNAME=erlexec'
+erlinit: Env: 'RELEASE_SYS_CONFIG=/srv/erlang/releases/0.0.1/sys'
+erlinit: Env: 'RELEASE_ROOT=/srv/erlang'
+erlinit: Env: 'RELEASE_TMP=/tmp'
+erlinit: Arg: '/srv/erlang/erts-6.0/bin/run_erl'
+erlinit: Arg: '1'
+erlinit: Arg: '2'
+erlinit: Arg: 'exec 3 /srv/erlang/erts-6.0/bin/erlexec -config /srv/erlang/releases/0.0.1/sys.config -boot /srv/erlang/releases/0.0.1/test -args_file /srv/erlang/releases/0.0.1/vm.args -boot_var RELEASE_LIB /srv/erlang/lib'
+erlinit: Launching erl...
+Hello from run_erl
+Args:
+  1
+  2
+  exec 3 /srv/erlang/erts-6.0/bin/erlexec -config /srv/erlang/releases/0.0.1/sys.config -boot /srv/erlang/releases/0.0.1/test -args_file /srv/erlang/releases/0.0.1/vm.args -boot_var RELEASE_LIB /srv/erlang/lib
+erlinit: Erlang VM exited
+erlinit: kill_all
+erlinit: Sending SIGTERM to all processes
+fixture: kill(-1, 15)
+fixture: sleep(1)
+erlinit: Sending SIGKILL to all processes
+fixture: kill(-1, 9)
+erlinit: unmount_all
+erlinit: unmounting tmpfs at /sys/fs/cgroup...
+fixture: umount("/sys/fs/cgroup")
+erlinit: unmounting tmpfs at /dev/shm...
+fixture: umount("/dev/shm")
+erlinit: unmounting devpts at /dev/pts...
+fixture: umount("/dev/pts")
+erlinit: unmounting proc at /proc...
+fixture: umount("/proc")
+erlinit: unmounting sysfs at /sys...
+fixture: umount("/sys")
+EOF

@@ -714,6 +714,7 @@ static void child()
 
     // Start Erlang up
     char erlexec_path[ERLINIT_PATH_MAX];
+    char alternate_exec_path[ERLINIT_PATH_MAX];
     sprintf(erlexec_path, "%s/bin/erlexec", run_info.erts_dir);
     char *exec_path = erlexec_path;
 
@@ -722,10 +723,18 @@ static void child()
 
     char **argv = exec_argv;
     // If there's an alternate exec and it's set properly, then use it.
-    char *alternate_exec_path = strtok(options.alternate_exec, " ");
+    char *alternate_exec_program = strtok(options.alternate_exec, " ");
     int append = 0;
-    if (options.alternate_exec && alternate_exec_path && alternate_exec_path[0] != '\0') {
-        exec_path = alternate_exec_path;
+    if (options.alternate_exec && alternate_exec_program && alternate_exec_program[0] != '\0') {
+        // If the alternate exec is a relative path, force it to the ERTS
+        // directory. Otherwise the user should pass absolute paths.
+        if (alternate_exec_program[0] == '/') {
+            exec_path = alternate_exec_program;
+        } else {
+            sprintf(alternate_exec_path, "%s/bin/%s", run_info.erts_dir, alternate_exec_program);
+            exec_path = alternate_exec_path;
+        }
+
         argv = concat_options(argv, exec_path, 0); // argv0
 
         char *arg;

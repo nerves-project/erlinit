@@ -162,7 +162,10 @@ The following lists the options:
     Run the specified command on exit.
 
 -s, --alternate-exec <program and arguments>
-    Run another program that starts Erlang up. The arguments to `erlexec` are passed afterwards.
+    Run another program that starts Erlang up. The arguments to `erlexec` are
+    passed afterwards. This requires an absolute path to the program unless
+    you're running a program out of the ERTS directory. For example, to run
+    `run_erl`, just pass `run_erl`.
 
 --shutdown-report <path>
     Before shutting down or rebooting, save a report to the specified path.
@@ -338,6 +341,11 @@ section. Another use is to capture the Erlang console to a pipe and redirect it
 to a GUI or web app. The `dtach` utility is useful for this. An example
 invocation is: `--alternate-exec "/usr/bin/dtach -N /tmp/iex_prompt"`.  See the
 `dtach` manpage for details.
+
+IMPORTANT: Use absolute paths to the programs that you want to run unless they
+are supplied by the Erlang runtime. `erlinit` knows about the Erlang runtime and
+will find the proper Erlang runtime binary (like `run_erl`), if you just pass
+the program name.
 
 ## Multiple consoles
 

@@ -142,7 +142,7 @@
   * Support merging commandline arguments together so that it's possible to
     launch erlang via `run_erl`. This is required since `run_erl` runs
     `sh -c` to start Erlang up and that requires all arguments to be passed
-    as a long string. Example: `-s "/usr/bin/run_erl /tmp/ /tmp exec"`
+    as a long string. Example: `-s "run_erl /tmp/ /tmp exec"`
 
 ## v1.4.8
 
