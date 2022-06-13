@@ -191,7 +191,7 @@ The following lists the options:
 --warn-unused-tty
     Print a message on ttys receiving kernel logs, but not an Erlang console
 
---working_directory <path>
+--working-directory <path>
     Set the working directory
 
 --x-pivot-root-on-overlayfs
