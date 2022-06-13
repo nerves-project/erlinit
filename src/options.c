@@ -224,7 +224,7 @@ void parse_args(int argc, char *argv[])
         case OPT_PRE_RUN_EXEC: // --pre-run-exec /bin/special-init
             SET_STRING_OPTION(options.pre_run_exec);
             break;
-        case OPT_WORKING_DIRECTORY: // --working_directory /root
+        case OPT_WORKING_DIRECTORY: // --working-directory /root
             SET_STRING_OPTION(options.working_directory);
             break;
         case OPT_GRACEFUL_SHUTDOWN_TIMEOUT: // --graceful-shutdown-timeout 10000
