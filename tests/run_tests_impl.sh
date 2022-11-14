@@ -26,7 +26,7 @@ FAKE_ERTS_DIR=$WORK/usr/lib/erlang/erts-6.0
 # Collect the tests from the commandline
 TESTS=$*
 if [ -z $TESTS ]; then
-    TESTS=$(ls $TESTS_DIR/[0-9][0-9][0-9]_*)
+    TESTS=$(ls "$TESTS_DIR"/[0-9][0-9][0-9]_*)
 fi
 
 # Just in case there are some leftover from a previous test, clear it out
@@ -121,7 +121,7 @@ EOF
 
     # Trim the results of known lines that vary between runs
     # The calls to sed fixup differences between getopt implementations.
-    cat $RESULTS.raw | \
+    cat "$RESULTS.raw" | \
         grep -v "Starting erlinit" | \
         grep -v "erlinit: Env: 'LD_" | \
         grep -v "erlinit: Env: 'SHLVL=" | \
@@ -134,7 +134,7 @@ EOF
         $SED -e "s/^erlinit: unrecognized option/init: unrecognized option/" | \
         $SED -e "s/^erlinit: invalid option/init: invalid option/" | \
         $SED -e "s/invalid option -- 'Z'/invalid option -- Z/" \
-        > $RESULTS
+        > "$RESULTS"
 
     # check results
     diff -w "$RESULTS" "$EXPECTED"
