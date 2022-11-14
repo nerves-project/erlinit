@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.12.2
+
+* Bug fixes
+  * Extend max config file line from 127 characters to 255 to allow for longer
+    environment settings. You can also specify `-env` on multiple lines. Thanks
+    to @pojiro for raising this issue.
+
 ## v1.12.1
 
 * Bug fixes
