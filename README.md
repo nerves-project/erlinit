@@ -109,6 +109,7 @@ The following lists the options:
 
 -e, --env <VAR=value;VAR2=Value2...>
     Set additional environment variables
+    Specify multiple times for a line contains more than 128 characters.
 
 --gid <id>
     Run the Erlang VM under the specified group ID
