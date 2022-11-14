@@ -88,6 +88,39 @@ static int parse_config_line(char *line, char **argv, int max_args)
     return argc;
 }
 
+// This is similar to fgets except that it drops the remainder of lines that are too long
+static char *get_line(char *line, int max_len, FILE *fp)
+{
+    int count = 0;
+
+    // Leave room for the NULL terminator
+    max_len--;
+
+    while (count < max_len) {
+        int c = fgetc(fp);
+        if (c == EOF || c == '\n') {
+            line[count] = 0;
+
+            if (count == 0 && c == EOF)
+                return NULL;
+            else
+                return line;
+        }
+        line[count] = (char) c;
+        count++;
+    }
+    line[count] = 0;
+
+    // Trim off the rest of the line
+    for (;;) {
+        int c = fgetc(fp);
+        if (c == EOF || c == '\n')
+            break;
+    }
+
+    return line;
+}
+
 // This is a very simple config file parser that extracts
 // commandline arguments from the specified file.
 static int load_config(const char *filename,
@@ -99,8 +132,8 @@ static int load_config(const char *filename,
         return 0;
 
     int argc = 0;
-    char line[128];
-    while (fgets(line, sizeof(line), fp) && argc < max_args) {
+    char line[256];
+    while (get_line(line, sizeof(line), fp) && argc < max_args) {
         int new_args = parse_config_line(line, argv, max_args - argc);
         argc += new_args;
         argv += new_args;
