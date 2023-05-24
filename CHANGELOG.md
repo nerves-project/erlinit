@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.12.3
+
+* Bug fixes
+  * Switch default TERM setting from `vt100` to `xterm-256color`. VT100
+    emulation was causing `$<50>` output delay sequences to be inserted and
+    these aren't necessary. `xterm-256color` was determined to be a safe default
+    for the majority of console users.
+
 ## v1.12.2
 
 * Bug fixes
