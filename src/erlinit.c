@@ -532,7 +532,7 @@ static void setup_environment(const struct erl_run_info *run_info)
     // PATH appears to only be needed for user convenience when running os:cmd/1
     // It may be possible to remove in the future.
     putenv("PATH=/usr/sbin:/usr/bin:/sbin:/bin");
-    putenv("TERM=vt100");
+    putenv("TERM=xterm-256color");
 
     // Erlang environment
 

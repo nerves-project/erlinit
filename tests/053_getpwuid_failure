@@ -44,7 +44,7 @@ erlinit: setting uid to 1
 fixture: setuid(1)
 erlinit: Env: 'HOME=/root'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
-erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'TERM=xterm-256color'
 erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
 erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
 erlinit: Env: 'EMU=beam'

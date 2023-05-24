@@ -55,7 +55,7 @@ erlinit: /etc/hostname not found
 erlinit: warn_unused_tty
 erlinit: Env: 'HOME=/home/user0'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
-erlinit: Env: 'TERM=vt100'
+erlinit: Env: 'TERM=xterm-256color'
 erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
 erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
 erlinit: Env: 'EMU=beam'
