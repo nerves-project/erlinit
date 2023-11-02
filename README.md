@@ -220,6 +220,10 @@ known good version of the application. When the command exits, `erlinit` will
 either reboot, hang, or poweroff depending on whether `--hang-on-exit` or
 `--poweroff-on-exit` were passed.
 
+If you're using `heart`/`nerves_heart` or some other kind of application watchdog
+make sure to disable those as well. They might also be triggering reboots if the
+application is not up and running.
+
 ## Read-only root file systems
 
 By default `erlinit` keeps the root filesystem mounted read-only. This is useful
