@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.13.0
+
+* New features
+  * Save and restore random number seeds with [SeedRNG](https://git.zx2c4.com/seedrng/tree/README.md).
+    This saves seeds to `/root/seedrng` since that's a persisted, writable
+    location on Nerves. If not using Nerves, this location can be changed at
+    compile-time using `LOCALSTATEDIR`.
+
 ## v1.12.3
 
 * Bug fixes
