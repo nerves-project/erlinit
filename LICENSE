@@ -1,4 +1,5 @@
-Except for the regression test code, all code has the following license:
+Except for the regression test code and seedrng.c, all code has the following
+license:
 
 The MIT License (MIT)
 
@@ -26,3 +27,10 @@ To support regression testing on OSX, Linux kernel header files were copied and
 modified to reduce dependencies. These files are in src/compat. None of these
 files are needed to use `erlinit` with Nerves or any other embedded Linux-based
 distribution.
+
+----
+seedrng.c has the following header:
+
+SPDX-License-Identifier: (GPL-2.0 OR Apache-2.0 OR MIT OR BSD-1-Clause OR CC0-1.0)
+
+Copyright (C) 2022 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.

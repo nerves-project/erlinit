@@ -396,6 +396,16 @@ builds](https://reproducible-builds.org). Set the
 [SOURCE_DATE_EPOCH](https://reproducible-builds.org/docs/source-date-epoch/)
 environment variable to force the build time to be a constant.
 
+## Random number seeds
+
+Embedded systems usually run a script to save a random number on shutdown that's
+used to initialize the random number generator on the next boot. `erlinit` uses
+[SeedRNG](https://git.zx2c4.com/seedrng/tree/README.md) for this. The seed is
+stored under `/root/seedrng` by default since that's a writable and persisted
+partition on Nerves. SeedRNG is called right before a `--pre-run-exec` and at
+shutdown after all other processes have exited. Errors are ignored, but logged
+as warnings. Specify `-v` to `erlinit` to see some information messages.
+
 ## Hacking
 
 It seems like there are an endless number of small tweaks to `erlinit` that

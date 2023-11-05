@@ -135,6 +135,9 @@ int system_cmd(const char *cmd, char *output_buffer, int length);
 // Shutdown report
 void shutdown_report_create(const char *path, const struct erlinit_exit_info *info);
 
+// seedrng
+int seedrng(void);
+
 #ifdef __APPLE__
 #include "compat.h"
 #endif

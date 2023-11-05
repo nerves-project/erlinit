@@ -1,5 +1,6 @@
 #include "compat.h"
 #include <stdio.h>
+#include <string.h>
 #include <errno.h>
 
 static int sigtimedwait_signal = 0;
@@ -64,4 +65,11 @@ int pivot_root(const char *new_root, const char *put_old)
     (void) new_root;
     (void) put_old;
     return 0;
+}
+
+ssize_t getrandom(void *buf, size_t buflen, unsigned int flags)
+{
+    (void) flags;
+    memset(buf, 0xaa, buflen);
+    return buflen;
 }

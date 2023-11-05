@@ -21,6 +21,12 @@
 #include <pwd.h>
 #include <sys/resource.h>
 
+#ifndef __APPLE__
+#include <linux/random.h>
+#else
+#define RNDADDENTROPY _IOW( 'R', 0x03, int [2] )
+#endif
+
 #define log(MSG, ...) do { fprintf(stderr, "fixture: " MSG "\n", ## __VA_ARGS__); } while (0)
 
 #ifndef __APPLE__
@@ -491,6 +497,10 @@ REPLACE(int, ioctl, (int fd, unsigned long request, ...))
         // Ignore FIODTYPE ioctls on OSX.
         return 0;
 #endif
+
+    case RNDADDENTROPY:
+        req = "RNDADDENTROPY";
+        break;
 
     default:
         log("unknown ioctl(0x%08lx)", request);

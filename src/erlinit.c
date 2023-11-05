@@ -705,6 +705,16 @@ static void child()
                     run_info.release_base_dir);
     }
 
+    // Restore the seed for the random number generator (failures ignored)
+    //
+    // This has to happen after `mount_filesystems()` and setting up the
+    // environment. Running it before pre_run_exec allows that program to use
+    // random numbers.
+    //
+    // It's not uncommon for pre_run_exec to be used to start hardware entropy
+    // daemons to help with random number generation too.
+    seedrng();
+
     // Optionally run a "pre-run" program
     if (options.pre_run_exec)
         run_cmd(options.pre_run_exec);
@@ -1021,6 +1031,9 @@ int main(int argc, char *argv[])
     // Dump state for post-mortem analysis of why the power off or reboot occurred.
     if (options.shutdown_report)
         shutdown_report_create(options.shutdown_report, &exit_info);
+
+    // Save the seed for the random number generator (failures ignored)
+    seedrng();
 
     // Unmount almost everything.
     unmount_all();

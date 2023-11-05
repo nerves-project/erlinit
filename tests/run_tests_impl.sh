@@ -55,6 +55,7 @@ run() {
     ln -s "$ERLINIT" "$WORK/sbin/init"
     mkdir -p "$FAKE_ERTS_DIR/bin"
     ln -s "$FAKE_ERLEXEC" "$FAKE_ERTS_DIR/bin/erlexec"
+    mkdir -p "$WORK/root"
 
     # Create some device files (the fixture sets their types)
     touch "$WORK/dev/mmcblk0" "$WORK/dev/mmcblk0p1" "$WORK/dev/mmcblk0p2" "$WORK/dev/mmcblk0p3" "$WORK/dev/mmcblk0p4"
@@ -100,6 +101,10 @@ devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
 tmpfs /dev/shm tmpfs rw,nosuid,nodev 0 0
 tmpfs /sys/fs/cgroup tmpfs ro,nosuid,nodev,noexec,mode=755 0 0
 EOF
+    # Fake random info
+    mkdir -p "$WORK/proc/sys/kernel/random"
+    echo "256" > "$WORK/proc/sys/kernel/random/poolsize"
+    touch "$WORK/dev/urandom"
 
     # Run the test script to setup files for the test
     source "$TESTS_DIR/$TEST"
