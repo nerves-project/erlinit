@@ -56,6 +56,8 @@ fixture: ioctl(SIOCSIFFLAGS)
 fixture: ioctl(SIOCGIFINDEX)
 erlinit: configure_hostname
 erlinit: /etc/hostname not found
+fixture: mkdir("/root/seedrng", 700)
+erlinit: Saving 256 bits of creditable seed for next boot
 erlinit: Env: 'HOME=/home/user0'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=xterm-256color'
@@ -87,6 +89,10 @@ fixture: kill(-1, 15)
 fixture: sleep(1)
 erlinit: Sending SIGKILL to all processes
 fixture: kill(-1, 9)
+fixture: mkdir("/root/seedrng", 700)
+erlinit: Seeding 256 bits and crediting
+fixture: ioctl(RNDADDENTROPY)
+erlinit: Saving 256 bits of creditable seed for next boot
 erlinit: unmount_all
 erlinit: unmounting tmpfs at /sys/fs/cgroup...
 fixture: umount("/sys/fs/cgroup")
