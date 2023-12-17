@@ -815,6 +815,17 @@ static void child()
     fatal("execvp failed to run %s: %s", exec_path, strerror(errno));
 }
 
+static void disable_core_dumps()
+{
+    FILE *fp = fopen("/proc/sys/kernel/core_pattern", "w");
+    if (fp == NULL) {
+        warn("Failed to disable core dumps");
+        return;
+    }
+    fprintf(fp, "|/bin/false");
+    fclose(fp);
+}
+
 static void kill_all()
 {
     debug("kill_all");
@@ -822,6 +833,8 @@ static void kill_all()
     // Sync as much as possible to disk before going on the process killing spree to
     // reduce I/O from the processes exiting.
     sync();
+
+    disable_core_dumps();
 
     // Kill processes the nice way
     warn("Sending SIGTERM to all processes");
