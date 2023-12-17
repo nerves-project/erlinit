@@ -819,10 +819,13 @@ static void kill_all()
 {
     debug("kill_all");
 
+    // Sync as much as possible to disk before going on the process killing spree to
+    // reduce I/O from the processes exiting.
+    sync();
+
     // Kill processes the nice way
     warn("Sending SIGTERM to all processes");
     kill(-1, SIGTERM);
-    sync();
 
     sleep(1);
 
