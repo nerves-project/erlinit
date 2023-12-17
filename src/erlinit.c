@@ -1056,7 +1056,7 @@ int main(int argc, char *argv[])
         sleep(5);
     }
 
-    // Close stdio filehandles to avoid hanging the musb driver when running
+    // Close stdio file handles to avoid hanging the musb driver when running
     // g_serial. Not all platforms hang when these are left open, but it seems
     // like a reasonable thing to do especially since we can't use them
     // anyway.
