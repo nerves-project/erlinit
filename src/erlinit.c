@@ -994,6 +994,14 @@ prepare_to_exit:
     }
 }
 
+
+/* See reboot(2) for details about the reboot command with arguments */
+#include <linux/reboot.h>
+#include <linux/syscall.h>
+static inline int reboot_with_args(int cmd, const void *arg) {
+    return (int) syscall(SYS_reboot, LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, cmd, arg);
+}
+
 int main(int argc, char *argv[])
 {
     if (getpid() != 1)
@@ -1078,7 +1086,10 @@ int main(int argc, char *argv[])
     close(STDERR_FILENO);
 
     // Reboot/poweroff/halt
-    reboot(exit_info.desired_reboot_cmd);
+    if (exit_info.reboot_args)
+        reboot_with_args(exit_info.desired_reboot_cmd, exit_info.reboot_args);
+    else
+        reboot(exit_info.desired_reboot_cmd);
 
     // If we get here, oops the kernel.
     return 0;

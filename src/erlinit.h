@@ -95,6 +95,7 @@ struct erlinit_exit_info {
     struct timespec shutdown_start;
     struct timespec shutdown_complete;
     int graceful_shutdown_ok;
+    const void *reboot_args;
 };
 
 // Logging functions

@@ -73,3 +73,9 @@ ssize_t getrandom(void *buf, size_t buflen, unsigned int flags)
     memset(buf, 0xaa, buflen);
     return buflen;
 }
+
+// This is only needed for reboot, so hardcode the arguments.
+long fake_syscall(long number, int magic, int magic2, int cmd, const void *arg)
+{
+    return 0;
+}
