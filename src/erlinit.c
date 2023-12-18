@@ -996,8 +996,7 @@ prepare_to_exit:
 
 
 /* See reboot(2) for details about the reboot command with arguments */
-#include <linux/reboot.h>
-#include <linux/syscall.h>
+#include <sys/syscall.h>
 static inline int reboot_with_args(int cmd, const void *arg) {
     return (int) syscall(SYS_reboot, LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, cmd, arg);
 }
