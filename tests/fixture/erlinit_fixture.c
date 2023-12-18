@@ -20,6 +20,7 @@
 #include <termios.h>
 #include <pwd.h>
 #include <sys/resource.h>
+#include <sys/syscall.h>
 
 #ifndef __APPLE__
 #include <linux/random.h>
@@ -141,6 +142,37 @@ REPLACE(int, reboot, (int cmd))
     exit(0);
 }
 
+// syscall gives a deprecation warning on MacOS, so handle this is compat.c
+#ifndef __APPLE__
+REPLACE(long, syscall, (long number, ...))
+{
+    unsigned int magic1;
+    unsigned int magic2;
+    unsigned int cmd;
+    const char *arg;
+
+    va_list ap;
+    va_start(ap, number);
+    magic1 = va_arg(ap, int);
+    magic2 = va_arg(ap, int);
+    cmd = va_arg(ap, int);
+    arg = va_arg(ap, const char *);
+    va_end(ap);
+
+#define LINUX_REBOOT_MAGIC1     0xfee1dead
+#define LINUX_REBOOT_MAGIC2     672274793
+#define LINUX_REBOOT_CMD_RESTART2       0xA1B2C3D4
+
+    // Only expecting this one syscall, so hardcode a lot here.
+    if (number == SYS_reboot && magic1 == LINUX_REBOOT_MAGIC1 && magic2 == LINUX_REBOOT_MAGIC2 && cmd == LINUX_REBOOT_CMD_RESTART2)
+        log("reboot(0x%08x, \"%s\")", cmd, arg);
+    else
+        log("syscall(0x%08x, 0x%08x, 0x%08x, 0x%08x)", cmd, magic1, magic2, cmd);
+
+    exit(0);
+}
+#endif
+
 REPLACE(int, clock_settime, (clockid_t clk_id, const struct timespec *tp))
 {
     (void) clk_id;
@@ -231,6 +263,15 @@ OVERRIDE(int, open, (const char *pathname, int flags, ...))
         return -1;
 
     return ORIGINAL(open)(new_path, flags, mode);
+}
+
+OVERRIDE(int, close, (int fd))
+{
+    // Ignore the default file handles when testing since we lose errors
+    if (fd == STDIN_FILENO || fd == STDOUT_FILENO || fd == STDERR_FILENO)
+        return 0;
+
+    return ORIGINAL(close)(fd);
 }
 
 #ifdef __APPLE__

@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <err.h>
+
+#include "sys/syscall.h"
+#include "linux/reboot.h"
 
 static int sigtimedwait_signal = 0;
 static int sigtimedwait_counter = 0;
@@ -72,4 +76,21 @@ ssize_t getrandom(void *buf, size_t buflen, unsigned int flags)
     (void) flags;
     memset(buf, 0xaa, buflen);
     return buflen;
+}
+
+// This is only needed for reboot, so hardcode most argument checks.
+long fake_syscall(long number, unsigned int magic, unsigned int magic2, unsigned int cmd, const void *arg)
+{
+    if (number != SYS_reboot)
+        errx(1, "Only syscall expecting to receive is the reboot one?");
+
+    if (magic != LINUX_REBOOT_MAGIC1 || (magic2 != LINUX_REBOOT_MAGIC1 && magic2 != LINUX_REBOOT_MAGIC2))
+        errx(1, "Unexpected magic passed to reboot syscall");
+
+    if (cmd != LINUX_REBOOT_CMD_RESTART2)
+        errx(1, "Expected LINUX_REBOOT_CMD_RESTART2 to be passed to reboot with arguments");
+
+    // On Linux, the fixture logs this, but that doesn't work on MacOS, so fake it.
+    fprintf(stderr, "fixture: reboot(0x%08x, \"%s\")", cmd, (const char *) arg);
+    return 0;
 }

@@ -71,4 +71,8 @@ int sigprocmask_noop(int how, const sigset_t *restrict set, sigset_t *restrict o
 #define RLIMIT_RTTIME     104
 #define RLIMIT_MSGQUEUE   105
 
+// syscall
+#define syscall fake_syscall
+long fake_syscall(long number, unsigned int magic, unsigned int magic2, unsigned int cmd, const void *arg);
+
 #endif

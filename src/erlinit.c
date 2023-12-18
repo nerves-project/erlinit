@@ -903,6 +903,22 @@ static void wait_for_graceful_shutdown(pid_t pid, struct erlinit_exit_info *exit
     clock_gettime(CLOCK_MONOTONIC, &exit_info->shutdown_complete);
 }
 
+static void read_reboot_args(char *args, size_t max_length)
+{
+    FILE *fp = fopen("/run/reboot-param", "r");
+    if (fp == NULL) {
+        args[0] = '\0';
+        return;
+    }
+
+    if (fgets(args, max_length, fp) != NULL) {
+        trim_whitespace(args);
+    } else {
+        args[0] = '\0';
+    }
+    fclose(fp);
+}
+
 static void fork_and_wait(struct erlinit_exit_info *exit_info)
 {
     sigset_t mask;
@@ -962,7 +978,8 @@ static void fork_and_wait(struct erlinit_exit_info *exit_info)
         } else if (rc == SIGTERM) {
             // Reboot request
             debug("sigterm -> reboot");
-            exit_info->desired_reboot_cmd = LINUX_REBOOT_CMD_RESTART;
+            read_reboot_args(exit_info->reboot_args, sizeof(exit_info->reboot_args));
+            exit_info->desired_reboot_cmd = exit_info->reboot_args[0] == '\0' ? LINUX_REBOOT_CMD_RESTART : LINUX_REBOOT_CMD_RESTART2;
             wait_for_graceful_shutdown(pid, exit_info);
             break;
         } else if (rc == SIGUSR2) {
@@ -992,6 +1009,13 @@ prepare_to_exit:
         else
             warn("Erlang VM exited");
     }
+}
+
+
+/* See reboot(2) for details about the reboot command with arguments (arg is a NULL-terminated string)*/
+#include <sys/syscall.h>
+static inline int reboot_with_args(int cmd, const void *arg) {
+    return (int) syscall(SYS_reboot, LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, cmd, arg);
 }
 
 int main(int argc, char *argv[])
@@ -1078,7 +1102,10 @@ int main(int argc, char *argv[])
     close(STDERR_FILENO);
 
     // Reboot/poweroff/halt
-    reboot(exit_info.desired_reboot_cmd);
+    if (exit_info.reboot_args[0] != '\0')
+        reboot_with_args(exit_info.desired_reboot_cmd, exit_info.reboot_args);
+    else
+        reboot(exit_info.desired_reboot_cmd);
 
     // If we get here, oops the kernel.
     return 0;

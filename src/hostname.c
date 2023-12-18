@@ -30,21 +30,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <unistd.h>
 
-static void trim_whitespace(char *s)
-{
-    char *left = s;
-    while (*left != 0 && isspace(*left))
-        left++;
-    char *right = s + strlen(s) - 1;
-    while (right >= left && isspace(*right))
-        right--;
-
-    int len = right - left + 1;
-    if (len)
-        memmove(s, left, len);
-    s[len] = 0;
-}
-
 static void kill_whitespace(char *s)
 {
     // This function trims whitespace off the front and back, and if

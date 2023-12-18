@@ -103,6 +103,8 @@ static void report_exit_info(FILE *fp, const struct erlinit_exit_info *exit_info
     if (WIFSIGNALED(exit_info->wait_status))
         fprintf(fp, "Erlang exited due to signal: %d\n", WTERMSIG(exit_info->wait_status));
     fprintf(fp, "Shutdown action: %s\n", reboot_cmd(exit_info->desired_reboot_cmd));
+    if (exit_info->reboot_args[0] != '\0')
+        fprintf(fp, "Reboot args: %s\n", (const char *) exit_info->reboot_args);
 }
 
 static void report_dmesg(FILE *fp)

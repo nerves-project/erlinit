@@ -411,6 +411,20 @@ partition on Nerves. SeedRNG is called right before a `--pre-run-exec` and at
 shutdown after all other processes have exited. Errors are ignored, but logged
 as warnings. Specify `-v` to `erlinit` to see some information messages.
 
+## Passing arguments to reboot
+
+It's possible to pass arguments to the `reboot(2)` syscall. This feature is used
+by the Raspberry Pi bootloader to support its automatic failback mechanism. See
+the [tryboot
+documentation](https://www.raspberrypi.com/documentation/computers/config_txt.html#the-tryboot-filter)
+for high level details for Raspberry Pi OS. The main difference with `erlinit` is
+how the `"0 tryboot"` parameter gets passed to the kernel. Raspberry Pi OS uses
+Systemd and Systemd's `reboot` implementation writes the parameter to
+`/run/systemd/reboot-param` to pass it to PID 1. With `erlinit`, you're
+responsible for writing `"0 tryboot"` to `/run/reboot-param` and then running
+`reboot`. `erlinit` will see file and pass the argument to the kernel as
+intended.
+
 ## Hacking
 
 It seems like there are an endless number of small tweaks to `erlinit` that

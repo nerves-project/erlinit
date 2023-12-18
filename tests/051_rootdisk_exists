@@ -75,5 +75,6 @@ erlinit: unmounting proc at /proc...
 fixture: umount("/proc")
 erlinit: unmounting sysfs at /sys...
 fixture: umount("/sys")
+fixture: reboot(0x01234567)
 EOF
 

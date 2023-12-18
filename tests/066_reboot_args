@@ -1,20 +1,27 @@
 #!/usr/bin/env bash
 
 #
-# Test whether the mount option works. We can't easily test
-# that the mount works, so just make sure that it gets close.
+# Test that gracefully rebooting with arguments works.
 #
 
 cat >"$CMDLINE_FILE" <<EOF
--v --mount /dev/mmcblk0p3:/root:vfat::
+-v
+EOF
+
+RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
+mkdir -p $RELEASE_PATH
+touch $RELEASE_PATH/test.boot
+touch $RELEASE_PATH/sys.config
+touch $RELEASE_PATH/vm.args
+ln -sf $FAKE_ERLEXEC.reboot $FAKE_ERTS_DIR/bin/erlexec
+cat >"$WORK/run/reboot-param" <<EOF
+  0 tryboot
 EOF
 
 cat >"$EXPECTED" <<EOF
-erlinit: cmdline argc=4, merged argc=4
+erlinit: cmdline argc=2, merged argc=2
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
-erlinit: merged argv[2]=--mount
-erlinit: merged argv[3]=/dev/mmcblk0p3:/root:vfat::
 fixture: mount("proc", "/proc", "proc", 14, data)
 fixture: mount("sysfs", "/sys", "sysfs", 14, data)
 fixture: mount("devtmpfs", "/dev", "devtmpfs", 42, data)
@@ -30,10 +37,12 @@ erlinit: set_ctty
 fixture: setsid()
 fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
 fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
-fixture: mkdir("/root", 755)
-fixture: mount("/dev/mmcblk0p3", "/root", "vfat", 0, data)
 erlinit: find_release
-erlinit: No release found in /srv/erlang.
+erlinit: /srv/erlang/releases/start_erl.data not found.
+erlinit: Using release in /srv/erlang/releases/0.0.1.
+erlinit: find_sys_config
+erlinit: find_vm_args
+erlinit: find_boot_path
 erlinit: find_erts_directory
 erlinit: setup_environment
 erlinit: setup_networking
@@ -47,17 +56,28 @@ erlinit: Saving 256 bits of creditable seed for next boot
 erlinit: Env: 'HOME=/home/user0'
 erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 erlinit: Env: 'TERM=xterm-256color'
-erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
+erlinit: Env: 'ROOTDIR=/srv/erlang'
 erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
 erlinit: Env: 'EMU=beam'
 erlinit: Env: 'PROGNAME=erlexec'
+erlinit: Env: 'RELEASE_SYS_CONFIG=/srv/erlang/releases/0.0.1/sys'
+erlinit: Env: 'RELEASE_ROOT=/srv/erlang'
+erlinit: Env: 'RELEASE_TMP=/tmp'
 erlinit: Arg: 'erlexec'
+erlinit: Arg: '-config'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/sys.config'
+erlinit: Arg: '-boot'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/test'
+erlinit: Arg: '-args_file'
+erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
 erlinit: Arg: '-boot_var'
 erlinit: Arg: 'RELEASE_LIB'
 erlinit: Arg: '/srv/erlang/lib'
 erlinit: Launching erl...
-Hello from erlexec
-erlinit: Erlang VM exited
+erlexec is sending signal to reboot
+erlinit: sigterm -> reboot
+erlinit: waiting 10000 ms for graceful shutdown
+erlinit: graceful shutdown detected
 erlinit: kill_all
 erlinit: Sending SIGTERM to all processes
 fixture: kill(-1, 15)
@@ -79,5 +99,5 @@ erlinit: unmounting proc at /proc...
 fixture: umount("/proc")
 erlinit: unmounting sysfs at /sys...
 fixture: umount("/sys")
-fixture: reboot(0x01234567)
+fixture: reboot(0xa1b2c3d4, "0 tryboot")
 EOF

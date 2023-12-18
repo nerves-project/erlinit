@@ -50,6 +50,7 @@ run() {
     mkdir -p "$WORK/sbin"
     mkdir -p "$WORK/bin"
     mkdir -p "$WORK/etc"
+    mkdir -p "$WORK/run"
     mkdir -p "$WORK/tmp"
     mkdir -p "$WORK/usr/bin"
     ln -s "$ERLINIT" "$WORK/sbin/init"

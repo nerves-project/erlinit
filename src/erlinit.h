@@ -95,6 +95,7 @@ struct erlinit_exit_info {
     struct timespec shutdown_start;
     struct timespec shutdown_complete;
     int graceful_shutdown_ok;
+    char reboot_args[32];
 };
 
 // Logging functions
@@ -137,6 +138,9 @@ void shutdown_report_create(const char *path, const struct erlinit_exit_info *in
 
 // seedrng
 int seedrng(void);
+
+// Utility functions
+void trim_whitespace(char *s);
 
 #ifdef __APPLE__
 #include "compat.h"
