@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <err.h>
+
+#include "sys/syscall.h"
+#include "linux/reboot.h"
 
 static int sigtimedwait_signal = 0;
 static int sigtimedwait_counter = 0;
@@ -75,7 +79,15 @@ ssize_t getrandom(void *buf, size_t buflen, unsigned int flags)
 }
 
 // This is only needed for reboot, so hardcode the arguments.
-long fake_syscall(long number, int magic, int magic2, int cmd, const void *arg)
+long fake_syscall(long number, unsigned int magic, unsigned int magic2, unsigned int cmd, const void *arg)
 {
+    if (number != SYS_reboot || magic != LINUX_REBOOT_MAGIC1 || magic2 != LINUX_REBOOT_MAGIC1)
+        errx(1, "Unexpected arguments passed to syscall");
+
+    if (cmd != LINUX_REBOOT_CMD_RESTART2)
+        errx(1, "Expected LINUX_REBOOT_CMD_RESTART2 to be passed to reboot with arguments");
+
+    fprintf(stderr, "Reboot arguments: %s", (const char *) arg);
+
     return 0;
 }

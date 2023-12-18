@@ -73,6 +73,6 @@ int sigprocmask_noop(int how, const sigset_t *restrict set, sigset_t *restrict o
 
 // syscall
 #define syscall fake_syscall
-long fake_syscall(long number, int magic, int magic2, int cmd, const void *arg);
+long fake_syscall(long number, unsigned int magic, unsigned int magic2, unsigned int cmd, const void *arg);
 
 #endif
