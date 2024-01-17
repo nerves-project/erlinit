@@ -200,6 +200,10 @@ The following lists the options:
     an overlayfs. It is experimental and the option will change.
 ```
 
+If you're using this in combination with `Nerves` you can customize configration
+via the application env as well. For details see the 
+[related documentation](https://hexdocs.pm/nerves/advanced-configuration.html#overriding-erlinit-config-from-mix-config).
+
 ## Rebooting or hanging when the Erlang VM exits
 
 In production, if the Erlang VM exits for any reason, the desired behavior is
