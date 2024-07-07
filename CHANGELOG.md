@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.14.0
+
+* New features
+  * Support passing arguments to reboot via the `/run/reboot-param` file. This
+    is required to support the Raspberry Pi's tryboot feature to implement A/B
+    partition failback. See the README.md for info.
+  * In the hostname pattern, support a special printf format specifier for
+    trimming the left side of the serial number string. `%-0.4s` lets you use
+    the 4 rightmost characters of the serial number in the hostname.
+
+* Bug fixes
+  * Disable core dumps before killing programs on shutdowns and reboots. This
+    saves I/O operations that might impact the saving of important data.
+  * Sync before killing programs on shutdowns and reboots to reduce the amount
+    of I/O needed during the graceful part of the shutdown.
+
 ## v1.13.0
 
 * New features
