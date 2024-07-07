@@ -8,7 +8,7 @@ cat >"$CONFIG" <<EOF
 -v
 
 # Specify a hostname pattern that has a unique id part
---hostname-pattern nerves-%.4s
+--hostname-pattern nerves-%.10s-
 
 # Call out to a dummy unique id generator
 --uniqueid-exec "/usr/bin/make-unique-id"
@@ -17,7 +17,7 @@ EOF
 cat >"$WORK/usr/bin/make-unique-id" <<EOF
 #!/usr/bin/env bash
 
-echo "12345678"
+echo "123456789abcdef"
 EOF
 chmod +x "$WORK/usr/bin/make-unique-id"
 
@@ -26,7 +26,7 @@ erlinit: cmdline argc=1, merged argc=6
 erlinit: merged argv[0]=/sbin/init
 erlinit: merged argv[1]=-v
 erlinit: merged argv[2]=--hostname-pattern
-erlinit: merged argv[3]=nerves-%.4s
+erlinit: merged argv[3]=nerves-%.10s-
 erlinit: merged argv[4]=--uniqueid-exec
 erlinit: merged argv[5]=/usr/bin/make-unique-id
 fixture: mount("proc", "/proc", "proc", 14, data)
@@ -54,8 +54,8 @@ fixture: ioctl(SIOCSIFFLAGS)
 fixture: ioctl(SIOCGIFINDEX)
 erlinit: configure_hostname
 erlinit: system_cmd '/usr/bin/make-unique-id'
-erlinit: Hostname: nerves-1234
-fixture: sethostname("nerves-1234", 11)
+erlinit: Hostname: nerves-123456789a-
+fixture: sethostname("nerves-123456789a-", 18)
 fixture: mkdir("/root/seedrng", 700)
 erlinit: Saving 256 bits of creditable seed for next boot
 erlinit: Env: 'HOME=/home/user0'

@@ -136,8 +136,9 @@ The following lists the options:
     Specify multiple times for more than one path to mount.
 
 -n, --hostname-pattern <pattern>
-    Specify a hostname for the system. The pattern is a printf(3)
-    pattern. It is passed a unique ID for the board. E.g., "nerves-%.4s"
+    Specify a hostname for the system. The pattern supports a "%[-][.len]s"
+    where len is the length of the unique ID to use and the "-" controls
+    whether the ID is trimmed from the right or left. E.g., "nerves-%.4s"
 
 --pre-run-exec <program and arguments>
     Run the specified command before Erlang starts
@@ -201,7 +202,7 @@ The following lists the options:
 ```
 
 If you're using this in combination with `Nerves` you can customize configration
-via the application env as well. For details see the 
+via the application env as well. For details see the
 [related documentation](https://hexdocs.pm/nerves/advanced-configuration.html#overriding-erlinit-config-from-mix-config).
 
 ## Rebooting or hanging when the Erlang VM exits
