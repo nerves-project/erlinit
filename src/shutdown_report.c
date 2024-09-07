@@ -89,7 +89,7 @@ static void report_current_time(FILE *fp)
 
 static void report_exit_info(FILE *fp, const struct erlinit_exit_info *exit_info)
 {
-    fprintf(fp, "Intention exit: %s\n", yes_or_no(exit_info->is_intentional_exit));
+    fprintf(fp, "Intentional exit: %s\n", yes_or_no(exit_info->is_intentional_exit));
     fprintf(fp, "Graceful shutdown succeeded: %s\n", yes_or_no(exit_info->graceful_shutdown_ok));
     fprintf(fp, "Graceful shutdown time: ");
     double shutdown_seconds = delta_seconds(&exit_info->shutdown_start, &exit_info->shutdown_complete);
