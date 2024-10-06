@@ -438,7 +438,7 @@ static int find_release_dirs(const char *base,
     int i;
     for (i = 0; i < n; i++) {
         char dirpath[ERLINIT_PATH_MAX];
-        sprintf(dirpath, "%s/%s", base, namelist[i]->d_name);
+        snprintf(dirpath, sizeof(dirpath), "%s/%s", base, namelist[i]->d_name);
 
         if (!is_directory(dirpath))
             continue;
@@ -725,7 +725,7 @@ static void child()
     // Start Erlang up
     char erlexec_path[ERLINIT_PATH_MAX];
     char alternate_exec_path[ERLINIT_PATH_MAX];
-    sprintf(erlexec_path, "%s/bin/erlexec", run_info.erts_dir);
+    snprintf(erlexec_path, sizeof(erlexec_path), "%s/bin/erlexec", run_info.erts_dir);
     char *exec_path = erlexec_path;
 
     char *exec_argv[64];
@@ -741,7 +741,7 @@ static void child()
         if (alternate_exec_program[0] == '/') {
             exec_path = alternate_exec_program;
         } else {
-            sprintf(alternate_exec_path, "%s/bin/%s", run_info.erts_dir, alternate_exec_program);
+            snprintf(alternate_exec_path, sizeof(alternate_exec_path), "%s/bin/%s", run_info.erts_dir, alternate_exec_program);
             exec_path = alternate_exec_path;
         }
 
