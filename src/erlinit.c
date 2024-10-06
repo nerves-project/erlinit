@@ -387,7 +387,7 @@ static int find_release_version_dir(const char *releases_dir,
     }
 
     // No start_erl.data, so pick the first subdirectory.
-    struct dirent **namelist;
+    struct dirent **namelist = NULL;
     int n = scandir(releases_dir,
                     &namelist,
                     dotfile_filter,
@@ -405,7 +405,7 @@ static int find_release_version_dir(const char *releases_dir,
         }
     }
 
-    if (n >= 0) {
+    if (n > 0) {
         for (i = 0; i < n; i++)
             free(namelist[i]);
         free(namelist);
