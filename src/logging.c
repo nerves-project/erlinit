@@ -91,14 +91,14 @@ void warn(const char *fmt, ...)
 
 void fatal(const char *fmt, ...)
 {
-    log_write("\n\nFATAL ERROR:\n", 18);
+    log_write("\n\nFATAL ERROR:\n", 15);
 
     va_list ap;
     va_start(ap, fmt);
     log_format(fmt, ap);
     va_end(ap);
 
-    log_write("\n\nCANNOT CONTINUE.\n", 22);
+    log_write("\n\nCANNOT CONTINUE.\n", 19);
 
     // Sleep so that the message can be printed
     sleep(1);
