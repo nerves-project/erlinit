@@ -208,11 +208,11 @@ void create_rootdisk_symlinks()
     if (rootdisk_files_created())
         return;
 
-    struct block_device_info *infos = scan_for_block_devices();
     dev_t rootdev = root_filesystem_device();
     if (rootdev == 0)
         return;
 
+    struct block_device_info *infos = scan_for_block_devices();
     struct block_device_info *rootfs_info = NULL;
     for (struct block_device_info *i = infos; i != NULL; i = i->next) {
         if (i->dev == rootdev) {
