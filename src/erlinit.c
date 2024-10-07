@@ -733,9 +733,11 @@ static void child()
 
     char **argv = exec_argv;
     // If there's an alternate exec and it's set properly, then use it.
-    char *alternate_exec_program = strtok(options.alternate_exec, " ");
+    char *alternate_exec_program = NULL;
     int append = 0;
-    if (options.alternate_exec && alternate_exec_program && alternate_exec_program[0] != '\0') {
+    if (options.alternate_exec &&
+        (alternate_exec_program = strtok(options.alternate_exec, " ")) &&
+        alternate_exec_program[0] != '\0') {
         // If the alternate exec is a relative path, force it to the ERTS
         // directory. Otherwise the user should pass absolute paths.
         if (alternate_exec_program[0] == '/') {
