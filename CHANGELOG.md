@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.14.1
+
+* Bug fixes
+  * Fix several issues found with clang's -fsanitize feature. Thanks to
+    @jbnoblot for reporting them. See
+    [#114](https://github.com/nerves-project/erlinit/issues/114) for details.
+
+
 ## v1.14.0
 
 * New features
