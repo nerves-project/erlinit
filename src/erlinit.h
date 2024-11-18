@@ -84,6 +84,7 @@ struct erlinit_options {
     char *shutdown_report;
     char *limits;
     int x_pivot_root_on_overlayfs;
+    char *core_pattern;
 };
 
 extern struct erlinit_options options;

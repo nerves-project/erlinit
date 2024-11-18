@@ -63,6 +63,7 @@ erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited
 erlinit: kill_all
+erlinit: Set core pattern to '|/bin/false'
 erlinit: Sending SIGTERM to all processes
 fixture: kill(-1, 15)
 fixture: sleep(1)

@@ -101,6 +101,10 @@ The following lists the options:
     Normally, the .boot file is automatically detected. The .boot extension is
     optional. A relative path is relative to the release directory.
 
+--core-pattern <pattern>
+    Specify a pattern for core dumps. This can be a file path like "/data/core".
+    See https://elixir.bootlin.com/linux/v6.11.8/source/Documentation/admin-guide/sysctl/kernel.rst#L144.
+
 -c, --ctty <tty[n]>
     Force the controlling terminal (ttyAMA0, tty1, etc.)
 
@@ -424,6 +428,21 @@ Systemd and Systemd's `reboot` implementation writes the parameter to
 responsible for writing `"tryboot"` to `/run/reboot-param` and then running
 `reboot`. `erlinit` will see file and pass the argument to the kernel as
 intended.
+
+## Saving core dumps early boot
+
+Saving core dumps requires that they be enabled in the Linux kernel and that
+there be a place to write them. Erlinit can make that happen. The configuration
+snippet below shows a line that will mount a writable filesystem at `/root`,
+then set the core pattern to write a file named `core` to that path, and then
+adjust the limits to save an unlimited amount of data to the `core` file. Modify
+to suit your system.
+
+```text
+-m /dev/mmcblk0p1:/root:f2fs:nodev:
+--core-pattern /root/core
+--limit core:unlimited:unlimited
+```
 
 ## Hacking
 

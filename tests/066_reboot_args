@@ -79,6 +79,7 @@ erlinit: sigterm -> reboot
 erlinit: waiting 10000 ms for graceful shutdown
 erlinit: graceful shutdown detected
 erlinit: kill_all
+erlinit: Set core pattern to '|/bin/false'
 erlinit: Sending SIGTERM to all processes
 fixture: kill(-1, 15)
 fixture: sleep(1)
