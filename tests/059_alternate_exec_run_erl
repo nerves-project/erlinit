@@ -105,6 +105,7 @@ Args:
   exec 3 /srv/erlang/erts-6.0/bin/erlexec -config /srv/erlang/releases/0.0.1/sys.config -boot /srv/erlang/releases/0.0.1/test -args_file /srv/erlang/releases/0.0.1/vm.args -boot_var RELEASE_LIB /srv/erlang/lib
 erlinit: Erlang VM exited
 erlinit: kill_all
+erlinit: Set core pattern to '|/bin/false'
 erlinit: Sending SIGTERM to all processes
 fixture: kill(-1, 15)
 fixture: sleep(1)

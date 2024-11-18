@@ -55,7 +55,8 @@ struct erlinit_options options = {
     .update_clock = 0,
     .shutdown_report = NULL,
     .limits = NULL,
-    .x_pivot_root_on_overlayfs = 0
+    .x_pivot_root_on_overlayfs = 0,
+    .core_pattern = NULL
 };
 
 enum erlinit_option_value {
@@ -92,6 +93,7 @@ enum erlinit_option_value {
     OPT_RELEASE_INCLUDE_ERTS,
     OPT_TTY_OPTIONS,
     OPT_SHUTDOWN_REPORT,
+    OPT_CORE_PATTERN,
 
     // Experimental
     OPT_X_PIVOT_ROOT_ON_OVERLAYFS
@@ -127,6 +129,7 @@ static struct option long_options[] = {
     {"shutdown-report", required_argument, 0, OPT_SHUTDOWN_REPORT},
     {"limits", required_argument, 0, OPT_LIMIT},
     {"x-pivot-root-on-overlayfs", no_argument, 0, OPT_X_PIVOT_ROOT_ON_OVERLAYFS},
+    {"core-pattern", required_argument, 0, OPT_CORE_PATTERN},
     {0,     0,      0, 0 }
 };
 
@@ -241,6 +244,9 @@ void parse_args(int argc, char *argv[])
             break;
         case OPT_X_PIVOT_ROOT_ON_OVERLAYFS: // --x-pivot-root-on-overlayfs
             options.x_pivot_root_on_overlayfs = 1;
+            break;
+        case OPT_CORE_PATTERN: // --core-pattern
+            SET_STRING_OPTION(options.core_pattern);
             break;
         default:
             // getopt prints a warning, so we don't have to

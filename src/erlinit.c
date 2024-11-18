@@ -91,6 +91,19 @@ static void erlinit_asprintf(char **strp, const char *fmt, ...)
         free(old_str);
 }
 
+static int set_core_pattern(const char *pattern)
+{
+    FILE *fp = fopen("/proc/sys/kernel/core_pattern", "w");
+    if (fp == NULL)
+        return -errno;
+
+    fprintf(fp, "%s", pattern);
+    fclose(fp);
+    debug("Set core pattern to '%s'", pattern);
+    return 0;
+}
+
+
 static int is_directory(const char *path)
 {
     struct stat sb;
@@ -575,6 +588,10 @@ static void setup_environment(const struct erl_run_info *run_info)
             envstr = strtok(NULL, ";");
         }
     }
+
+    if (options.core_pattern && set_core_pattern(options.core_pattern) < 0) {
+        warn("Failed to set core pattern to '%s'", options.core_pattern);
+    }
 }
 
 static void update_time()
@@ -819,13 +836,8 @@ static void child()
 
 static void disable_core_dumps()
 {
-    FILE *fp = fopen("/proc/sys/kernel/core_pattern", "w");
-    if (fp == NULL) {
+    if (set_core_pattern("|/bin/false") < 0)
         warn("Failed to disable core dumps");
-        return;
-    }
-    fprintf(fp, "|/bin/false");
-    fclose(fp);
 }
 
 static void kill_all()
