@@ -201,16 +201,11 @@ void unmount_all()
     struct mount_info {
         char source[256];
         char target[256];
-        char fstype[32];
     } mounts[MAX_MOUNTS];
 
-    char options[128];
-    int freq;
-    int passno;
     int i = 0;
     while (i < MAX_MOUNTS &&
-            fscanf(fp, "%255s %255s %31s %127s %d %d", mounts[i].source, mounts[i].target, mounts[i].fstype,
-                   options, &freq, &passno) >= 3) {
+            fscanf(fp, "%255s %255s %*s %*s %*d %*d", mounts[i].source, mounts[i].target) == 2) {
         i++;
     }
     fclose(fp);
