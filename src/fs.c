@@ -218,8 +218,7 @@ void unmount_all()
     // Unmount as much as we can in reverse order.
     int num_mounts = i;
     for (i = num_mounts - 1; i >= 0; i--) {
-        // Whitelist directories that don't unmount or
-        // remount immediately (rootfs)
+        // Allow directories that don't unmount or remount immediately (rootfs)
         if (strcmp(mounts[i].source, "devtmpfs") == 0 ||
                 strcmp(mounts[i].source, "/dev/root") == 0)
             continue;
