@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.14.2
+
+* New features
+  * Support setting the core file pattern early in the boot process to enabling
+    capturing core files from `beam.smp` startup. See --core-pattern.
+
+* Bug fixes
+  * Fix parse issue when looking for file systems to unmount. Previously if file
+    system options for longer than 127 characters, there'd be a harmless parse
+    error. It was harmless since it just resulted in an ignored error and
+    everything that was supposed to be unmounted was. It was just distracting to
+    see in the logs.
+
 ## v1.14.1
 
 * Bug fixes
