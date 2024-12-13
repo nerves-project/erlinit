@@ -15,7 +15,7 @@ touch $RELEASE_PATH/sys.config
 touch $RELEASE_PATH/vm.args
 ln -sf $FAKE_ERLEXEC.reboot $FAKE_ERTS_DIR/bin/erlexec
 cat >"$WORK/run/reboot-param" <<EOF
-  tryboot
+0 tryboot
 EOF
 
 cat >"$EXPECTED" <<EOF
@@ -100,5 +100,5 @@ erlinit: unmounting proc at /proc...
 fixture: umount("/proc")
 erlinit: unmounting sysfs at /sys...
 fixture: umount("/sys")
-fixture: reboot(0xa1b2c3d4, "tryboot")
+fixture: reboot(0xa1b2c3d4, "0 tryboot")
 EOF
