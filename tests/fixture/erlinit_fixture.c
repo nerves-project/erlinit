@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2018 Frank Hunleth
+// SPDX-FileCopyrightText: 2021 Connor Rigby
+//
+// SPDX-License-Identifier: MIT
+//
 #define _GNU_SOURCE // for RTLD_NEXT
 #include <stdio.h>
 #include <dlfcn.h>

@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2016 Christian Taedcke
+# SPDX-FileCopyrightText: 2018 Frank Hunleth
+# SPDX-FileCopyrightText: 2019 Justin Schneck
+#
+# SPDX-License-Identifier: MIT
+#
 
 #
 # Test that the boot_arg parameter for erlexec works

@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2020 Frank Hunleth
+# SPDX-FileCopyrightText: 2020 Michał Kalbarczyk
+#
+# SPDX-License-Identifier: MIT
+#
 
 #
 # Test that if getpwuid fails to find the home directory that

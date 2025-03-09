@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2019 João Henrique Ferreira de Freitas
+# SPDX-FileCopyrightText: 2020 Frank Hunleth
+#
+# SPDX-License-Identifier: MIT
+#
 
 #
 # Test that starting up a Erlang/OTP release using an embedded ERTS

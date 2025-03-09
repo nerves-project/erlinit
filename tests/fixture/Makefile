@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2018 Frank Hunleth
+#
+# SPDX-License-Identifier: MIT
+#
 
 LDFLAGS += -fPIC -shared -pedantic -ldl
 CFLAGS ?= -fPIC -O2 -Wall -Wextra -Wno-unused-parameter

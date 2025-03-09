@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2014 Frank Hunleth
+#
+# SPDX-License-Identifier: MIT
+#
 VERSION=1.14.2
 
 CFLAGS+=-Wall -Wextra -O2

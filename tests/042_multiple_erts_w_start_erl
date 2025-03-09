@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2018 Frank Hunleth
+# SPDX-FileCopyrightText: 2019 Justin Schneck
+#
+# SPDX-License-Identifier: MIT
+#
 
 #
 # Test that the start_erl.data file is read when picking a release to run.

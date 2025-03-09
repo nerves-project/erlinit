@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2015 Frank Hunleth
+# SPDX-FileCopyrightText: 2019 Justin Schneck
+#
+# SPDX-License-Identifier: MIT
+#
 
 #
 # Test that specifying --verbose on the command line works

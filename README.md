@@ -1,7 +1,8 @@
 # erlinit
 
-[![CircleCI](https://circleci.com/gh/nerves-project/erlinit.svg?style=svg)](https://circleci.com/gh/nerves-project/erlinit)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/nerves-project/erlinit/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/nerves-project/erlinit/tree/main)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/4086/badge.svg)](https://scan.coverity.com/projects/4086)
+[![REUSE status](https://api.reuse.software/badge/github.com/nerves-project/erlinit)](https://api.reuse.software/info/github.com/nerves-project/erlinit)
 
 This is a replacement for `/sbin/init` that launches an Erlang/OTP release. It
 is intentionally minimalist as it expects Erlang/OTP to be in charge of

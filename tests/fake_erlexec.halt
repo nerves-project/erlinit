@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2017 Frank Hunleth
+#
+# SPDX-License-Identifier: MIT
+#
 
 echo "erlexec is sending signal to halt" 1>&2
 

@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2020 Frank Hunleth
+#
+# SPDX-License-Identifier: MIT
+#
 
 #
 # Test that if the rootdisk* files exist that erlinit doesn't
