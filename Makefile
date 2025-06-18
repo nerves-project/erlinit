@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 #
-VERSION=1.14.2
+VERSION=1.14.3
 
 CFLAGS+=-Wall -Wextra -O2
 

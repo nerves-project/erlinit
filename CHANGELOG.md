@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.14.3
+
+This release has many non-code affecting changes to make copyright and licensing
+information machine readable. Erlinit is now REUSE compliant.
+
+* Bug fixes
+  * Fix issue causing stdin to be incorrectly closed and causing Erlang to exit.
+    This was a deterministic issue, so if you haven't seen it, it doesn't affect
+    you.
+
 ## v1.14.2
 
 * New features
