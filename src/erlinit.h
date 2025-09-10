@@ -29,7 +29,6 @@
 #define ERLANG_ERTS_LIB_DIR ERLANG_ROOT_DIR "/lib"
 
 #define DEFAULT_RELEASE_ROOT_DIR "/srv/erlang"
-#define RELEASE_ROOT_LIB DEFAULT_RELEASE_ROOT_DIR "/lib"
 
 // This is the maximum number of mounted filesystems that
 // is expected in a running system. It is used on shutdown
@@ -134,4 +133,3 @@ void trim_whitespace(char *s);
 #endif
 
 #endif // ERLINIT_H
-
