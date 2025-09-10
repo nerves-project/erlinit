@@ -80,7 +80,7 @@ erlinit: Env: 'CMDLINE_LONG=1234567890123456789012345678901234567890123456789012
 erlinit: Arg: 'erlexec'
 erlinit: Arg: '-boot_var'
 erlinit: Arg: 'RELEASE_LIB'
-erlinit: Arg: '/srv/erlang/lib'
+erlinit: Arg: '/usr/lib/erlang/lib'
 erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited
