@@ -54,7 +54,7 @@ erlinit: Env: 'PROGNAME=erlexec'
 erlinit: Arg: 'erlexec'
 erlinit: Arg: '-boot_var'
 erlinit: Arg: 'RELEASE_LIB'
-erlinit: Arg: '/srv/erlang/lib'
+erlinit: Arg: '/usr/lib/erlang/lib'
 erlinit: Launching erl...
 Hello from erlexec
 erlinit: Erlang VM exited
@@ -82,4 +82,3 @@ erlinit: unmounting sysfs at /sys...
 fixture: umount("/sys")
 fixture: reboot(0x01234567)
 EOF
-
