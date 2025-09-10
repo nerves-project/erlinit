@@ -795,9 +795,12 @@ static void child()
     }
 
     // Set the RELEASE_LIB boot_var for Elixir 1.9+ releases
+    char *release_lib = NULL;
+    erlinit_asprintf(&release_lib, "%s/lib", run_info.release_base_dir);
     argv = concat_options(argv, "-boot_var", append);
     argv = concat_options(argv, "RELEASE_LIB", append);
-    argv = concat_options(argv, RELEASE_ROOT_LIB, append);
+    argv = concat_options(argv, release_lib, append);
+    free(release_lib);
 
     if (options.verbose) {
         // Dump the environment and commandline
