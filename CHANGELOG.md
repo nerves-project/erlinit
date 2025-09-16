@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.14.4
+
+* Bug fixes
+  * Fix hardcoded `RELEASE_DIR` setting so that it's automatically computed from
+    the release's base directory. This allows non-Nerves use cases to change the
+    base directory. Thanks to @ziopio for finding and fixing the issue.
+
 ## v1.14.3
 
 This release has many non-code affecting changes to make copyright and licensing
