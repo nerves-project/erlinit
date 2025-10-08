@@ -60,6 +60,7 @@ struct erlinit_options {
     char *run_on_exit;
     char *pre_run_exec;
     char *boot_path;
+    char *vmargs_path;
     char *working_directory;
     int uid;
     int gid;
