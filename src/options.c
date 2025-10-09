@@ -33,6 +33,7 @@ struct erlinit_options options = {
     .run_on_exit = NULL,
     .pre_run_exec = NULL,
     .boot_path = NULL,
+    .vmargs_path = NULL,
     .working_directory = NULL,
     .gid = 0,
     .uid = 0,
@@ -79,6 +80,7 @@ enum erlinit_option_value {
     OPT_TTY_OPTIONS,
     OPT_SHUTDOWN_REPORT,
     OPT_CORE_PATTERN,
+    OPT_VMARGS_PATH,
 
     // Experimental
     OPT_X_PIVOT_ROOT_ON_OVERLAYFS
@@ -115,6 +117,7 @@ static struct option long_options[] = {
     {"limits", required_argument, 0, OPT_LIMIT},
     {"x-pivot-root-on-overlayfs", no_argument, 0, OPT_X_PIVOT_ROOT_ON_OVERLAYFS},
     {"core-pattern", required_argument, 0, OPT_CORE_PATTERN},
+    {"vmargs-path", required_argument, 0, OPT_VMARGS_PATH},
     {0,     0,      0, 0 }
 };
 
@@ -232,6 +235,9 @@ void parse_args(int argc, char *argv[])
             break;
         case OPT_CORE_PATTERN: // --core-pattern
             SET_STRING_OPTION(options.core_pattern);
+            break;
+        case OPT_VMARGS_PATH: // --vmargs-path path
+            SET_STRING_OPTION(options.vmargs_path);
             break;
         default:
             // getopt prints a warning, so we don't have to

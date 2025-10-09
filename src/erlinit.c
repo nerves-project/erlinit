@@ -192,6 +192,26 @@ static void find_sys_config(const char *release_version_dir, char **sys_config)
 static void find_vm_args(const char *release_version_dir, char **vmargs_path)
 {
     debug("find_vm_args");
+
+    // Check if the user specified a vmargs path
+    if (options.vmargs_path) {
+        // Handle a user-specified vm.args file. Absolute or relative is ok.
+        if (options.vmargs_path[0] == '/')
+            erlinit_asprintf(vmargs_path, "%s", options.vmargs_path);
+        else
+            erlinit_asprintf(vmargs_path, "%s/%s", release_version_dir, options.vmargs_path);
+
+        // If the file exists, then everything is ok.
+        if (file_exists(*vmargs_path))
+            return;
+
+        // User specified a path but it doesn't exist, warn and fall back to default
+        warn("Specified vm.args file '%s' not found. Auto-detecting.", options.vmargs_path);
+        free(*vmargs_path);
+        *vmargs_path = NULL;
+    }
+
+    // Try the default location
     erlinit_asprintf(vmargs_path, "%s/vm.args", release_version_dir);
     if (!file_exists(*vmargs_path)) {
         warn("%s not found?", *vmargs_path);
