@@ -17,7 +17,8 @@ endif
 # _GNU_SOURCE is for asprintf
 EXTRA_CFLAGS= -D_GNU_SOURCE -DPROGRAM_VERSION=$(VERSION) -DBUILD_TIME=$(BUILD_TIME)
 
-ifeq ($(shell uname),Darwin)
+# Compile in the compatibility code if testing on MacOS
+ifeq ($(shell echo | $(CC) -dM -E - | grep -q __APPLE__ && echo yes),yes)
 EXTRA_CFLAGS+=-Isrc/compat
 EXTRA_SRC=src/compat/compat.c
 endif
