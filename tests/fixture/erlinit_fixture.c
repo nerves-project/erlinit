@@ -259,9 +259,14 @@ OVERRIDE(int, open, (const char *pathname, int flags, ...))
         mode = 0;
     va_end(ap);
 
-    // Log to stderr if opened for write (read is stubbed)
-    if (strcmp(pathname, "/dev/kmsg") == 0 && (flags & (O_RDWR|O_WRONLY)))
-        return dup(STDERR_FILENO);
+    if (strcmp(pathname, "/dev/kmsg") == 0) {
+        // Don't allow logging writes to /dev/kmsg so output goes to stderr.
+        // Fake out read requests since that's stubbed.
+        if (flags & O_WRONLY)
+            return -1;
+        else
+            return dup(STDERR_FILENO);
+    }
 
     char new_path[PATH_MAX];
     if (fixup_path(pathname, new_path) < 0)
