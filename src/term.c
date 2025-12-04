@@ -14,6 +14,26 @@
 #include <string.h>
 #include <stdio.h>
 #include <termios.h>
+#ifdef __linux__
+#include <sys/ioctl.h>
+// Avoid including <linux/termios.h> directly to prevent conflicts with
+// the system <termios.h>. Define the termios2 struct and TCGETS2/TCSETS2
+// ioctl macros locally so we can set arbitrary baud rates on Linux.
+struct termios2 {
+    tcflag_t c_iflag;
+    tcflag_t c_oflag;
+    tcflag_t c_cflag;
+    tcflag_t c_lflag;
+    cc_t c_line;
+    cc_t c_cc[19];
+    speed_t c_ispeed;
+    speed_t c_ospeed;
+};
+#ifndef TCGETS2
+#define TCGETS2 _IOR('T', 0x2A, struct termios2)
+#define TCSETS2 _IOW('T', 0x2B, struct termios2)
+#endif
+#endif
 #include <unistd.h>
 
 #define SYSFS_ACTIVE_CONSOLE "/sys/class/tty/console/active"
@@ -81,10 +101,16 @@ void warn_unused_tty()
     }
 }
 
-static int lookup_tty_options(const char *options, speed_t *speed)
+// Parses the tty options string (expected to be a baud number). On success
+// sets *speed to a standard speed_t when possible and *raw_baud to 0.
+// When the baud is not one of the standard constants (e.g. > 115200),
+// sets *speed to 0 and *raw_baud to the numeric baud so the caller may
+// attempt an OS-specific method to set the baud (termios2 on Linux).
+static int lookup_tty_options(const char *options, speed_t *speed, unsigned long *raw_baud)
 {
     // NOTE: Only setting the speed is supported now. No parity and 8 bits are assumed.
     unsigned long baud = strtoul(options, NULL, 10);
+    *raw_baud = 0;
     switch (baud) {
     case 9600:
         *speed = B9600;
@@ -102,8 +128,15 @@ static int lookup_tty_options(const char *options, speed_t *speed)
         *speed = B115200;
         break;
     default:
-        warn("Couldn't parse tty option '%s'. Defaulting to 115200n8", options);
-        *speed = B115200;
+        // If it's a reasonable numeric baud, return it in raw_baud so the
+        // caller can try platform specific means to configure it.
+        if (baud > 0) {
+            *speed = 0;
+            *raw_baud = baud;
+        } else {
+            warn("Couldn't parse tty option '%s'. Defaulting to 115200n8", options);
+            *speed = B115200;
+        }
         break;
     }
     return 0;
@@ -121,11 +154,53 @@ static void init_terminal(int fd)
     }
 
     speed_t speed;
-    lookup_tty_options(options.tty_options, &speed);
+    unsigned long raw_baud = 0;
+    lookup_tty_options(options.tty_options, &speed, &raw_baud);
 
-    // Set baud
-    cfsetispeed(&termios, speed);
-    cfsetospeed(&termios, speed);
+    // Set baud. If raw_baud is non-zero attempt Linux-specific termios2
+    // handling to support arbitrary baud rates > 115200. Otherwise use
+    // the standard cfset* helpers.
+    if (raw_baud == 0) {
+        cfsetispeed(&termios, speed);
+        cfsetospeed(&termios, speed);
+    } else {
+#ifdef __linux__
+        // Use termios2 to set arbitrary baud rates (BOTHER).
+        struct termios2 tio2;
+        if (ioctl(fd, TCGETS2, &tio2) < 0) {
+            warn("Could not get console settings (termios2), falling back to 115200");
+            cfsetispeed(&termios, B115200);
+            cfsetospeed(&termios, B115200);
+        } else {
+            // Copy the flags we configured into the termios2 structure so
+            // our other settings (8N1, flow control, etc.) are preserved.
+            tio2.c_cflag = termios.c_cflag;
+#ifdef BOTHER
+            tio2.c_cflag |= BOTHER;
+#endif
+            tio2.c_ispeed = raw_baud;
+            tio2.c_ospeed = raw_baud;
+
+            tio2.c_iflag = termios.c_iflag;
+            tio2.c_oflag = termios.c_oflag;
+            tio2.c_lflag = termios.c_lflag;
+            memcpy(tio2.c_cc, termios.c_cc, sizeof(tio2.c_cc));
+
+            if (ioctl(fd, TCSETS2, &tio2) < 0) {
+                warn("Could not set console settings (termios2), falling back to 115200");
+                cfsetispeed(&termios, B115200);
+                cfsetospeed(&termios, B115200);
+            }
+            // Note: when termios2 is used we don't call tcsetattr below for speed
+            // because we've already applied settings via TCSETS2. We'll still call
+            // tcsetattr to set any remaining flags later.
+        }
+#else
+        warn("Arbitrary baud rates >115200 are only supported on Linux. Defaulting to 115200n8");
+        cfsetispeed(&termios, B115200);
+        cfsetospeed(&termios, B115200);
+#endif
+    }
 
     // 8 bits
     termios.c_cflag &= ~CSIZE;
@@ -138,7 +213,9 @@ static void init_terminal(int fd)
     termios.c_cflag &= ~CSTOPB;
 
     // No control flow
+#ifdef CRTSCTS
     termios.c_cflag &= ~CRTSCTS;
+#endif
     termios.c_iflag &= ~(IXON | IXOFF | IXANY);
 
     // Forced options
