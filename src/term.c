@@ -42,7 +42,7 @@ static int readsysfs(const char *path, char *buffer, int maxlen)
 
 void warn_unused_tty()
 {
-    debug("warn_unused_tty");
+    elog(ELOG_DEBUG, "warn_unused_tty");
 
     // warn_unused_tty must be called after set_ctty to ensure this is set.
     const char *used_tty = options.controlling_terminal;
@@ -102,7 +102,7 @@ static int lookup_tty_options(const char *options, speed_t *speed)
         *speed = B115200;
         break;
     default:
-        warn("Couldn't parse tty option '%s'. Defaulting to 115200n8", options);
+        elog(ELOG_WARNING, "Couldn't parse tty option '%s'. Defaulting to 115200n8", options);
         *speed = B115200;
         break;
     }
@@ -116,7 +116,7 @@ static void init_terminal(int fd)
 
     struct termios termios;
     if (tcgetattr(fd, &termios) < 0) {
-        warn("Could not get console settings");
+        elog(ELOG_WARNING, "Could not get console settings");
         return;
     }
 
@@ -152,12 +152,12 @@ static void init_terminal(int fd)
     termios.c_cc[VTIME] = 0;
 
     if (tcsetattr(fd, TCSANOW, &termios) < 0)
-        warn("Could not set console settings");
+        elog(ELOG_WARNING, "Could not set console settings");
 }
 
 void set_ctty()
 {
-    debug("set_ctty");
+    elog(ELOG_DEBUG, "set_ctty");
 
     // Set up a controlling terminal for Erlang so that
     // it's possible to get to shell management mode.
@@ -175,7 +175,7 @@ void set_ctty()
         if (readsysfs(SYSFS_ACTIVE_CONSOLE, &ttypath[TTY_PREFIX_LENGTH],
                       sizeof(ttypath) - TTY_PREFIX_LENGTH) == 0) {
             // No active console?
-            warn("no active consoles found!");
+            elog(ELOG_WARNING, "no active consoles found!");
             return;
         }
 
@@ -199,6 +199,6 @@ void set_ctty()
         if (fd > 2)
             close(fd);
     } else {
-        warn("error setting controlling terminal: %s", ttypath);
+        elog(ELOG_WARNING, "error setting controlling terminal: %s", ttypath);
     }
 }

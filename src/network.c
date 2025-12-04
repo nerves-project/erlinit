@@ -20,7 +20,7 @@ static int enable_loopback()
     // Set the loopback interface to up
     int fd = socket(PF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
-        warn("socket(PF_INET) failed");
+        elog(ELOG_WARNING, "socket(PF_INET) failed");
         return -1;
     }
 
@@ -31,18 +31,18 @@ static int enable_loopback()
     ifr.ifr_name[1] = 'o';
     ifr.ifr_name[2] = '\0';
     if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0) {
-        warn("SIOCGIFFLAGS failed on lo");
+        elog(ELOG_WARNING, "SIOCGIFFLAGS failed on lo");
         goto cleanup;
     }
 
     ifr.ifr_flags |= IFF_UP;
     if (ioctl(fd, SIOCSIFFLAGS, &ifr)) {
-        warn("SIOCSIFFLAGS failed on lo");
+        elog(ELOG_WARNING, "SIOCSIFFLAGS failed on lo");
         goto cleanup;
     }
 
     if (ioctl(fd, SIOCGIFINDEX, &ifr) < 0) {
-        warn("SIOCGIFINDEX failed on lo");
+        elog(ELOG_WARNING, "SIOCGIFINDEX failed on lo");
         goto cleanup;
     }
 
@@ -132,14 +132,14 @@ static void configure_loopback(int ifindex)
     msg.msg_iovlen = 2;
 
     if (sendmsg(s, &msg, 0) < 0)
-        warn("Netlink sendmsg failed to send localhost IP address request");
+        elog(ELOG_WARNING, "Netlink sendmsg failed to send localhost IP address request");
 
     close(s);
 }
 
 void setup_networking()
 {
-    debug("setup_networking");
+    elog(ELOG_DEBUG, "setup_networking");
 
     // Bring up the loopback interface (needed if the erlang distribute protocol code gets run)
     int ifindex = enable_loopback();

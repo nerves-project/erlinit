@@ -28,8 +28,18 @@
 #endif
 
 // erlinit.h
-void debug(const char *fmt, ...);
-void warn(const char *fmt, ...);
+enum elog_severity {
+    ELOG_EMERG = 0,
+    ELOG_ALERT,
+    ELOG_CRIT,
+    ELOG_ERROR,
+    ELOG_WARNING,
+    ELOG_NOTICE,
+    ELOG_INFO,
+    ELOG_DEBUG
+};
+void elog(enum elog_severity sev, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
 
 #define SEED_DIR LOCALSTATEDIR "/seedrng"
 #define CREDITABLE_SEED "seed.credit"
@@ -289,7 +299,7 @@ static size_t determine_optimal_seed_len(void)
 	int fd = open("/proc/sys/kernel/random/poolsize", O_RDONLY);
 
 	if (fd < 0 || read_full(fd, poolsize_str, sizeof(poolsize_str) - 1) < 0) {
-		warn("Unable to determine pool size, falling back to 256 bits");
+		elog(ELOG_WARNING, "Unable to determine pool size, falling back to 256 bits");
 		ret = MIN_SEED_LEN;
 	} else
 		ret = DIV_ROUND_UP(strtoul(poolsize_str, NULL, 10), 8);
@@ -376,18 +386,18 @@ static int seed_from_file_if_exists(const char *filename, int dfd, bool credit, 
 		return 0;
 	else if (fd < 0) {
 		ret = -errno;
-		warn("Unable to open seed file");
+		elog(ELOG_WARNING, "Unable to open seed file");
 		goto out;
 	}
 	seed_len = read_full(fd, seed, sizeof(seed));
 	if (seed_len < 0) {
 		ret = -errno;
-		warn("Unable to read seed file");
+		elog(ELOG_WARNING, "Unable to read seed file");
 		goto out;
 	}
 	if ((unlinkat(dfd, filename, 0) < 0 || fsync(dfd) < 0) && seed_len) {
 		ret = -errno;
-		warn("Unable to remove seed after reading, so not seeding");
+		elog(ELOG_WARNING, "Unable to remove seed after reading, so not seeding");
 		goto out;
 	}
 	if (!seed_len)
@@ -396,10 +406,10 @@ static int seed_from_file_if_exists(const char *filename, int dfd, bool credit, 
 	blake2s_update(hash, &seed_len, sizeof(seed_len));
 	blake2s_update(hash, seed, seed_len);
 
-	debug("Seeding %zd bits %s crediting", seed_len * 8, credit ? "and" : "without");
+	elog(ELOG_DEBUG, "Seeding %zd bits %s crediting", seed_len * 8, credit ? "and" : "without");
 	if (seed_rng(seed, seed_len, credit) < 0) {
 		ret = -errno;
-		warn("Unable to seed");
+		elog(ELOG_WARNING, "Unable to seed");
 	}
 
 out:
@@ -437,13 +447,13 @@ int seedrng(void)
 	blake2s_update(&hash, &boottime, sizeof(boottime));
 
 	if (mkdir(SEED_DIR, 0700) < 0 && errno != EEXIST) {
-		warn("Unable to create seed directory");
+		elog(ELOG_WARNING, "Unable to create seed directory");
 		return 1;
 	}
 
 	dfd = open(SEED_DIR, O_DIRECTORY | O_RDONLY);
 	if (dfd < 0 || flock(dfd, LOCK_EX) < 0) {
-		warn("Unable to lock seed directory");
+		elog(ELOG_WARNING, "Unable to lock seed directory");
 		program_ret = 1;
 		goto out;
 	}
@@ -455,7 +465,7 @@ int seedrng(void)
 
 	new_seed_len = determine_optimal_seed_len();
 	if (read_new_seed(new_seed, new_seed_len, &new_seed_creditable) < 0) {
-		warn("Unable to read new seed");
+		elog(ELOG_WARNING, "Unable to read new seed");
 		new_seed_len = BLAKE2S_HASH_LEN;
 		strncpy((char *)new_seed, seedrng_failure, new_seed_len);
 		program_ret |= 1 << 3;
@@ -464,20 +474,20 @@ int seedrng(void)
 	blake2s_update(&hash, new_seed, new_seed_len);
 	blake2s_final(&hash, new_seed + new_seed_len - BLAKE2S_HASH_LEN);
 
-	debug("Saving %zu bits of %s seed for next boot", new_seed_len * 8, new_seed_creditable ? "creditable" : "non-creditable");
+	elog(ELOG_DEBUG, "Saving %zu bits of %s seed for next boot", new_seed_len * 8, new_seed_creditable ? "creditable" : "non-creditable");
 	fd = openat(dfd, NON_CREDITABLE_SEED, O_WRONLY | O_CREAT | O_TRUNC, 0400);
 	if (fd < 0) {
-		warn("Unable to open seed file for writing");
+		elog(ELOG_WARNING, "Unable to open seed file for writing");
 		program_ret |= 1 << 4;
 		goto out;
 	}
 	if (write_full(fd, new_seed, new_seed_len) != (ssize_t)new_seed_len || fsync(fd) < 0) {
-		warn("Unable to write seed file");
+		elog(ELOG_WARNING, "Unable to write seed file");
 		program_ret |= 1 << 5;
 		goto out;
 	}
 	if (new_seed_creditable && renameat(dfd, NON_CREDITABLE_SEED, dfd, CREDITABLE_SEED) < 0) {
-		warn("Unable to make new seed creditable");
+		elog(ELOG_WARNING, "Unable to make new seed creditable");
 		program_ret |= 1 << 6;
 	}
 out:

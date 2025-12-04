@@ -128,11 +128,11 @@ static void report_dmesg(FILE *fp)
 
 void shutdown_report_create(const char *path, const struct erlinit_exit_info *exit_info)
 {
-    debug("Writing shutdown report to '%s'", path);
+    elog(ELOG_DEBUG, "Writing shutdown report to '%s'", path);
 
     FILE *fp = fopen(path, "w");
     if (fp == NULL) {
-        warn("Failed to write shutdown dump to '%s'", path);
+        elog(ELOG_WARNING, "Failed to write shutdown dump to '%s'", path);
         return;
     }
     fprintf(fp, "# Erlinit shutdown report\n\n");

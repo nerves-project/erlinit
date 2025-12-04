@@ -15,10 +15,10 @@
 
 int system_cmd(const char *cmd, char *output_buffer, int length)
 {
-    debug("system_cmd '%s'", cmd);
+    elog(ELOG_DEBUG, "system_cmd '%s'", cmd);
     int pipefd[2];
     if (pipe(pipefd) < 0) {
-        warn("pipe");
+        elog(ELOG_ERROR, "pipe");
         return -1;
     }
 
@@ -27,7 +27,7 @@ int system_cmd(const char *cmd, char *output_buffer, int length)
         // child
         int devnull = open("/dev/null", O_RDWR);
         if (devnull < 0) {
-            warn("Couldn't open /dev/null");
+            elog(ELOG_ERROR, "Couldn't open /dev/null");
             exit(EXIT_FAILURE);
         }
 
@@ -35,9 +35,9 @@ int system_cmd(const char *cmd, char *output_buffer, int length)
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
         if (dup2(devnull, STDIN_FILENO) < 0)
-            warn("dup2 devnull");
+            elog(ELOG_ERROR, "dup2 devnull");
         if (dup2(pipefd[1], STDOUT_FILENO) < 0)
-            warn("dup2 pipe");
+            elog(ELOG_ERROR, "dup2 pipe");
         close(devnull);
 
         char *cmd_copy = strdup(cmd);
@@ -53,7 +53,7 @@ int system_cmd(const char *cmd, char *output_buffer, int length)
             execvp(exec_path, exec_argv);
 
         // Not supposed to reach here.
-        warn("execvp '%s' failed", cmd);
+        elog(ELOG_ERROR, "execvp '%s' failed", cmd);
         exit(EXIT_FAILURE);
     } else {
         // parent
@@ -74,14 +74,14 @@ int system_cmd(const char *cmd, char *output_buffer, int length)
             if (rc == pid)
                 break;
             if (rc != -1 || errno != EINTR) {
-                warn("waitpid failed for '%s': %d", cmd, errno);
+                elog(ELOG_ERROR, "waitpid failed for '%s': %d", cmd, errno);
                 return -1;
             }
         }
         if (WIFEXITED(status)) {
             return WEXITSTATUS(status);
         } else {
-            warn("'%s' didn't exit", cmd);
+            elog(ELOG_ERROR, "'%s' didn't exit", cmd);
             return -1;
         }
     }

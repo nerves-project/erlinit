@@ -86,7 +86,7 @@ static int set_core_pattern(const char *pattern)
 
     fprintf(fp, "%s", pattern);
     fclose(fp);
-    debug("Set core pattern to '%s'", pattern);
+    elog(ELOG_DEBUG, "Set core pattern to '%s'", pattern);
     return 0;
 }
 
@@ -112,7 +112,7 @@ static void find_erts_directory(const char *erts_version,
                                 const char *release_base_dir,
                                 char **erts_dir)
 {
-    debug("find_erts_directory");
+    elog(ELOG_DEBUG, "find_erts_directory");
 
     // Common case: Release specifies an ERTS version. See if it's included
     // in the release first and then try the system version (if any).
@@ -125,7 +125,7 @@ static void find_erts_directory(const char *erts_version,
         if (is_directory(*erts_dir))
             return;
 
-        warn("start_erl.data specifies erts-%s, but it wasn't found! Looking for any erts version",
+        elog(ELOG_WARNING, "start_erl.data specifies erts-%s, but it wasn't found! Looking for any erts version",
              erts_version);
     }
 
@@ -180,10 +180,10 @@ static int normal_directory_filter(const struct dirent *d)
 
 static void find_sys_config(const char *release_version_dir, char **sys_config)
 {
-    debug("find_sys_config");
+    elog(ELOG_DEBUG, "find_sys_config");
     erlinit_asprintf(sys_config, "%s/sys.config", release_version_dir);
     if (!file_exists(*sys_config)) {
-        warn("%s not found?", *sys_config);
+        elog(ELOG_WARNING, "%s not found?", *sys_config);
         free(*sys_config);
         *sys_config = NULL;
     }
@@ -191,10 +191,10 @@ static void find_sys_config(const char *release_version_dir, char **sys_config)
 
 static void find_vm_args(const char *release_version_dir, char **vmargs_path)
 {
-    debug("find_vm_args");
+    elog(ELOG_DEBUG, "find_vm_args");
     erlinit_asprintf(vmargs_path, "%s/vm.args", release_version_dir);
     if (!file_exists(*vmargs_path)) {
-        warn("%s not found?", *vmargs_path);
+        elog(ELOG_WARNING, "%s not found?", *vmargs_path);
         free(*vmargs_path);
         *vmargs_path = NULL;
     }
@@ -222,7 +222,7 @@ static int find_boot_path_user(const char *release_version_dir, char **boot_path
             return 1;
         }
         free(boot_path_with_dotboot);
-        warn("Specified boot file '%s' not found. Auto-detecting.", options.boot_path);
+        elog(ELOG_WARNING, "Specified boot file '%s' not found. Auto-detecting.", options.boot_path);
     }
 
     return 0;
@@ -260,7 +260,7 @@ static void find_boot_path_auto(const char *release_version_dir, char **boot_pat
         fatal("No boot file found in %s.", release_version_dir);
 
     if (n > 1)
-        warn("Found more than one boot file. Using %s.", namelist[0]->d_name);
+        elog(ELOG_WARNING, "Found more than one boot file. Using %s.", namelist[0]->d_name);
 
     // Use the first
     erlinit_asprintf(boot_path, "%s/%s", release_version_dir, namelist[0]->d_name);
@@ -278,7 +278,7 @@ static void find_boot_path_auto(const char *release_version_dir, char **boot_pat
 static void find_boot_path(const char *release_version_dir, const char *release_name,
                            char **boot_path)
 {
-    debug("find_boot_path");
+    elog(ELOG_DEBUG, "find_boot_path");
 
     if (!find_boot_path_user(release_version_dir, boot_path) &&
             !find_boot_path_by_release_name(release_version_dir, release_name, boot_path))
@@ -321,7 +321,7 @@ static int find_consolidated_dirs(const char *release_base_dir,
         free(consolidated_path);
     }
     if (num_found > 1)
-        warn("More than one consolidated directory found. Using '%s'",
+        elog(ELOG_WARNING, "More than one consolidated directory found. Using '%s'",
              run_info->consolidated_protocols_path);
 
     // Free everything
@@ -338,7 +338,7 @@ static int read_start_erl(const char *releases_dir, char **erts_version, char **
     erlinit_asprintf(&start_erl_path, "%s/start_erl.data", releases_dir);
     FILE *fp = fopen(start_erl_path, "r");
     if (!fp) {
-        warn("%s not found.", start_erl_path);
+        elog(ELOG_WARNING, "%s not found.", start_erl_path);
         free(start_erl_path);
         return 0;
     }
@@ -349,7 +349,7 @@ static int read_start_erl(const char *releases_dir, char **erts_version, char **
     if (fscanf(fp, "%" xstr(MAX_VERSION_AND_RELEASE_NAMES) "s %" xstr(MAX_VERSION_AND_RELEASE_NAMES)
                "s",
                erts_string, rel_string) != 2) {
-        warn("%s doesn't contain expected contents. Skipping.", start_erl_path);
+        elog(ELOG_WARNING, "%s doesn't contain expected contents. Skipping.", start_erl_path);
         free(start_erl_path);
         fclose(fp);
         return 0;
@@ -382,7 +382,7 @@ static int find_release_version_dir(const char *releases_dir,
         if (is_directory(*version_dir))
             return 1;
 
-        warn("start_erl.data specifies %s, but %s isn't a directory", release_version, *version_dir);
+        elog(ELOG_WARNING, "start_erl.data specifies %s, but %s isn't a directory", release_version, *version_dir);
         free(release_version);
     }
 
@@ -469,7 +469,7 @@ static int find_release_dirs(const char *base,
 
 static void find_release(struct erl_run_info *run_info)
 {
-    debug("find_release");
+    elog(ELOG_DEBUG, "find_release");
 
     if (options.release_search_path == NULL)
         options.release_search_path = strdup(DEFAULT_RELEASE_ROOT_DIR);
@@ -479,7 +479,7 @@ static void find_release(struct erl_run_info *run_info)
     const char *search_path = strtok(options.release_search_path, ":");
     while (search_path != NULL) {
         if (find_release_dirs(search_path, 1, run_info)) {
-            debug("Using release in %s.", run_info->releases_version_dir);
+            elog(ELOG_DEBUG, "Using release in %s.", run_info->releases_version_dir);
 
             find_sys_config(run_info->releases_version_dir, &run_info->sys_config);
             find_vm_args(run_info->releases_version_dir, &run_info->vmargs_path);
@@ -489,7 +489,7 @@ static void find_release(struct erl_run_info *run_info)
             return;
         }
 
-        warn("No release found in %s.", search_path);
+        elog(ELOG_WARNING, "No release found in %s.", search_path);
         search_path = strtok(NULL, ":");
     }
 #if 0
@@ -527,7 +527,7 @@ static void setup_home_directory()
 
 static void setup_environment(const struct erl_run_info *run_info)
 {
-    debug("setup_environment");
+    elog(ELOG_DEBUG, "setup_environment");
 
     // PATH appears to only be needed for user convenience when running os:cmd/1
     // It may be possible to remove in the future.
@@ -577,7 +577,7 @@ static void setup_environment(const struct erl_run_info *run_info)
     }
 
     if (options.core_pattern && set_core_pattern(options.core_pattern) < 0) {
-        warn("Failed to set core pattern to '%s'", options.core_pattern);
+        elog(ELOG_WARNING, "Failed to set core pattern to '%s'", options.core_pattern);
     }
 }
 
@@ -586,7 +586,7 @@ static void update_time()
     if (!options.update_clock)
         return;
 
-    debug("checking that the clock is after %d", BUILD_TIME);
+    elog(ELOG_DEBUG, "checking that the clock is after %ld", (long int) BUILD_TIME);
 
     // Force the time to at least the build date.  For systems w/o real-time
     // clocks, the time will be closer to the actual date until NTP kicks in.
@@ -595,23 +595,23 @@ static void update_time()
 
     struct timespec tp;
     if (clock_gettime(CLOCK_REALTIME, &tp) < 0) {
-        warn("clock_gettime failed. Skipping time check");
+        elog(ELOG_WARNING, "clock_gettime failed. Skipping time check");
         return;
     }
 
     if (tp.tv_sec < BUILD_TIME) {
         tp.tv_sec = BUILD_TIME;
         tp.tv_nsec = 0;
-        debug("updating the clock to %d", tp.tv_sec);
+        elog(ELOG_DEBUG, "updating the clock to %ld", (long int) tp.tv_sec);
         if (clock_settime(CLOCK_REALTIME, &tp) < 0) {
-            warn("clock_settime");
+            elog(ELOG_WARNING, "clock_settime");
         }
     }
 }
 
 static int run_cmd(const char *cmd)
 {
-    debug("run_cmd '%s'", cmd);
+    elog(ELOG_DEBUG, "run_cmd '%s'", cmd);
 
     pid_t pid = fork();
     if (pid == 0) {
@@ -629,7 +629,7 @@ static int run_cmd(const char *cmd)
             execvp(exec_path, exec_argv);
 
         // Not supposed to reach here.
-        warn("execvp '%s' failed", cmd);
+        elog(ELOG_WARNING, "execvp '%s' failed", cmd);
         exit(EXIT_FAILURE);
     } else {
         // parent
@@ -640,7 +640,7 @@ static int run_cmd(const char *cmd)
         } while (rc < 0 && errno == EINTR);
 
         if ((rc < 0 && errno != ECHILD) || rc != pid) {
-            warn("unexpected return from waitpid: rc=%d, errno=%d", rc, errno);
+            elog(ELOG_WARNING, "unexpected return from waitpid: rc=%d, errno=%d", rc, errno);
             return -1;
         }
         return status;
@@ -650,12 +650,12 @@ static int run_cmd(const char *cmd)
 static void drop_privileges()
 {
     if (options.gid > 0) {
-        debug("setting gid to %d", options.gid);
+        elog(ELOG_DEBUG, "setting gid to %d", options.gid);
 
         OK_OR_FATAL(setgid(options.gid), "setgid failed");
     }
     if (options.uid > 0) {
-        debug("setting uid to %d", options.uid);
+        elog(ELOG_DEBUG, "setting uid to %d", options.uid);
 
         OK_OR_FATAL(setuid(options.uid), "setuid failed");
     }
@@ -802,21 +802,21 @@ static void child()
     argv = concat_options(argv, release_lib, append);
     free(release_lib);
 
-    if (options.verbose) {
+    if (options.verbose >= ELOG_DEBUG) {
         // Dump the environment and commandline
         extern char **environ;
         char **env = environ;
         while (*env != 0)
-            debug("Env: '%s'", *env++);
+            elog(ELOG_DEBUG, "Env: '%s'", *env++);
 
         int i;
         for (i = 0; exec_argv[i] != NULL; i++)
-            debug("Arg: '%s'", exec_argv[i]);
+            elog(ELOG_DEBUG, "Arg: '%s'", exec_argv[i]);
     }
 
-    debug("Launching erl...");
+    elog(ELOG_INFO, "Launching erl...");
     if (options.print_timing)
-        warn("stop");
+        elog(ELOG_INFO, "stop");
 
     execvp(exec_path, exec_argv);
 
@@ -827,12 +827,12 @@ static void child()
 static void disable_core_dumps()
 {
     if (set_core_pattern("|/bin/false") < 0)
-        warn("Failed to disable core dumps");
+        elog(ELOG_WARNING, "Failed to disable core dumps");
 }
 
 static void kill_all()
 {
-    debug("kill_all");
+    elog(ELOG_DEBUG, "kill_all");
 
     // Sync as much as possible to disk before going on the process killing spree to
     // reduce I/O from the processes exiting.
@@ -841,13 +841,13 @@ static void kill_all()
     disable_core_dumps();
 
     // Kill processes the nice way
-    warn("Sending SIGTERM to all processes");
+    elog(ELOG_INFO, "Sending SIGTERM to all processes");
     kill(-1, SIGTERM);
 
     sleep(1);
 
     // Brutal kill the stragglers
-    warn("Sending SIGKILL to all processes");
+    elog(ELOG_INFO, "Sending SIGKILL to all processes");
     kill(-1, SIGKILL);
     sync();
 }
@@ -871,37 +871,37 @@ static void wait_for_graceful_shutdown(pid_t pid, struct erlinit_exit_info *exit
     timeout.tv_nsec = (options.graceful_shutdown_timeout_ms % 1000) * 1000000;
 
     for (;;) {
-        debug("waiting %d ms for graceful shutdown", options.graceful_shutdown_timeout_ms);
+        elog(ELOG_DEBUG, "waiting %d ms for graceful shutdown", options.graceful_shutdown_timeout_ms);
         int rc = sigtimedwait(&mask, NULL, &timeout);
         if (rc == SIGCHLD) {
             rc = waitpid(-1, &exit_info->wait_status, WNOHANG);
             if (rc == pid) {
-                debug("graceful shutdown detected");
+                elog(ELOG_DEBUG, "graceful shutdown detected");
                 exit_info->graceful_shutdown_ok = 1;
                 break;
             } else if (rc < 0) {
-                warn("Unexpected error from waitpid %d", errno);
+                elog(ELOG_ERROR, "Unexpected error from waitpid %d", errno);
                 break;
             } else if (rc == 0) {
                 // No child exited
-                debug("Ignoring spurious SIGCHLD");
+                elog(ELOG_DEBUG, "Ignoring spurious SIGCHLD");
             } else {
-                debug("Ignoring SIGCHLD from pid %d", rc);
+                elog(ELOG_DEBUG, "Ignoring SIGCHLD from pid %d", rc);
             }
         } else if (rc == 0) {
-            warn("Ignoring unexpected return from sigtimedwait");
+            elog(ELOG_ERROR, "Ignoring unexpected return from sigtimedwait");
         } else if (rc < 0) {
             if (errno == EAGAIN) {
                 // Timeout. Brutal kill our child so that the shutdown process can continue.
-                warn("Graceful shutdown timer expired (%d ms). Killing Erlang VM process shortly. Adjust timeout with --graceful-shutdown-timeout option.",
+                elog(ELOG_ERROR, "Graceful shutdown timer expired (%d ms). Killing Erlang VM process shortly. Adjust timeout with --graceful-shutdown-timeout option.",
                      options.graceful_shutdown_timeout_ms);
                 break;
             } else if (errno != EINTR) {
-                warn("Unexpected errno %d from sigtimedwait", errno);
+                elog(ELOG_ERROR, "Unexpected errno %d from sigtimedwait", errno);
                 break;
             }
         } else if (rc > 0) {
-            warn("Ignoring signal %d while waiting for graceful shutdown", rc);
+            elog(ELOG_WARNING, "Ignoring signal %d while waiting for graceful shutdown", rc);
         }
     }
     clock_gettime(CLOCK_MONOTONIC, &exit_info->shutdown_complete);
@@ -966,33 +966,33 @@ static void fork_and_wait(struct erlinit_exit_info *exit_info)
                 if (rc == pid)
                     goto prepare_to_exit;
                 else if (rc > 0)
-                    debug("reaped pid %d", rc);
+                    elog(ELOG_DEBUG, "reaped pid %d", rc);
             } while (rc > 0);
         } else if (rc < 0) {
             // An error occurred.
-            debug("sigwaitinfo->errno %d", errno);
+            elog(ELOG_DEBUG, "sigwaitinfo->errno %d", errno);
             if (errno != EINTR)
                 fatal("Unexpected error from sigwaitinfo: %d", errno);
         } else if (rc == SIGPWR || rc == SIGUSR1) {
             // Halt request
-            debug("sigpwr|sigusr1 -> halt");
+            elog(ELOG_INFO, "sigpwr|sigusr1 -> halt");
             exit_info->desired_reboot_cmd = LINUX_REBOOT_CMD_HALT;
             wait_for_graceful_shutdown(pid, exit_info);
             break;
         } else if (rc == SIGTERM) {
             // Reboot request
-            debug("sigterm -> reboot");
+            elog(ELOG_INFO, "sigterm -> reboot");
             read_reboot_args(exit_info->reboot_args, sizeof(exit_info->reboot_args));
             exit_info->desired_reboot_cmd = exit_info->reboot_args[0] == '\0' ? LINUX_REBOOT_CMD_RESTART : LINUX_REBOOT_CMD_RESTART2;
             wait_for_graceful_shutdown(pid, exit_info);
             break;
         } else if (rc == SIGUSR2) {
-            debug("sigusr2 -> power off");
+            elog(ELOG_INFO, "sigusr2 -> power off");
             exit_info->desired_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
             wait_for_graceful_shutdown(pid, exit_info);
             break;
         } else {
-            debug("sigwaitinfo unexpected rc=%d", rc);
+            elog(ELOG_WARNING, "sigwaitinfo unexpected rc=%d", rc);
         }
     }
 
@@ -1003,15 +1003,15 @@ prepare_to_exit:
         exit_info->is_intentional_exit = 1;
 
         if (WIFSIGNALED(exit_info->wait_status))
-            warn("Ignoring unexpected error during shutdown.");
+            elog(ELOG_ERROR, "Ignoring unexpected error during shutdown.");
     } else {
         // Unintentional exit either due to a crash or an actual call to exit()
         exit_info->is_intentional_exit = 0;
         exit_info->desired_reboot_cmd = options.unintentional_exit_cmd;
         if (WIFSIGNALED(exit_info->wait_status))
-            warn("Erlang terminated due to signal %d", WTERMSIG(exit_info->wait_status));
+            elog(ELOG_ERROR, "Erlang terminated due to signal %d", WTERMSIG(exit_info->wait_status));
         else
-            warn("Erlang VM exited");
+            elog(ELOG_INFO, "Erlang VM exited");
     }
 }
 
@@ -1035,14 +1035,14 @@ int main(int argc, char *argv[])
     parse_args(merged_argc, merged_argv);
 
     if (options.print_timing)
-        warn("start");
+        elog(ELOG_INFO, "start");
 
-    debug("Starting " PROGRAM_NAME " " PROGRAM_VERSION_STR "...");
+    elog(ELOG_INFO, "Starting " PROGRAM_NAME " " PROGRAM_VERSION_STR "...");
 
-    debug("cmdline argc=%d, merged argc=%d", argc, merged_argc);
+    elog(ELOG_DEBUG, "cmdline argc=%d, merged argc=%d", argc, merged_argc);
     int i;
     for (i = 0; i < merged_argc; i++)
-        debug("merged argv[%d]=%s", i, merged_argv[i]);
+        elog(ELOG_DEBUG, "merged argv[%d]=%s", i, merged_argv[i]);
 
     // Set up experimental writable file system overlay
     if (options.x_pivot_root_on_overlayfs)
@@ -1091,7 +1091,7 @@ int main(int argc, char *argv[])
         // Sometimes Erlang exits on initialization. Hanging on exit
         // makes it easier to debug these cases since messages don't
         // keep scrolling on the screen.
-        warn("Not rebooting on exit as requested by the erlinit configuration...");
+        elog(ELOG_INFO, "Not rebooting on exit as requested by the erlinit configuration...");
 
         // Make sure that the user sees the message.
         sleep(5);

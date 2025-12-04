@@ -162,7 +162,7 @@ static dev_t root_filesystem_device()
     if (stat("/", &st) >= 0) {
         return st.st_dev;
     } else {
-        warn("Could not determine root device: %s", strerror(errno));
+        elog(ELOG_WARNING, "Could not determine root device: %s", strerror(errno));
         return 0;
     }
 }
@@ -181,7 +181,7 @@ static void create_dev_symlink(const char *partition_suffix, const char *devname
     snprintf(symlinkpath, sizeof(symlinkpath), "/dev/rootdisk%s", partition_suffix);
     snprintf(devpath, sizeof(devpath), "/dev/%s", devname);
     if (symlink(devpath, symlinkpath) < 0)
-        warn("Could not create symlink '%s'->'%s': %s", symlinkpath, devpath, strerror(errno));
+        elog(ELOG_WARNING, "Could not create symlink '%s'->'%s': %s", symlinkpath, devpath, strerror(errno));
 }
 
 void create_rootdisk_symlinks()

@@ -109,7 +109,7 @@ static void hostname_sprintf(char *output, const char *pattern, const char *seri
 
 void configure_hostname()
 {
-    debug("configure_hostname");
+    elog(ELOG_DEBUG, "configure_hostname");
     char hostname[128] = "\0";
 
     if (options.hostname_pattern) {
@@ -122,7 +122,7 @@ void configure_hostname()
                 kill_whitespace(buffer);
                 unique_id = buffer;
             } else {
-                warn("`%s` failed. Using default ID: '%s'", options.uniqueid_exec, unique_id);
+                elog(ELOG_WARNING, "`%s` failed. Using default ID: '%s'", options.uniqueid_exec, unique_id);
             }
         }
         hostname_sprintf(hostname, options.hostname_pattern, unique_id);
@@ -132,7 +132,7 @@ void configure_hostname()
         // Set the hostname from /etc/hostname
         FILE *fp = fopen("/etc/hostname", "r");
         if (!fp) {
-            warn("/etc/hostname not found");
+            elog(ELOG_WARNING, "/etc/hostname not found");
             return;
         }
 
@@ -143,10 +143,10 @@ void configure_hostname()
     }
 
     if (*hostname == '\0') {
-        warn("Not setting empty hostname");
+        elog(ELOG_WARNING, "Not setting empty hostname");
         return;
     }
 
-    debug("Hostname: %s", hostname);
+    elog(ELOG_DEBUG, "Hostname: %s", hostname);
     OK_OR_WARN(sethostname(hostname, strlen(hostname)), "Error setting hostname: %s", strerror(errno));
 }

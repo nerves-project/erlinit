@@ -43,8 +43,20 @@
 // for erlinit use.
 #define ERLINIT_PATH_MAX 1024
 
+// See /usr/include/syslog.h for values. They're also standardized in RFC5424.
+enum elog_severity {
+    ELOG_EMERG = 0,
+    ELOG_ALERT,
+    ELOG_CRIT,
+    ELOG_ERROR,
+    ELOG_WARNING,
+    ELOG_NOTICE,
+    ELOG_INFO,
+    ELOG_DEBUG
+};
+
 struct erlinit_options {
-    int verbose;
+    enum elog_severity verbose;
     int print_timing;
     int unintentional_exit_cmd; // Invoked when erlang exits. See linux/reboot.h for options
     int fatal_reboot_cmd;       // Invoked on fatal() log message. See linux/reboot.h for options
@@ -85,12 +97,13 @@ struct erlinit_exit_info {
 };
 
 // Logging functions
-void debug(const char *fmt, ...);
-void warn(const char *fmt, ...);
-void fatal(const char *fmt, ...);
+void elog(enum elog_severity sev, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+void fatal(const char *fmt, ...)
+	__attribute__((format(printf, 1, 2), noreturn));
 
 #define OK_OR_FATAL(WORK, MSG, ...) do { if ((WORK) < 0) fatal(MSG, ## __VA_ARGS__); } while (0)
-#define OK_OR_WARN(WORK, MSG, ...) do { if ((WORK) < 0) warn(MSG, ## __VA_ARGS__); } while (0)
+#define OK_OR_WARN(WORK, MSG, ...) do { if ((WORK) < 0) elog(ELOG_WARNING, MSG, ## __VA_ARGS__); } while (0)
 
 // Configuration loading
 void merge_config(int argc, char *argv[], int *merged_argc, char **merged_argv);

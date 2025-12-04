@@ -51,7 +51,7 @@ static int str_to_resource(const char *s)
             return i->value;
     }
 
-    warn("Unrecognized resource %s", s);
+    elog(ELOG_WARNING, "Unrecognized resource %s", s);
     return -1;
 }
 
@@ -68,10 +68,10 @@ void create_limits()
             limit.rlim_cur = str_to_limit(soft);
             limit.rlim_max = str_to_limit(hard);
             if (setrlimit(resource, &limit) != 0)
-                warn("could not set limits %s");
+                elog(ELOG_WARNING, "could not set limits %s", resource_name);
 
         } else {
-            warn("Invalid parameter to -l. Expecting 3 colon-separated fields");
+            elog(ELOG_WARNING, "Invalid parameter to -l. Expecting 3 colon-separated fields");
         }
     }
 }

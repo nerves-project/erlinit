@@ -49,7 +49,7 @@ static unsigned long str_to_mountflags(char *s)
         else if (strcmp(flag, "sync") == 0)
             flags |= MS_SYNCHRONOUS;
         else
-            warn("Unrecognized filesystem mount flag: %s", flag);
+            elog(ELOG_WARNING, "Unrecognized filesystem mount flag: %s", flag);
 
         flag = strtok(NULL, ",");
     }
@@ -59,13 +59,13 @@ static unsigned long str_to_mountflags(char *s)
 int pivot_root(const char *new_root, const char *put_old);
 void pivot_root_on_overlayfs()
 {
-    debug("pivot_root_on_overlayfs");
+    elog(ELOG_DEBUG, "pivot_root_on_overlayfs");
 
     // Setup an overlay filesystem for the rootfs so that the official contents
     // are protected in a read-only fs, but we can still update files when
     // debugging.
     if (mount("", "/mnt", "tmpfs", 0, "size=10%") < 0) {
-        warn("Could not mount tmpfs in /mnt: %s\n"
+        elog(ELOG_ERROR, "Could not mount tmpfs in /mnt: %s\n"
              "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
         return;
     }
@@ -77,7 +77,7 @@ void pivot_root_on_overlayfs()
 
     if (mount("", "/mnt/.merged", "overlay", 0,
               "lowerdir=/,upperdir=/mnt/.upper,workdir=/mnt/.work") < 0) {
-        warn("Could not mount overlayfs: %s\n"
+        elog(ELOG_ERROR, "Could not mount overlayfs: %s\n"
              "Check that CONFIG_OVERLAY_FS=y is in the kernel config.", strerror(errno));
         return;
     }
@@ -85,24 +85,24 @@ void pivot_root_on_overlayfs()
     OK_OR_WARN(mkdir("/mnt/.merged/dev", 0755), "Cannot create /mnt/.merged/dev");
 
     if (mount("/dev", "/mnt/.merged/dev", "tmpfs", MS_MOVE, NULL) < 0) {
-        warn("Could not move /dev to upper overlay: %s", strerror(errno));
+        elog(ELOG_ERROR, "Could not move /dev to upper overlay: %s", strerror(errno));
         return;
     }
     if (chdir("/mnt/.merged") < 0) {
-        warn("Could not change directory to /mnt/.merged: %s", strerror(errno));
+        elog(ELOG_ERROR, "Could not change directory to /mnt/.merged: %s", strerror(errno));
         return;
     }
 
     if (mkdir(".oldrootfs", 0755) < 0) {
-        warn("Could not create directory .oldrootfs: %s", strerror(errno));
+        elog(ELOG_ERROR, "Could not create directory .oldrootfs: %s", strerror(errno));
         return;
     }
 
     if (pivot_root(".", ".oldrootfs") < 0) {
-        warn("pivot_root failed: %s", strerror(errno));
+        elog(ELOG_ERROR, "pivot_root failed: %s", strerror(errno));
         return;
     }
-    debug("pivot_root_on_overlayfs done!");
+    elog(ELOG_DEBUG, "pivot_root_on_overlayfs done!");
 }
 
 void setup_pseudo_filesystems()
@@ -133,11 +133,11 @@ void mount_filesystems()
     // Mount /tmp and /run since they're almost always needed and it's
     // not easy to do it at the right time in Erlang.
     if (mount("tmpfs", "/tmp", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, "mode=1777,size=10%") < 0)
-        warn("Could not mount tmpfs in /tmp: %s\r\n"
+        elog(ELOG_WARNING, "Could not mount tmpfs in /tmp: %s\r\n"
              "Check that tmpfs support is enabled in the kernel config.", strerror(errno));
 
     if (mount("tmpfs", "/run", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV, "mode=0755,size=5%") < 0)
-        warn("Could not mount tmpfs in /run: %s", strerror(errno));
+        elog(ELOG_WARNING, "Could not mount tmpfs in /run: %s", strerror(errno));
 
     // Mount any filesystems specified by the user. This is best effort.
     // The user is required to figure out if anything went wrong in their
@@ -163,20 +163,20 @@ void mount_filesystems()
 
             unsigned long imountflags = str_to_mountflags(mountflags);
             if (mount(source, target, filesystemtype, imountflags, (void *) data) < 0)
-                warn("Cannot mount %s at %s: %s", source, target, strerror(errno));
+                elog(ELOG_WARNING, "Cannot mount %s at %s: %s", source, target, strerror(errno));
         } else {
-            warn("Invalid parameter to -m. Expecting 5 colon-separated fields");
+            elog(ELOG_WARNING, "Invalid parameter to -m. Expecting 5 colon-separated fields");
         }
     }
 }
 
 void unmount_all()
 {
-    debug("unmount_all");
+    elog(ELOG_DEBUG, "unmount_all");
 
     FILE *fp = fopen("/proc/mounts", "r");
     if (!fp) {
-        warn("/proc/mounts not found");
+        elog(ELOG_WARNING, "/proc/mounts not found");
         return;
     }
 
@@ -200,8 +200,8 @@ void unmount_all()
                 strcmp(mounts[i].source, "/dev/root") == 0)
             continue;
 
-        debug("unmounting %s at %s...", mounts[i].source, mounts[i].target);
+        elog(ELOG_DEBUG, "unmounting %s at %s...", mounts[i].source, mounts[i].target);
         if (umount(mounts[i].target) < 0 && umount(mounts[i].source) < 0)
-            warn("umount %s failed: %s", mounts[i].target, strerror(errno));
+            elog(ELOG_WARNING, "umount %s failed: %s", mounts[i].target, strerror(errno));
     }
 }

@@ -139,7 +139,7 @@ void merge_config(int argc, char *argv[], int *merged_argc, char **merged_argv)
                                 MAX_ARGC - argc);
 
     if (*merged_argc + argc - 1 > MAX_ARGC) {
-        warn("Too many arguments specified between the config file and commandline. Dropping some.");
+        elog(ELOG_ERROR, "Too many arguments specified between the config file and commandline. Dropping some.");
         argc = MAX_ARGC - *merged_argc + 1;
     }
 
