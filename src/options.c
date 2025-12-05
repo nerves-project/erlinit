@@ -17,7 +17,7 @@
 
 // Initialize the default options
 struct erlinit_options options = {
-    .verbose = ELOG_WARNING,
+    .verbose = ELOG_LEVEL_WARNING,
     .print_timing = 0,
     .unintentional_exit_cmd = LINUX_REBOOT_CMD_RESTART,
     .fatal_reboot_cmd = LINUX_REBOOT_CMD_RESTART,
@@ -198,7 +198,7 @@ void parse_args(int argc, char *argv[])
             options.print_timing = 1;
             break;
         case OPT_VERBOSE: // --verbose
-            options.verbose = ELOG_DEBUG;
+            options.verbose = ELOG_LEVEL_DEBUG;
             break;
         case OPT_WARN_UNUSED_TTY: // --warn-unused-tty
             options.warn_unused_tty = 1;

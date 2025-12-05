@@ -44,6 +44,8 @@ run() {
     CONFIG=$WORK/$TEST.config
     CMDLINE_FILE=$WORK/$TEST.cmdline
     EXPECTED=$WORK/$TEST.expected
+    PMSG_EXPECTED=$WORK/$TEST.pmsg_expected
+    PMSG=$WORK/dev/pmsg0
 
     echo "Running $TEST..."
 
@@ -124,6 +126,10 @@ EOF
         CMDLINE=
     fi
 
+    if [ -e "$PMSG_EXPECTED" ]; then
+        touch "$PMSG"
+    fi
+
     # Run erlinit
     # NOTE: Call 'exec' so that it's possible to set argv0, but that means we
     #       need a subshell - hence the parentheses.
@@ -151,6 +157,22 @@ EOF
     if [ $? != 0 ]; then
         echo "Test $TEST failed!"
         exit 1
+    fi
+
+    if [ -e "$PMSG_EXPECTED" ]; then
+        cat "$PMSG" | \
+            grep -v "erlinit 1\.[0-9]\+\.[0-9]\+" \
+            > "$PMSG.filtered"
+        diff -w "$PMSG.filtered" "$PMSG_EXPECTED"
+        if [ $? != 0 ]; then
+            echo "Test $TEST failed!"
+            exit 1
+        fi
+    else
+        if [ -e "$PMSG" ]; then
+            echo "erlinit wrote to $PMSG and it shouldn't have. Test $TEST failed!"
+            exit 1
+        fi
     fi
 }
 

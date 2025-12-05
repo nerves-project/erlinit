@@ -262,6 +262,20 @@ For debug purposes and if `/dev/kmsg` cannot be opened, logging goes to
 `stderr` can block. In some scenarios, it can block indefinitely (e.g., logging
 to a gadget serial device).
 
+## Pstore breadcrumbs
+
+The logging described above doesn't always work when there are problems early on
+or when rebooting. `erlinit` also writes notable events to the Linux pstore's
+`pmsg` circular buffer. When enabled and configured, `pmsg` survives reboots
+even though it's an in-memory buffer. The tradeoff is that you can't write a lot
+to it, so it's not as verbose as normal logging.
+
+See the Linux `pstore` documentation and the
+[ramoops_logger](https://hex.pm/packages/ramoops_logger) for more details.
+
+Currently there's nothing to configure and `erlinit` will automatically write
+breadcrumbs to it if available.
+
 ## Shutdown reports
 
 `erlinit` can help debug unexpected reboots and poweroffs. If you specify a path

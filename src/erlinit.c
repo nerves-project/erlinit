@@ -802,7 +802,7 @@ static void child()
     argv = concat_options(argv, release_lib, append);
     free(release_lib);
 
-    if (options.verbose >= ELOG_DEBUG) {
+    if (options.verbose >= ELOG_LEVEL_DEBUG) {
         // Dump the environment and commandline
         extern char **environ;
         char **env = environ;
@@ -814,7 +814,7 @@ static void child()
             elog(ELOG_DEBUG, "Arg: '%s'", exec_argv[i]);
     }
 
-    elog(ELOG_INFO, "Launching erl...");
+    elog(ELOG_INFO | ELOG_PMSG, "Launching erl...");
     if (options.print_timing)
         elog(ELOG_INFO, "stop");
 
@@ -1037,7 +1037,7 @@ int main(int argc, char *argv[])
     if (options.print_timing)
         elog(ELOG_INFO, "start");
 
-    elog(ELOG_INFO, PROGRAM_NAME " " PROGRAM_VERSION_STR);
+    elog(ELOG_INFO | ELOG_PMSG, PROGRAM_NAME " " PROGRAM_VERSION_STR);
 
     elog(ELOG_DEBUG, "cmdline argc=%d, merged argc=%d", argc, merged_argc);
     int i;
@@ -1073,6 +1073,7 @@ int main(int argc, char *argv[])
     kill_all();
 
     // Dump state for post-mortem analysis of why the power off or reboot occurred.
+    log_mini_shutdown_report(&exit_info);
     if (options.shutdown_report)
         shutdown_report_create(options.shutdown_report, &exit_info);
 
@@ -1091,7 +1092,7 @@ int main(int argc, char *argv[])
         // Sometimes Erlang exits on initialization. Hanging on exit
         // makes it easier to debug these cases since messages don't
         // keep scrolling on the screen.
-        elog(ELOG_INFO, "Not rebooting on exit as requested by the erlinit configuration...");
+        elog(ELOG_INFO | ELOG_PMSG, "Not rebooting on exit as requested by the erlinit configuration...");
 
         // Make sure that the user sees the message.
         sleep(5);
@@ -1107,10 +1108,10 @@ int main(int argc, char *argv[])
 
     // Reboot/poweroff/halt
     if (exit_info.reboot_args[0] != '\0') {
-        elog(ELOG_INFO, "Calling reboot(0x%x, %s)", exit_info.desired_reboot_cmd, exit_info.reboot_args);
+        elog(ELOG_INFO | ELOG_PMSG, "Calling reboot(0x%x, %s)", exit_info.desired_reboot_cmd, exit_info.reboot_args);
         reboot_with_args(exit_info.desired_reboot_cmd, exit_info.reboot_args);
     } else {
-        elog(ELOG_INFO, "Calling reboot(0x%x)", exit_info.desired_reboot_cmd);
+        elog(ELOG_INFO | ELOG_PMSG, "Calling reboot(0x%x)", exit_info.desired_reboot_cmd);
         reboot(exit_info.desired_reboot_cmd);
     }
 

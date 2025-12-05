@@ -147,6 +147,13 @@ REPLACE(int, reboot, (int cmd))
     exit(0);
 }
 
+REPLACE(time_t, time, (time_t *tloc))
+{
+    // Hardcode all timestamps to be the same in the output for unit test purposes
+    *tloc = 1764970081;
+    return *tloc;
+}
+
 // syscall gives a deprecation warning on MacOS, so handle this is compat.c
 #ifndef __APPLE__
 REPLACE(long, syscall, (long number, ...))
@@ -266,7 +273,12 @@ OVERRIDE(int, open, (const char *pathname, int flags, ...))
             return -1;
         else
             return dup(STDERR_FILENO);
+    } else if (strcmp(pathname, "/dev/pmsg0") == 0) {
+        // Similate pmsg0 by forcing it to be opened with the append flag
+        if (flags & O_WRONLY)
+            flags |= O_APPEND;
     }
+
 
     char new_path[PATH_MAX];
     if (fixup_path(pathname, new_path) < 0)

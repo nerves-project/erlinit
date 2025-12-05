@@ -147,3 +147,17 @@ void shutdown_report_create(const char *path, const struct erlinit_exit_info *ex
 
     fclose(fp);
 }
+
+void log_mini_shutdown_report(const struct erlinit_exit_info *exit_info)
+{
+    elog(ELOG_PMSG_ONLY, "Intentional exit from Erlang: %s", yes_or_no(exit_info->is_intentional_exit));
+    if (WIFEXITED(exit_info->wait_status))
+        elog(ELOG_PMSG_ONLY, "Erlang exit status: %d", WEXITSTATUS(exit_info->wait_status));
+    if (WIFSIGNALED(exit_info->wait_status))
+        elog(ELOG_PMSG_ONLY, "Erlang exited due to signal: %d", WTERMSIG(exit_info->wait_status));
+
+    elog(ELOG_PMSG_ONLY, "Graceful shutdown succeeded: %s", yes_or_no(exit_info->graceful_shutdown_ok));
+    double shutdown_seconds = delta_seconds(&exit_info->shutdown_start, &exit_info->shutdown_complete);
+    elog(ELOG_PMSG_ONLY, "Graceful shutdown time: %.3f s", shutdown_seconds);
+}
+
