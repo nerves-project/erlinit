@@ -1,3 +1,8 @@
+<!--
+  SPDX-FileCopyrightText: 2013 Frank Hunleth
+  SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # erlinit
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/nerves-project/erlinit/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/nerves-project/erlinit/tree/main)
