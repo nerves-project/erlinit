@@ -79,7 +79,7 @@ erlinit: Arg: 'RELEASE_LIB'
 erlinit: Arg: '/srv/erlang/lib'
 erlinit: Launching erl...
 erlexec is sending signal to reboot
-erlinit: sigterm -> reboot
+erlinit: Reboot requested
 erlinit: waiting 10000 ms for graceful shutdown
 erlinit: graceful shutdown detected
 erlinit: kill_all
@@ -104,5 +104,6 @@ erlinit: unmounting proc at /proc...
 fixture: umount("/proc")
 erlinit: unmounting sysfs at /sys...
 fixture: umount("/sys")
+erlinit: Calling reboot(0xa1b2c3d4, 0 tryboot)
 fixture: reboot(0xa1b2c3d4, "0 tryboot")
 EOF

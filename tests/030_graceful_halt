@@ -77,7 +77,7 @@ erlinit: Arg: 'RELEASE_LIB'
 erlinit: Arg: '/srv/erlang/lib'
 erlinit: Launching erl...
 erlexec is sending signal to halt
-erlinit: sigpwr|sigusr1 -> halt
+erlinit: Halt requested
 erlinit: waiting 10000 ms for graceful shutdown
 erlinit: graceful shutdown detected
 erlinit: kill_all
@@ -102,5 +102,6 @@ erlinit: unmounting proc at /proc...
 fixture: umount("/proc")
 erlinit: unmounting sysfs at /sys...
 fixture: umount("/sys")
+erlinit: Calling reboot(0xcdef0123)
 fixture: reboot(0xcdef0123)
 EOF

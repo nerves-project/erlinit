@@ -975,19 +975,19 @@ static void fork_and_wait(struct erlinit_exit_info *exit_info)
                 fatal("Unexpected error from sigwaitinfo: %d", errno);
         } else if (rc == SIGPWR || rc == SIGUSR1) {
             // Halt request
-            elog(ELOG_INFO, "sigpwr|sigusr1 -> halt");
+            elog(ELOG_INFO, "Halt requested");
             exit_info->desired_reboot_cmd = LINUX_REBOOT_CMD_HALT;
             wait_for_graceful_shutdown(pid, exit_info);
             break;
         } else if (rc == SIGTERM) {
             // Reboot request
-            elog(ELOG_INFO, "sigterm -> reboot");
+            elog(ELOG_INFO, "Reboot requested");
             read_reboot_args(exit_info->reboot_args, sizeof(exit_info->reboot_args));
             exit_info->desired_reboot_cmd = exit_info->reboot_args[0] == '\0' ? LINUX_REBOOT_CMD_RESTART : LINUX_REBOOT_CMD_RESTART2;
             wait_for_graceful_shutdown(pid, exit_info);
             break;
         } else if (rc == SIGUSR2) {
-            elog(ELOG_INFO, "sigusr2 -> power off");
+            elog(ELOG_INFO, "Power off requested");
             exit_info->desired_reboot_cmd = LINUX_REBOOT_CMD_POWER_OFF;
             wait_for_graceful_shutdown(pid, exit_info);
             break;
@@ -1037,7 +1037,7 @@ int main(int argc, char *argv[])
     if (options.print_timing)
         elog(ELOG_INFO, "start");
 
-    elog(ELOG_INFO, "Starting " PROGRAM_NAME " " PROGRAM_VERSION_STR "...");
+    elog(ELOG_INFO, PROGRAM_NAME " " PROGRAM_VERSION_STR);
 
     elog(ELOG_DEBUG, "cmdline argc=%d, merged argc=%d", argc, merged_argc);
     int i;
@@ -1106,10 +1106,13 @@ int main(int argc, char *argv[])
     close(STDERR_FILENO);
 
     // Reboot/poweroff/halt
-    if (exit_info.reboot_args[0] != '\0')
+    if (exit_info.reboot_args[0] != '\0') {
+        elog(ELOG_INFO, "Calling reboot(0x%x, %s)", exit_info.desired_reboot_cmd, exit_info.reboot_args);
         reboot_with_args(exit_info.desired_reboot_cmd, exit_info.reboot_args);
-    else
+    } else {
+        elog(ELOG_INFO, "Calling reboot(0x%x)", exit_info.desired_reboot_cmd);
         reboot(exit_info.desired_reboot_cmd);
+    }
 
     // If we get here, oops the kernel.
     return 0;

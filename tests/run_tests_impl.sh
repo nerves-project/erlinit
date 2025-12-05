@@ -132,7 +132,7 @@ EOF
     # Trim the results of known lines that vary between runs
     # The calls to sed fixup differences between getopt implementations.
     cat "$RESULTS.raw" | \
-        grep -v "Starting erlinit" | \
+        grep -v "erlinit 1\.[0-9]\+\.[0-9]\+" | \
         grep -v "erlinit: Env: 'LD_" | \
         grep -v "erlinit: Env: 'SHLVL=" | \
         grep -v "erlinit: Env: '_=" | \
