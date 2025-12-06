@@ -19,7 +19,7 @@
 static int kmsg_format(int severity, char **strp, const char *msg)
 {
     int prival = 3 * 8 + (severity & ELOG_SEVERITY_MASK); // facility=daemon(3)
-    return asprintf(strp, "<%d>%s\n", prival, msg);
+    return asprintf(strp, "<%d>" PROGRAM_NAME ": %s\n", prival, msg);
 }
 
 static int stderr_format(char **strp, const char *msg)

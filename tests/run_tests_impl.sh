@@ -46,6 +46,8 @@ run() {
     EXPECTED=$WORK/$TEST.expected
     PMSG_EXPECTED=$WORK/$TEST.pmsg_expected
     PMSG=$WORK/dev/pmsg0
+    KMSG_EXPECTED=$WORK/$TEST.kmsg_expected
+    KMSG=$WORK/dev/kmsg
 
     echo "Running $TEST..."
 
@@ -130,6 +132,10 @@ EOF
         touch "$PMSG"
     fi
 
+    if [ -e "$KMSG_EXPECTED" ]; then
+        touch "$KMSG"
+    fi
+
     # Run erlinit
     # NOTE: Call 'exec' so that it's possible to set argv0, but that means we
     #       need a subshell - hence the parentheses.
@@ -171,6 +177,28 @@ EOF
     else
         if [ -e "$PMSG" ]; then
             echo "erlinit wrote to $PMSG and it shouldn't have. Test $TEST failed!"
+            exit 1
+        fi
+    fi
+
+    if [ -e "$KMSG_EXPECTED" ]; then
+        cat "$KMSG" | \
+            grep -v "erlinit 1\.[0-9]\+\.[0-9]\+" | \
+            grep -v "erlinit: Env: 'LD_" | \
+            grep -v "erlinit: Env: 'SHLVL=" | \
+            grep -v "erlinit: Env: '_=" | \
+            grep -v "erlinit: Env: 'PWD=" | \
+            grep -v "erlinit: Env: 'WORK=" | \
+            grep -v "erlinit: Env: 'SED=" \
+            > "$KMSG.filtered"
+        diff -w "$KMSG.filtered" "$KMSG_EXPECTED"
+        if [ $? != 0 ]; then
+            echo "Test $TEST failed!"
+            exit 1
+        fi
+    else
+        if [ -e "$KMSG" ]; then
+            echo "erlinit wrote to $KMSG and it shouldn't have. Test $TEST failed!"
             exit 1
         fi
     fi

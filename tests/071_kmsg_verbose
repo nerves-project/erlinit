@@ -1,25 +1,16 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: 2020 Frank Hunleth
+# SPDX-FileCopyrightText: 2025 Frank Hunleth
 #
 # SPDX-License-Identifier: MIT
 #
 
 #
-# Test that saving a shutdown report works.
-#
-# Note: This only tests that the code runs and not that the report looks ok.
+# Test that crumbs get logged to /dev/kmsg with verbosity on
 #
 
 cat >"$CMDLINE_FILE" <<EOF
--v --shutdown-report /shutdown.txt
+-v
 EOF
-
-RELEASE_PATH=$WORK/srv/erlang/releases/0.0.1
-mkdir -p $RELEASE_PATH
-touch $RELEASE_PATH/test.boot
-touch $RELEASE_PATH/sys.config
-touch $RELEASE_PATH/vm.args
-ln -sf $FAKE_ERLEXEC.reboot $FAKE_ERTS_DIR/bin/erlexec
 
 cat >"$EXPECTED" <<EOF
 fixture: mount("proc", "/proc", "proc", 14, data)
@@ -40,7 +31,7 @@ fixture: ioctl(SIOCGIFFLAGS)
 fixture: ioctl(SIOCSIFFLAGS)
 fixture: ioctl(SIOCGIFINDEX)
 fixture: mkdir("/root/seedrng", 700)
-erlexec is sending signal to reboot
+Hello from erlexec
 fixture: kill(-1, 15)
 fixture: sleep(1)
 fixture: kill(-1, 9)
@@ -55,18 +46,12 @@ fixture: reboot(0x01234567)
 EOF
 
 cat >"$KMSG_EXPECTED" <<EOF
-<31>erlinit: cmdline argc=4, merged argc=4
+<31>erlinit: cmdline argc=2, merged argc=2
 <31>erlinit: merged argv[0]=/sbin/init
 <31>erlinit: merged argv[1]=-v
-<31>erlinit: merged argv[2]=--shutdown-report
-<31>erlinit: merged argv[3]=/shutdown.txt
 <31>erlinit: set_ctty
 <31>erlinit: find_release
-<28>erlinit: /srv/erlang/releases/start_erl.data not found.
-<31>erlinit: Using release in /srv/erlang/releases/0.0.1.
-<31>erlinit: find_sys_config
-<31>erlinit: find_vm_args
-<31>erlinit: find_boot_path
+<28>erlinit: No release found in /srv/erlang.
 <31>erlinit: find_erts_directory
 <31>erlinit: setup_environment
 <31>erlinit: setup_networking
@@ -76,32 +61,20 @@ cat >"$KMSG_EXPECTED" <<EOF
 <31>erlinit: Env: 'HOME=/home/user0'
 <31>erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
 <31>erlinit: Env: 'TERM=xterm-256color'
-<31>erlinit: Env: 'ROOTDIR=/srv/erlang'
+<31>erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
 <31>erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
 <31>erlinit: Env: 'EMU=beam'
 <31>erlinit: Env: 'PROGNAME=erlexec'
-<31>erlinit: Env: 'RELEASE_SYS_CONFIG=/srv/erlang/releases/0.0.1/sys'
-<31>erlinit: Env: 'RELEASE_ROOT=/srv/erlang'
-<31>erlinit: Env: 'RELEASE_TMP=/tmp'
 <31>erlinit: Arg: 'erlexec'
-<31>erlinit: Arg: '-config'
-<31>erlinit: Arg: '/srv/erlang/releases/0.0.1/sys.config'
-<31>erlinit: Arg: '-boot'
-<31>erlinit: Arg: '/srv/erlang/releases/0.0.1/test'
-<31>erlinit: Arg: '-args_file'
-<31>erlinit: Arg: '/srv/erlang/releases/0.0.1/vm.args'
 <31>erlinit: Arg: '-boot_var'
 <31>erlinit: Arg: 'RELEASE_LIB'
-<31>erlinit: Arg: '/srv/erlang/lib'
+<31>erlinit: Arg: '/usr/lib/erlang/lib'
 <30>erlinit: Launching erl...
-<30>erlinit: Reboot requested
-<31>erlinit: waiting 10000 ms for graceful shutdown
-<31>erlinit: graceful shutdown detected
+<30>erlinit: Erlang VM exited
 <31>erlinit: kill_all
 <31>erlinit: Set core pattern to '|/bin/false'
 <30>erlinit: Sending SIGTERM to all processes
 <30>erlinit: Sending SIGKILL to all processes
-<31>erlinit: Writing shutdown report to '/shutdown.txt'
 <31>erlinit: Seeding 256 bits and crediting
 <31>erlinit: Saving 256 bits of creditable seed for next boot
 <31>erlinit: unmount_all
