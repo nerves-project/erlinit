@@ -5,6 +5,23 @@
 
 # Changelog
 
+## v1.15.0
+
+This release adds support for logging breadcrumbs to the Linux pstore pmsg
+circular buffer. This is an in-memory buffer that can survive reboots and is
+useful when debugging issues when logging to disk isn't possible. It's not used
+when pstore isn't available.
+
+* Changes
+  * Log messages sent to kmsg now set the severity field properly. When
+    verbosity was enabled, trivial log messages now get recorded at the debug
+    severity rather than the default warning severity.
+  * Linux pstore pmsg breadcrumb logs
+  * Several updates to log message text since they're more visible now
+
+* Bug fixes
+  * Fix cross-compilation on macOS (@LostKobrakai)
+
 ## v1.14.4
 
 * Bug fixes
