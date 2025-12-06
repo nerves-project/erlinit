@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2025 Frank Hunleth
+#
+# SPDX-License-Identifier: MIT
+#
+
+#
+# Test that crumbs get logged to /dev/kmsg with verbosity on
+#
+
+cat >"$CMDLINE_FILE" <<EOF
+-v
+EOF
+
+cat >"$EXPECTED" <<EOF
+fixture: mount("proc", "/proc", "proc", 14, data)
+fixture: mount("sysfs", "/sys", "sysfs", 14, data)
+fixture: mount("devtmpfs", "/dev", "devtmpfs", 42, data)
+fixture: mkdir("/dev/pts", 755)
+fixture: mkdir("/dev/shm", 1777)
+fixture: mount("devpts", "/dev/pts", "devpts", 10, data)
+fixture: symlink("/dev/mmcblk0","/dev/rootdisk0")
+fixture: symlink("/dev/mmcblk0p4","/dev/rootdisk0p4")
+fixture: symlink("/dev/mmcblk0p3","/dev/rootdisk0p3")
+fixture: symlink("/dev/mmcblk0p2","/dev/rootdisk0p2")
+fixture: symlink("/dev/mmcblk0p1","/dev/rootdisk0p1")
+fixture: setsid()
+fixture: mount("tmpfs", "/tmp", "tmpfs", 14, data)
+fixture: mount("tmpfs", "/run", "tmpfs", 14, data)
+fixture: ioctl(SIOCGIFFLAGS)
+fixture: ioctl(SIOCSIFFLAGS)
+fixture: ioctl(SIOCGIFINDEX)
+fixture: mkdir("/root/seedrng", 700)
+Hello from erlexec
+fixture: kill(-1, 15)
+fixture: sleep(1)
+fixture: kill(-1, 9)
+fixture: mkdir("/root/seedrng", 700)
+fixture: ioctl(RNDADDENTROPY)
+fixture: umount("/sys/fs/cgroup")
+fixture: umount("/dev/shm")
+fixture: umount("/dev/pts")
+fixture: umount("/proc")
+fixture: umount("/sys")
+fixture: reboot(0x01234567)
+EOF
+
+cat >"$KMSG_EXPECTED" <<EOF
+<31>erlinit: cmdline argc=2, merged argc=2
+<31>erlinit: merged argv[0]=/sbin/init
+<31>erlinit: merged argv[1]=-v
+<31>erlinit: set_ctty
+<31>erlinit: find_release
+<28>erlinit: No release found in /srv/erlang.
+<31>erlinit: find_erts_directory
+<31>erlinit: setup_environment
+<31>erlinit: setup_networking
+<31>erlinit: configure_hostname
+<28>erlinit: /etc/hostname not found
+<31>erlinit: Saving 256 bits of creditable seed for next boot
+<31>erlinit: Env: 'WORK=/Users/fhunleth/git/nerves-project/erlinit/tests/work'
+<31>erlinit: Env: 'SED=sed'
+<31>erlinit: Env: 'PWD=/Users/fhunleth/git/nerves-project/erlinit'
+<31>erlinit: Env: 'SHLVL=0'
+<31>erlinit: Env: 'HOME=/home/user0'
+<31>erlinit: Env: 'PATH=/usr/sbin:/usr/bin:/sbin:/bin'
+<31>erlinit: Env: 'TERM=xterm-256color'
+<31>erlinit: Env: 'ROOTDIR=/usr/lib/erlang'
+<31>erlinit: Env: 'BINDIR=/usr/lib/erlang/erts-6.0/bin'
+<31>erlinit: Env: 'EMU=beam'
+<31>erlinit: Env: 'PROGNAME=erlexec'
+<31>erlinit: Arg: 'erlexec'
+<31>erlinit: Arg: '-boot_var'
+<31>erlinit: Arg: 'RELEASE_LIB'
+<31>erlinit: Arg: '/usr/lib/erlang/lib'
+<30>erlinit: Launching erl...
+<30>erlinit: Erlang VM exited
+<31>erlinit: kill_all
+<31>erlinit: Set core pattern to '|/bin/false'
+<30>erlinit: Sending SIGTERM to all processes
+<30>erlinit: Sending SIGKILL to all processes
+<31>erlinit: Seeding 256 bits and crediting
+<31>erlinit: Saving 256 bits of creditable seed for next boot
+<31>erlinit: unmount_all
+<31>erlinit: unmounting tmpfs at /sys/fs/cgroup...
+<31>erlinit: unmounting tmpfs at /dev/shm...
+<31>erlinit: unmounting devpts at /dev/pts...
+<31>erlinit: unmounting proc at /proc...
+<31>erlinit: unmounting sysfs at /sys...
+<30>erlinit: Calling reboot(0x1234567)
+EOF

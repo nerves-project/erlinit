@@ -267,14 +267,14 @@ OVERRIDE(int, open, (const char *pathname, int flags, ...))
     va_end(ap);
 
     if (strcmp(pathname, "/dev/kmsg") == 0) {
-        // Don't allow logging writes to /dev/kmsg so output goes to stderr.
-        // Fake out read requests since that's stubbed.
+        // If /dev/kmsg exists, then force append for test purposes
+        // Fake out read requests since those are always mocked.
         if (flags & O_WRONLY)
-            return -1;
+            flags |= O_APPEND;
         else
             return dup(STDERR_FILENO);
     } else if (strcmp(pathname, "/dev/pmsg0") == 0) {
-        // Similate pmsg0 by forcing it to be opened with the append flag
+        // Simulate pmsg0 by forcing it to be opened with the append flag
         if (flags & O_WRONLY)
             flags |= O_APPEND;
     }
