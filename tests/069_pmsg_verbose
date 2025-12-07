@@ -84,10 +84,10 @@ fixture: reboot(0x01234567)
 EOF
 
 cat >"$PMSG_EXPECTED" <<EOF
-2025-12-05T21:28:01.000000+00:00 erlinit Launching erl...
-2025-12-05T21:28:01.000000+00:00 erlinit Intentional exit from Erlang: no
-2025-12-05T21:28:01.000000+00:00 erlinit Erlang exit status: 0
-2025-12-05T21:28:01.000000+00:00 erlinit Graceful shutdown succeeded: no
-2025-12-05T21:28:01.000000+00:00 erlinit Graceful shutdown time: 0.000 s
-2025-12-05T21:28:01.000000+00:00 erlinit Calling reboot(0x1234567)
+2025-12-05T21:28:01.123456+00:00 erlinit Launching erl...
+2025-12-05T21:28:01.123456+00:00 erlinit Intentional exit from Erlang: no
+2025-12-05T21:28:01.123456+00:00 erlinit Erlang exit status: 0
+2025-12-05T21:28:01.123456+00:00 erlinit Graceful shutdown succeeded: no
+2025-12-05T21:28:01.123456+00:00 erlinit Graceful shutdown time: 0.000 s
+2025-12-05T21:28:01.123456+00:00 erlinit Calling reboot(0x1234567)
 EOF

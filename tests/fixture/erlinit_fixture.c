@@ -154,6 +154,16 @@ REPLACE(time_t, time, (time_t *tloc))
     return *tloc;
 }
 
+REPLACE(int, clock_gettime, (clockid_t clock_id, struct timespec *tp))
+{
+    (void) clock_id;
+
+    // Hardcode all timestamps to be the same in the output for unit test purposes
+    tp->tv_sec = 1764970081;
+    tp->tv_nsec = 123456789;
+    return 0;
+}
+
 // syscall gives a deprecation warning on MacOS, so handle this is compat.c
 #ifndef __APPLE__
 REPLACE(long, syscall, (long number, ...))

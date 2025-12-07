@@ -29,18 +29,30 @@ static int stderr_format(char **strp, const char *msg)
 
 static int pmsg_format(char **strp, const char *msg)
 {
-    time_t rawtime;
-    time(&rawtime);
-    struct tm timeinfo;
-    if (gmtime_r(&rawtime, &timeinfo) == NULL)
-        return -1; // Or handle error appropriately
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) != 0)
+        return -1;
+
+    struct tm tm;
+    if (gmtime_r(&ts.tv_sec, &tm) == NULL)
+        return -1;
+
+    long usec = ts.tv_nsec / 1000;
 
     // Match the RFC3339 timestamps from Erlang's logger_formatter
     // 2025-12-04T00:01:34.200744+00:00
-    char timestamp[48];
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%S.000000+00:00", &timeinfo);
-
-    return asprintf(strp, "%s " PROGRAM_NAME " %s\n", timestamp, msg);
+    return asprintf(
+            strp,
+            "%04d-%02d-%02dT%02d:%02d:%02d.%06ld+00:00 " PROGRAM_NAME " %s\n",
+            tm.tm_year + 1900,
+            tm.tm_mon + 1,
+            tm.tm_mday,
+            tm.tm_hour,
+            tm.tm_min,
+            tm.tm_sec,
+            usec,
+            msg
+        );
 }
 
 static void log_pmsg_breadcrumb(const char *msg)
