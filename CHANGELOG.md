@@ -5,6 +5,13 @@
 
 # Changelog
 
+## v1.15.1
+
+* Bug fixes
+  * Add program name back to kmsg logs that was unintentionally removed from
+    v1.15.0.
+  * Add microsecond precision to pmsg timestamps
+
 ## v1.15.0
 
 This release adds support for logging breadcrumbs to the Linux pstore pmsg
