@@ -41,7 +41,9 @@ struct erlinit_options options = {
     .shutdown_report = NULL,
     .limits = NULL,
     .x_pivot_root_on_overlayfs = 0,
-    .core_pattern = NULL
+    .core_pattern = NULL,
+    .splash_path = NULL,
+    .splash_fb_timeout_ms = 5000
 };
 
 enum erlinit_option_value {
@@ -79,6 +81,8 @@ enum erlinit_option_value {
     OPT_TTY_OPTIONS,
     OPT_SHUTDOWN_REPORT,
     OPT_CORE_PATTERN,
+    OPT_SPLASH,
+    OPT_SPLASH_FB_TIMEOUT,
 
     // Experimental
     OPT_X_PIVOT_ROOT_ON_OVERLAYFS
@@ -115,6 +119,8 @@ static struct option long_options[] = {
     {"limits", required_argument, 0, OPT_LIMIT},
     {"x-pivot-root-on-overlayfs", no_argument, 0, OPT_X_PIVOT_ROOT_ON_OVERLAYFS},
     {"core-pattern", required_argument, 0, OPT_CORE_PATTERN},
+    {"splash", required_argument, 0, OPT_SPLASH},
+    {"splash-fb-timeout", required_argument, 0, OPT_SPLASH_FB_TIMEOUT},
     {0,     0,      0, 0 }
 };
 
@@ -232,6 +238,12 @@ void parse_args(int argc, char *argv[])
             break;
         case OPT_CORE_PATTERN: // --core-pattern
             SET_STRING_OPTION(options.core_pattern);
+            break;
+        case OPT_SPLASH: // --splash /etc/splash.ppm
+            SET_STRING_OPTION(options.splash_path);
+            break;
+        case OPT_SPLASH_FB_TIMEOUT: // --splash-fb-timeout 5000
+            options.splash_fb_timeout_ms = strtol(optarg, NULL, 0);
             break;
         default:
             // getopt prints a warning, so we don't have to

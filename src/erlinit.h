@@ -95,6 +95,8 @@ struct erlinit_options {
     char *limits;
     int x_pivot_root_on_overlayfs;
     char *core_pattern;
+    char *splash_path;
+    int splash_fb_timeout_ms;
 };
 
 extern struct erlinit_options options;
@@ -151,6 +153,9 @@ void log_mini_shutdown_report(const struct erlinit_exit_info *exit_info);
 
 // seedrng
 int seedrng(void);
+
+// Splash screen (Linux-only; runs in a forked child, never returns)
+void run_splash(const char *path) __attribute__((noreturn));
 
 // Utility functions
 void trim_whitespace(char *s);

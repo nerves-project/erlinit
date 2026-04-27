@@ -12,6 +12,7 @@
 
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -1050,6 +1051,20 @@ int main(int argc, char *argv[])
 
     // Mount /dev, /proc and /sys
     setup_pseudo_filesystems();
+
+    // Fire off the splash screen as early as possible. Only fork if the
+    // splash file is present so that the default-no-splash path is free.
+    // Reaping is handled by the existing waitpid(-1, ...) loop in fork_and_wait.
+    {
+        const char *splash_path = options.splash_path ? options.splash_path : "/etc/splash.ppm";
+        int splash_fd = open(splash_path, O_RDONLY);
+        if (splash_fd >= 0) {
+            close(splash_fd);
+            pid_t splash_pid = fork();
+            if (splash_pid == 0)
+                run_splash(splash_path);
+        }
+    }
 
     // Create symlinks for partitions on the drive containing the
     // root filesystem.

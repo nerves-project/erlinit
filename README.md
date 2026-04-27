@@ -182,6 +182,14 @@ The following lists the options:
 --shutdown-report <path>
     Before shutting down or rebooting, save a report to the specified path.
 
+--splash <path>
+    Path to a P6 PPM (binary RGB, maxval 255) to display on /dev/fb0 during
+    boot. If omitted, the default is /etc/splash.ppm; if neither exists, no
+    splash is shown. See "Splash screen" below.
+
+--splash-fb-timeout <milliseconds>
+    How long to wait for /dev/fb0 to appear before giving up. Default 5000.
+
 -t, --print-timing
     Print out when erlinit starts and when it launches Erlang (for
     benchmarking)
@@ -390,6 +398,73 @@ locations.  This can cause some confusion and look like a hang. To address this,
 `--warn-unused-tty` option.  For example, if the user specifies that the Erlang
 shell is on `ttyAMA0` (the UART port), a message will be printed on `tty0` (the
 HDMI output).
+
+## Splash screen
+
+`erlinit` can display a static splash image on `/dev/fb0` during boot. The
+intent is to cover the time between the kernel handing off to userspace and
+your application drawing its own UI. It is fire-and-forget: a fork happens
+right after `/dev` is mounted, and the splash child draws and exits while the
+rest of boot continues.
+
+The splash uses the framebuffer device directly (no DRM, no libraries). Format
+support is intentionally narrow — RGB565, XRGB8888 / BGRX8888, and 24-bit
+packed RGB. If you need anything more (animation, scaling, transparency,
+multiple frames), use a separate splash binary.
+
+### Image format
+
+The input is a P6 PPM (binary RGB, maxval 255) — what `convert image.png
+splash.ppm` from ImageMagick produces by default. The parser is strict: only
+P6, only maxval 255, dimensions up to 4096×4096. PPM `# ...` comments between
+header tokens are tolerated. P3 (ASCII), P5 (grayscale), other PPM variants
+and non-255 maxvals are rejected.
+
+The image is centered on the framebuffer. If it is larger than the
+framebuffer, it is clipped — not scaled. If it is smaller, the surrounding
+margin is filled with the **top-left pixel of the source image**. Use a
+margin-color block in the corner of your design, or pre-pad the image to the
+target resolution if you want a different background.
+
+### Configuration
+
+```text
+--splash /etc/splash.ppm
+--splash-fb-timeout 5000
+```
+
+If `--splash` is omitted, `/etc/splash.ppm` is used if present; otherwise no
+splash is displayed and no fork occurs. Any failure (missing file, parse
+error, `/dev/fb0` never appearing within the timeout, unsupported pixel
+format, ioctl/mmap failure) results in a silent skip — the splash is
+best-effort and never blocks or fails boot.
+
+### Behavior on screen
+
+After the blit, the splash process puts `/dev/tty0` in `KD_GRAPHICS` mode to
+suppress the framebuffer console. It then exits without restoring `KD_TEXT`,
+so the splash persists until something else writes to `/dev/fb0`. Your
+application can simply open `/dev/fb0` and draw over it when it is ready;
+`fbcon` will not fight you. The framebuffer is already populated and in
+graphics mode by the time the BEAM starts.
+
+If `KDSETMODE` fails (e.g., no VT exists), a warning is logged and the blit
+still happens — `fbcon` may then overdraw text on top of the splash, but a
+possibly-overdrawn splash is better than no splash.
+
+### Recommended kernel cmdline
+
+For a clean splash UX, suppress kernel chatter and skip EDID negotiation on
+HDMI:
+
+```text
+quiet loglevel=0 logo.nologo video=HDMI-A-1:1280x720@60
+```
+
+On Raspberry Pi specifically, the `video=` argument tells the kernel the
+exact mode to set up so the framebuffer is available immediately, instead of
+waiting for the display to advertise its modes. Adjust the connector name
+and resolution to match your hardware.
 
 ## Privilege
 
