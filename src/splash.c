@@ -71,6 +71,10 @@ static int ppm_read_uint(FILE *fp, unsigned int *out)
             return -1;
         digits++;
     }
+    // Push the (non-digit) terminator back so the caller can verify it's
+    // whitespace, or so the next ppm_skip_ws can consume it.
+    if (c != EOF)
+        ungetc(c, fp);
     if (!digits)
         return -1;
     *out = v;
