@@ -1060,9 +1060,14 @@ int main(int argc, char *argv[])
         int splash_fd = open(splash_path, O_RDONLY);
         if (splash_fd >= 0) {
             close(splash_fd);
+            elog(ELOG_DEBUG, "splash: forking child for %s", splash_path);
             pid_t splash_pid = fork();
             if (splash_pid == 0)
                 run_splash(splash_path);
+            else if (splash_pid < 0)
+                elog(ELOG_WARNING, "splash: fork failed: %s", strerror(errno));
+            else
+                elog(ELOG_DEBUG, "splash: forked pid %d", splash_pid);
         }
     }
 
